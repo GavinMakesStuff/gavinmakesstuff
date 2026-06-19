@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gavin Krohn — Portfolio</title>
+  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="portfolio">
+  <nav class="site-nav">
+    <div class="container">
+      <a class="logo" href="/portfolio/index.html">Gavin Krohn</a>
+      <ul class="nav-links">
+        <li><a href="/portfolio/index.html" class="active">Projects</a></li>
+        <li><a href="mailto:you@example.com">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <div class="bio-section">
+        <img src="/images/site/headshot-placeholder.svg" alt="Headshot — replace with a real photo" style="width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--color-ink-raised);">
+        <div>
+          <h1 style="margin-bottom:6px;">Gavin Krohn</h1>
+          <p class="lede" style="margin-bottom:0;">Replace this with a short professional summary — your background, the kind of work you're looking for, and a couple of skills to highlight. Two to three sentences is plenty.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" style="padding-top:16px;">
+    <div class="container">
+      <div class="section-heading"><h2>Selected projects</h2></div>
+      <div id="portfolio-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Gavin Krohn</span>
+      <span><a href="mailto:you@example.com">you@example.com</a></span>
+    </div>
+  </footer>
+
+  <script src="/js/shared.js"></script>
+  <script>
+    (async function () {
+      try {
+        const res = await fetch('/data/projects.json');
+        initProjects(await res.json());
+      } catch (e) { console.error('Data load failed', e); }
+      renderProjectCards('portfolio-projects-grid', 'portfolio', '/portfolio/project.html');
+    })();
+  </script>
+</body>
+</html>

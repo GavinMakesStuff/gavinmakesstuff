@@ -1,0 +1,13 @@
+{
+  "posts": [
+    {
+      "id": "why-i-build-stuff",
+      "draft": false,
+      "title": "Why I keep building random stuff in my garage",
+      "date": "2026-06-01",
+      "summary": "An origin story involving a broken coffee maker, too much free time, and absolutely no formal training.",
+      "thumbnail": "/images/site/blog-placeholder.svg",
+      "body": "It started with a coffee maker. It broke, I refused to just buy a new one out of spite, and somehow that turned into a hobby that now takes up an entire shelf in my garage.\n\nThis blog is where I'll post the actual stories behind the projects you'll find in the workshop section — the parts that didn't work, the late-night \"why-is-this-smoking\" moments, and the occasional win that actually goes to plan.\n\nIf you're new here: welcome. Pull up a stool, the soldering iron's already hot."
+    }
+  ]
+}

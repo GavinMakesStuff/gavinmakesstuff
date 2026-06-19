@@ -1,0 +1,10 @@
+<svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="400" fill="#12181C"/>
+  <path d="M -20 100 L 150 100 L 190 140 L 380 140 L 420 180 L 620 180" fill="none" stroke="#2A8F79" stroke-width="3"/>
+  <path d="M -20 310 L 140 310 L 180 270 L 360 270 L 400 230 L 620 230" fill="none" stroke="#2A8F79" stroke-width="3"/>
+  <circle cx="190" cy="140" r="6" fill="#3DD9B8"/>
+  <circle cx="420" cy="180" r="6" fill="#FF7A52"/>
+  <circle cx="180" cy="270" r="6" fill="#FF7A52"/>
+  <text x="300" y="205" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="600" fill="#ECE8DE">Retro arcade cabinet</text>
+  <text x="300" y="230" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#8B9499">thumbnail placeholder — swap this file later</text>
+</svg>

@@ -1,0 +1,157 @@
+backend:
+  name: git-gateway
+  branch: main
+
+# Images and files uploaded through the admin panel go here
+media_folder: "images/uploads"
+public_folder: "/images/uploads"
+
+# Show a live preview in the editor (optional but helpful)
+show_preview_links: true
+
+collections:
+  # ── PROJECTS ────────────────────────────────────────────────────────────────
+  - name: "projects"
+    label: "Projects"
+    files:
+      - name: "projects_list"
+        label: "All Projects"
+        file: "data/projects.json"
+        fields:
+          - name: "projects"
+            label: "Projects"
+            label_singular: "Project"
+            widget: "list"
+            summary: "{{fields.id}} — Public: {{fields.showOnPublic}}, Portfolio: {{fields.showOnPortfolio}}, Draft: {{fields.draft}}"
+            fields:
+
+              - name: id
+                label: "URL slug (lowercase-with-hyphens, no spaces)"
+                widget: string
+                hint: "Example: my-cool-robot — this appears in the URL and must be unique"
+
+              - name: draft
+                label: "Save as draft (hidden from visitors)"
+                widget: boolean
+                default: false
+
+              - name: thumbnail
+                label: "Thumbnail image"
+                widget: image
+                required: false
+                hint: "Shown on the project card. Recommended size: 600×400px"
+
+              - name: showOnPublic
+                label: "Show on Public (Workshop) section"
+                widget: boolean
+                default: true
+
+              - name: showOnPortfolio
+                label: "Show on Portfolio section"
+                widget: boolean
+                default: true
+
+              # ── PUBLIC VERSION ─────────────────────────────────────────────
+              - name: public
+                label: "Public version (casual, fun tone)"
+                widget: object
+                fields:
+                  - {name: title, label: Title, widget: string}
+                  - {name: summary, label: "Card summary (one sentence shown on the project card)", widget: string}
+                  - name: tags
+                    label: Tags
+                    widget: list
+                    allow_add: true
+                    field: {name: tag, label: Tag, widget: string}
+                    hint: "Short labels like: arduino, woodworking, beginner-friendly"
+                  - name: description
+                    label: "Full description"
+                    widget: markdown
+                    hint: "Use the toolbar for headings, bold, bullet points, etc."
+                  - name: gallery
+                    label: "Gallery images"
+                    widget: list
+                    allow_add: true
+                    required: false
+                    field: {name: image, label: Image, widget: image}
+                  - name: downloads
+                    label: "Downloadable files"
+                    widget: list
+                    allow_add: true
+                    required: false
+                    fields:
+                      - {name: label, label: "Button label (e.g. Project files (.zip))", widget: string}
+                      - {name: file, label: File, widget: file}
+                      - {name: meta, label: "Note (e.g. file size)", widget: string, required: false}
+
+              # ── PORTFOLIO VERSION ──────────────────────────────────────────
+              - name: portfolio
+                label: "Portfolio version (professional tone)"
+                widget: object
+                fields:
+                  - {name: title, label: Title, widget: string}
+                  - {name: summary, label: "Card summary (one sentence shown on the project card)", widget: string}
+                  - name: tags
+                    label: Tags
+                    widget: list
+                    allow_add: true
+                    field: {name: tag, label: Tag, widget: string}
+                    hint: "Skill/tech labels like: embedded systems, c++, fabrication"
+                  - name: description
+                    label: "Full description"
+                    widget: markdown
+                    hint: "Recommended structure: ## Problem, ## Approach, ## Outcome"
+                  - name: gallery
+                    label: "Gallery images"
+                    widget: list
+                    allow_add: true
+                    required: false
+                    field: {name: image, label: Image, widget: image}
+                  - name: downloads
+                    label: "Downloadable files"
+                    widget: list
+                    allow_add: true
+                    required: false
+                    fields:
+                      - {name: label, label: "Button label", widget: string}
+                      - {name: file, label: File, widget: file}
+                      - {name: meta, label: "Note", widget: string, required: false}
+
+  # ── BLOG POSTS ──────────────────────────────────────────────────────────────
+  - name: "blog"
+    label: "Blog Posts"
+    files:
+      - name: "blog_list"
+        label: "All Blog Posts"
+        file: "data/blog.json"
+        fields:
+          - name: "posts"
+            label: "Posts"
+            label_singular: "Post"
+            widget: "list"
+            summary: "{{fields.date}} — {{fields.title}}"
+            fields:
+              - name: id
+                label: "URL slug (lowercase-with-hyphens)"
+                widget: string
+              - name: draft
+                label: "Save as draft"
+                widget: boolean
+                default: false
+              - name: title
+                label: Title
+                widget: string
+              - name: date
+                label: Date
+                widget: date
+                format: "YYYY-MM-DD"
+              - name: summary
+                label: "Card summary (one sentence)"
+                widget: string
+              - name: thumbnail
+                label: "Thumbnail image"
+                widget: image
+                required: false
+              - name: body
+                label: "Post content"
+                widget: markdown

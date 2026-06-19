@@ -1,0 +1,8 @@
+<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1000" height="700" fill="#1B232A"/>
+  <path d="M -20 500 L 260 500 L 310 450 L 600 450 L 650 400 L 1020 400" fill="none" stroke="#2A8F79" stroke-width="3"/>
+  <circle cx="310" cy="450" r="8" fill="#3DD9B8"/>
+  <circle cx="650" cy="400" r="8" fill="#FF7A52"/>
+  <text x="500" y="280" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="600" fill="#ECE8DE">Gallery image 1</text>
+  <text x="500" y="315" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#8B9499">arcade-cabinet — replace with a real photo</text>
+</svg>

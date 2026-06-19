@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project — Gavin Krohn Portfolio</title>
+  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="portfolio">
+  <nav class="site-nav">
+    <div class="container">
+      <a class="logo" href="/portfolio/index.html">Gavin Krohn</a>
+      <ul class="nav-links">
+        <li><a href="/portfolio/index.html" class="active">Projects</a></li>
+        <li><a href="mailto:you@example.com">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container detail-header">
+    <a class="back-link" href="/portfolio/index.html">← Back to all projects</a>
+    <div id="project-detail-root"><div class="empty-state">Loading…</div></div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Gavin Krohn</span>
+      <span><a href="mailto:you@example.com">you@example.com</a></span>
+    </div>
+  </footer>
+
+  <div class="lightbox-overlay" id="lightbox-overlay" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close image">×</button>
+    <img id="lightbox-image" src="" alt="Enlarged gallery image" onclick="event.stopPropagation()">
+  </div>
+
+  <script src="/js/shared.js"></script>
+  <script>
+    (async function () {
+      try {
+        const res = await fetch('/data/projects.json');
+        initProjects(await res.json());
+      } catch (e) { console.error('Data load failed', e); }
+      renderProjectDetail('portfolio');
+    })();
+  </script>
+</body>
+</html>
