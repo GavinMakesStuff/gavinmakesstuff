@@ -116,7 +116,7 @@
       <a href="/admin/index.html">Full Editor</a>
       <a href="/public/index.html" target="_blank">View Site</a>
       <span id="user-bar"></span>
-      <button id="logout-btn" onclick="netlifyIdentity.logout()">Log out</button>
+      <button id="logout-btn" onclick="logout()">Log out</button>
     </div>
   </nav>
 
@@ -236,38 +236,81 @@
   </div><!-- /admin-wrap -->
 </div><!-- /app -->
 
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script>
-  // ── Authentication ──────────────────────────────────────────────────────────
-  var currentUser = null;
+  // ── Authentication (GitHub OAuth, shared with Decap CMS's login system) ────
+  var currentToken = sessionStorage.getItem('gh_token');
+  var currentUsername = sessionStorage.getItem('gh_username');
 
-  netlifyIdentity.on('init', function (user) {
-    if (user) {
-      showApp(user);
-    } else {
-      // Not logged in — open the login modal
-      netlifyIdentity.open();
-    }
-  });
-
-  netlifyIdentity.on('login', function (user) {
-    netlifyIdentity.close();
-    showApp(user);
-  });
-
-  netlifyIdentity.on('logout', function () {
-    currentUser = null;
-    document.getElementById('app').style.display = 'none';
+  function showLoginGate() {
+    document.getElementById('auth-gate').innerHTML =
+      '<h2 style="font-family:\'Poppins\',sans-serif;margin-bottom:6px;">Admin Login</h2>' +
+      '<p style="color:var(--muted);max-width:320px;text-align:center;">Log in with the GitHub account that owns this site.</p>' +
+      '<button class="btn btn-primary" onclick="loginWithGitHub()">Log in with GitHub</button>';
     document.getElementById('auth-gate').style.display = 'flex';
-    netlifyIdentity.open();
-  });
+    document.getElementById('app').style.display = 'none';
+  }
 
-  function showApp(user) {
-    currentUser = user;
+  function showApp() {
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    document.getElementById('user-bar').textContent = user.email;
+    document.getElementById('user-bar').textContent = currentUsername || '';
   }
+
+  function loginWithGitHub() {
+    var popup = window.open('/api/auth', 'github-oauth', 'width=600,height=700');
+    if (!popup) {
+      showStatus('Your browser blocked the login popup. Allow popups for this site and try again.', true);
+      return;
+    }
+
+    function handler(e) {
+      if (typeof e.data !== 'string') return;
+
+      // Step 1: the popup pings us to confirm we're listening — echo back
+      if (e.data === 'authorizing:github') {
+        popup.postMessage('authorizing:github', '*');
+        return;
+      }
+
+      // Step 2: the popup sends the real token
+      if (e.data.indexOf('authorization:github:success:') === 0) {
+        var payload = JSON.parse(e.data.slice('authorization:github:success:'.length));
+        currentToken = payload.token;
+        sessionStorage.setItem('gh_token', currentToken);
+        window.removeEventListener('message', handler);
+
+        // Grab the username for display, then show the app
+        fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + currentToken } })
+          .then(function (r) { return r.json(); })
+          .then(function (u) {
+            currentUsername = u.login || '';
+            sessionStorage.setItem('gh_username', currentUsername);
+            showApp();
+          })
+          .catch(function () { showApp(); });
+      }
+    }
+
+    window.addEventListener('message', handler);
+  }
+
+  function logout() {
+    sessionStorage.removeItem('gh_token');
+    sessionStorage.removeItem('gh_username');
+    currentToken = null;
+    currentUsername = null;
+    showLoginGate();
+  }
+
+  // On page load: show the app right away if we have a saved token.
+  // Any actual admin action will be rejected server-side if it's invalid
+  // or expired, at which point you'd just need to log in again.
+  if (currentToken) {
+    showApp();
+  } else {
+    showLoginGate();
+  }
+</script>
 
   // ── AI Generation ───────────────────────────────────────────────────────────
   async function generateDraft() {
@@ -283,7 +326,7 @@
     setLoading(true);
     showStatus('Writing your project write-ups… this takes about 10–15 seconds.', false);
 
-    var token = currentUser && currentUser.token && currentUser.token.access_token;
+    var token = currentToken;
 
     try {
       var res = await fetch('/.netlify/functions/ai-draft', {
@@ -340,7 +383,7 @@
 
     setLoading(true, asDraft ? 'Saving draft…' : 'Publishing to site…');
 
-    var token = currentUser && currentUser.token && currentUser.token.access_token;
+    var token = currentToken;
 
     try {
       var res = await fetch('/.netlify/functions/ai-draft', {

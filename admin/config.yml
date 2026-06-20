@@ -1,6 +1,9 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: GavinMakesStuff/gavinmakesstuff
   branch: main
+  base_url: https://gavinmakesstuff.com
+  auth_endpoint: api/auth
 
 # Images and files uploaded through the admin panel go here
 media_folder: "images/uploads"
