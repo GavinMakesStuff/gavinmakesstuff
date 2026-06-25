@@ -329,7 +329,7 @@
     var token = currentToken;
 
     try {
-      var res = await fetch('/.netlify/functions/ai-draft', {
+      var res = await fetch('/api/ai-draft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -386,7 +386,7 @@
     var token = currentToken;
 
     try {
-      var res = await fetch('/.netlify/functions/ai-draft', {
+      var res = await fetch('/api/ai-draft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
