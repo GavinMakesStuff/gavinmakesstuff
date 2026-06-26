@@ -1,6 +1,29 @@
 {
   "projects": [
     {
+      "id": "test",
+      "draft": true,
+      "thumbnail": "",
+      "showOnPublic": true,
+      "showOnPortfolio": true,
+      "public": {
+        "title": "Testing, Testing, 1-2-3",
+        "summary": "A quick test run to see if this whole documentation thing actually works.",
+        "tags": [],
+        "description": "## Just Kicking the Tires\n\nSo here's the thing — every builder needs to test their workflow before diving into the real projects. This was my chance to make sure the documentation system actually does what I want it to do.\n\n## What I Did\n\nNothing fancy, just:\n- Threw together some raw notes\n- Ran them through the process\n- Checked if the output looked reasonable\n\n## The Verdict\n\nSurprisingly, it works! Who knew? This is the kind of project where success just means \"did it break anything?\" and the answer is no, so we're good.\n\nOn to the real stuff now! 🚀",
+        "gallery": [],
+        "downloads": []
+      },
+      "portfolio": {
+        "title": "Documentation System Validation",
+        "summary": "Established and validated a dual-format documentation pipeline for technical projects.",
+        "tags": [],
+        "description": "## Problem\n\nNeeded to create a structured, repeatable process for documenting maker projects in two distinct formats: one for public-facing engagement and one for professional portfolio presentation. The system needed to be efficient and maintainable while producing appropriately-toned output for each audience.\n\n## Approach\n\nDesigned a documentation framework that:\n- Accepts raw notes and project metadata as input\n- Generates two parallel outputs with distinct voice and structure\n- Uses JSON as the output format for integration flexibility\n- Establishes clear formatting conventions (public: conversational with markdown structure; portfolio: problem-solution-outcome framework)\n\n## Outcome\n\nSuccessfully validated the documentation pipeline with clean, formatted output in both public and professional registers. The system is now ready to process actual project work with consistent quality and tone across all documentation.",
+        "gallery": [],
+        "downloads": []
+      }
+    },
+    {
       "id": "scout-a-personal-job-search-intelligence-tool",
       "draft": false,
       "thumbnail": "",
