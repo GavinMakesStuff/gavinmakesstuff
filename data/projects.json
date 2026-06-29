@@ -48,10 +48,10 @@
     },
     {
       "id": "scout-a-personal-job-search-intelligence-tool",
-      "draft": false,
+      "draft": true,
       "thumbnail": "",
-      "showOnPublic": true,
-      "showOnPortfolio": true,
+      "showOnPublic": false,
+      "showOnPortfolio": false,
       "public": {
         "title": "Scout — A Job Search Intelligence Dashboard I Built to Stop Going Crazy",
         "summary": "I got tired of reading job postings that looked great until the fifth paragraph, so I built a tool that does it for me — honestly.",
