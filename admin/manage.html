@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Content — Gavin makes stuff Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #12181c; --ink-raised: #1b232a; --ink-border: #2a343b;
+      --trace: #3dd9b8; --solder: #ff7a52;
+      --paper: #ece8de; --muted: #8b9499;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--ink); color: var(--paper);
+      font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; }
+    h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 600; margin: 0 0 0.4em; }
+    p { margin: 0 0 1em; }
+    a { color: var(--trace); }
+
+    #auth-gate { display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; flex-direction: column; gap: 16px; text-align: center; padding: 24px; }
+    .admin-wrap { max-width: 980px; margin: 0 auto; padding: 32px 24px 80px; }
+    .admin-nav { background: var(--ink-raised); border-bottom: 1px solid var(--ink-border);
+      padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .admin-nav .logo { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 1.1rem; }
+    .admin-nav-links { display: flex; gap: 20px; align-items: center; }
+    .admin-nav-links a { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+    .admin-nav-links a:hover, .admin-nav-links a.active { color: var(--paper); }
+
+    .card { background: var(--ink-raised); border: 1px solid var(--ink-border);
+      border-radius: var(--radius); padding: 22px; margin-bottom: 20px; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: var(--paper); }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    input[type=text], input[type=date], textarea, select {
+      width: 100%; background: var(--ink); border: 1px solid var(--ink-border);
+      border-radius: 6px; padding: 9px 12px; color: var(--paper);
+      font-family: 'Inter', sans-serif; font-size: 0.92rem; resize: vertical; }
+    input:focus, textarea:focus { outline: 2px solid var(--trace); outline-offset: 1px; }
+    .field { margin-bottom: 16px; }
+    .checkbox-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .checkbox-row label { display: flex; align-items: center; gap: 7px; font-weight: 400; margin: 0; cursor: pointer; }
+    input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--trace); cursor: pointer; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px;
+      border-radius: 8px; border: 1px solid var(--ink-border); background: transparent;
+      color: var(--paper); font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      font-weight: 500; cursor: pointer; white-space: nowrap; text-decoration: none; }
+    .btn:hover { background: var(--ink-border); }
+    .btn-primary { background: var(--trace); border-color: var(--trace); color: #08221c; }
+    .btn-primary:hover { background: #34c2a4; }
+    .btn-draft { background: var(--ink-border); border-color: var(--muted); }
+    .btn-danger { background: transparent; border-color: #e05555; color: #e05555; }
+    .btn-sm { padding: 5px 11px; font-size: 0.78rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .item-row { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 0; border-top: 1px solid var(--ink-border); }
+    .item-row:first-of-type { border-top: none; }
+    .item-title { font-weight: 500; }
+    .item-meta { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 100px; margin-left: 8px; font-weight: 500; }
+    .badge-draft { background: rgba(255,122,82,0.15); color: var(--solder); }
+    .badge-live { background: rgba(61,217,184,0.15); color: var(--trace); }
+    .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    .toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
+    .toolbar button { background: var(--ink); border: 1px solid var(--ink-border); color: var(--paper);
+      border-radius: 5px; padding: 4px 9px; font-size: 0.8rem; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .toolbar button:hover { background: var(--ink-border); }
+
+    .upload-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .upload-item { display: flex; align-items: center; gap: 10px; background: var(--ink);
+      border: 1px solid var(--ink-border); border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; }
+    .upload-item img { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; }
+    .upload-item .path { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .upload-item button { background: none; border: none; color: #e05555; cursor: pointer; font-size: 0.9rem; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+    .tone-tag { font-size: 0.72rem; padding: 3px 9px; border-radius: 100px; font-weight: 500; margin-bottom: 14px; display: inline-block; }
+    .tone-public { background: rgba(61,217,184,0.12); color: var(--trace); border: 1px solid rgba(61,217,184,0.3); }
+    .tone-portfolio { background: rgba(255,122,82,0.12); color: var(--solder); border: 1px solid rgba(255,122,82,0.3); }
+
+    .status-bar { padding: 12px 16px; border-radius: 8px; margin-bottom: 18px;
+      background: rgba(61,217,184,0.08); border: 1px solid rgba(61,217,184,0.2);
+      font-size: 0.88rem; display: none; align-items: center; gap: 10px; }
+    .status-bar.visible { display: flex; }
+    .status-bar.error { background: rgba(224,85,85,0.08); border-color: rgba(224,85,85,0.3); color: #e05555; }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--ink-border);
+      border-top-color: var(--trace); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #user-bar { font-size: 0.85rem; color: var(--muted); }
+    #logout-btn { background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 0.85rem; padding: 0; text-decoration: underline; }
+    #list-view, #form-view { display: none; }
+  </style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+  <p style="color:var(--muted);">Checking login…</p>
+</div>
+
+<div id="app" style="display:none;">
+  <nav class="admin-nav">
+    <span class="logo">Gavin makes stuff — Admin</span>
+    <div class="admin-nav-links">
+      <a href="/admin/ai-draft.html">AI Draft</a>
+      <a href="/admin/manage.html" class="active">Manage Projects</a>
+      <a href="/public/index.html" target="_blank">View Site</a>
+      <span id="user-bar"></span>
+      <button id="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </nav>
+
+  <div class="admin-wrap">
+    <div class="status-bar" id="status-bar">
+      <div class="spinner" id="status-spinner"></div>
+      <span id="status-text"></span>
+    </div>
+
+    <!-- ── LIST VIEW ── -->
+    <div id="list-view">
+      <div class="card">
+        <div class="section-head">
+          <h2 style="margin:0;font-size:1.2rem;">Projects</h2>
+          <button class="btn btn-primary btn-sm" onclick="newItem('project')">+ New Project</button>
+        </div>
+        <div id="projects-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2 style="margin:0;font-size:1.2rem;">Blog Posts</h2>
+          <button class="btn btn-primary btn-sm" onclick="newItem('blog')">+ New Post</button>
+        </div>
+        <div id="blog-list"></div>
+      </div>
+    </div>
+
+    <!-- ── FORM VIEW ── -->
+    <div id="form-view"></div>
+
+  </div>
+</div>
+
+<script>
+  // ── Auth (identical proven pattern from ai-draft.html) ──────────────────────
+  var currentToken = sessionStorage.getItem('gh_token');
+  var currentUsername = sessionStorage.getItem('gh_username');
+  var state = { projects: [], blog: [], editingType: null, editingItem: null };
+
+  function showLoginGate() {
+    document.getElementById('auth-gate').innerHTML =
+      '<h2 style="font-family:\'Poppins\',sans-serif;margin-bottom:6px;">Admin Login</h2>' +
+      '<p style="color:var(--muted);max-width:320px;text-align:center;">Log in with the GitHub account that owns this site.</p>' +
+      '<button class="btn btn-primary" onclick="loginWithGitHub()">Log in with GitHub</button>';
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+  function showApp() {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-bar').textContent = currentUsername || '';
+    loadList();
+  }
+  function loginWithGitHub() {
+    var popup = window.open('/api/auth', 'github-oauth', 'width=600,height=700');
+    if (!popup) { showStatus('Your browser blocked the login popup. Allow popups and try again.', true); return; }
+    function handler(e) {
+      if (typeof e.data !== 'string') return;
+      if (e.data === 'authorizing:github') { popup.postMessage('authorizing:github', '*'); return; }
+      if (e.data.indexOf('authorization:github:success:') === 0) {
+        var payload = JSON.parse(e.data.slice('authorization:github:success:'.length));
+        currentToken = payload.token;
+        sessionStorage.setItem('gh_token', currentToken);
+        window.removeEventListener('message', handler);
+        fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + currentToken } })
+          .then(function (r) { return r.json(); })
+          .then(function (u) {
+            currentUsername = u.login || '';
+            sessionStorage.setItem('gh_username', currentUsername);
+            showApp();
+          })
+          .catch(function () { showApp(); });
+      }
+    }
+    window.addEventListener('message', handler);
+  }
+  function logout() {
+    sessionStorage.removeItem('gh_token');
+    sessionStorage.removeItem('gh_username');
+    currentToken = null; currentUsername = null;
+    showLoginGate();
+  }
+  if (currentToken) { showApp(); } else { showLoginGate(); }
+
+  // ── Status helpers ──────────────────────────────────────────────────────────
+  function showStatus(msg, isError) {
+    var bar = document.getElementById('status-bar');
+    document.getElementById('status-text').textContent = msg;
+    document.getElementById('status-spinner').style.display = isError ? 'none' : 'block';
+    bar.className = 'status-bar visible' + (isError ? ' error' : '');
+  }
+  function hideStatus() { document.getElementById('status-bar').className = 'status-bar'; }
+
+  async function callApi(payload) {
+    var res = await fetch('/api/manage-content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + currentToken },
+      body: JSON.stringify(payload),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+
+  function slugify(s) {
+    return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  // ── List view ────────────────────────────────────────────────────────────────
+  async function loadList() {
+    document.getElementById('list-view').style.display = 'none';
+    document.getElementById('form-view').style.display = 'none';
+    showStatus('Loading your content…', false);
+    try {
+      var data = await callApi({ action: 'list' });
+      state.projects = data.projects;
+      state.blog = data.blog;
+      renderLists();
+      hideStatus();
+      document.getElementById('list-view').style.display = 'block';
+    } catch (e) {
+      showStatus('Could not load content: ' + e.message, true);
+    }
+  }
+
+  function renderLists() {
+    var pEl = document.getElementById('projects-list');
+    pEl.innerHTML = state.projects.length ? state.projects.map(function (p) {
+      return '<div class="item-row">' +
+        '<div><div class="item-title">' + (p.public.title || p.id) +
+          '<span class="badge ' + (p.draft ? 'badge-draft">Draft' : 'badge-live">Live') + '</span></div>' +
+        '<div class="item-meta">' + p.id + ' &middot; Public: ' + (p.showOnPublic ? 'yes' : 'no') + ' &middot; Portfolio: ' + (p.showOnPortfolio ? 'yes' : 'no') + '</div></div>' +
+        '<div class="item-actions">' +
+          '<button class="btn btn-sm" onclick="editItem(\'project\',\'' + p.id + '\')">Edit</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="deleteItem(\'project\',\'' + p.id + '\')">Delete</button>' +
+        '</div></div>';
+    }).join('') : '<p class="hint">No projects yet.</p>';
+
+    var bEl = document.getElementById('blog-list');
+    bEl.innerHTML = state.blog.length ? state.blog.map(function (b) {
+      return '<div class="item-row">' +
+        '<div><div class="item-title">' + b.title +
+          '<span class="badge ' + (b.draft ? 'badge-draft">Draft' : 'badge-live">Live') + '</span></div>' +
+        '<div class="item-meta">' + b.id + ' &middot; ' + (b.date || '') + '</div></div>' +
+        '<div class="item-actions">' +
+          '<button class="btn btn-sm" onclick="editItem(\'blog\',\'' + b.id + '\')">Edit</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="deleteItem(\'blog\',\'' + b.id + '\')">Delete</button>' +
+        '</div></div>';
+    }).join('') : '<p class="hint">No blog posts yet.</p>';
+  }
+
+  async function deleteItem(type, id) {
+    if (!confirm('Delete this ' + type + ' permanently? This cannot be undone.')) return;
+    showStatus('Deleting…', false);
+    try {
+      await callApi({ action: 'delete', type: type, id: id });
+      await loadList();
+    } catch (e) {
+      showStatus('Delete failed: ' + e.message, true);
+    }
+  }
+
+  // ── Form view ────────────────────────────────────────────────────────────────
+  function blankProject() {
+    return { id: '', draft: true, thumbnail: '', showOnPublic: true, showOnPortfolio: true,
+      public: { title: '', summary: '', tags: [], description: '', gallery: [], downloads: [] },
+      portfolio: { title: '', summary: '', tags: [], description: '', gallery: [], downloads: [] } };
+  }
+  function blankPost() {
+    return { id: '', draft: true, title: '', date: new Date().toISOString().slice(0,10), summary: '', thumbnail: '', body: '' };
+  }
+
+  function newItem(type) {
+    state.editingType = type;
+    state.editingItem = type === 'project' ? blankProject() : blankPost();
+    renderForm();
+  }
+  function editItem(type, id) {
+    var list = type === 'project' ? state.projects : state.blog;
+    var item = list.find(function (i) { return i.id === id; });
+    state.editingType = type;
+    state.editingItem = JSON.parse(JSON.stringify(item)); // deep copy
+    renderForm();
+  }
+  function cancelForm() {
+    document.getElementById('form-view').style.display = 'none';
+    document.getElementById('list-view').style.display = 'block';
+  }
+
+  function renderForm() {
+    document.getElementById('list-view').style.display = 'none';
+    var el = document.getElementById('form-view');
+    el.style.display = 'block';
+    var item = state.editingItem;
+    var isNew = !item.id;
+
+    if (state.editingType === 'project') {
+      el.innerHTML =
+        '<div class="card">' +
+          '<h2 style="font-size:1.2rem;">' + (isNew ? 'New Project' : 'Edit Project') + '</h2>' +
+          '<div class="field"><label>URL slug</label>' +
+            '<input type="text" id="f-id" value="' + esc(item.id) + '" placeholder="my-cool-project" ' + (isNew ? '' : 'disabled') + '>' +
+            '<p class="hint">Lowercase, hyphens only. Used in the page URL and for uploaded file paths. Can\'t be changed after creating.</p></div>' +
+          '<div class="checkbox-row">' +
+            '<label><input type="checkbox" id="f-draft" ' + (item.draft ? 'checked' : '') + '> Save as draft (hidden from visitors)</label>' +
+            '<label><input type="checkbox" id="f-public" ' + (item.showOnPublic ? 'checked' : '') + '> Show on Public</label>' +
+            '<label><input type="checkbox" id="f-portfolio" ' + (item.showOnPortfolio ? 'checked' : '') + '> Show on Portfolio</label>' +
+          '</div>' +
+          '<div class="field"><label>Tags (comma separated, shared by both versions)</label>' +
+            '<input type="text" id="f-tags" value="' + esc((item.public.tags || []).join(', ')) + '"></div>' +
+          '<div class="field"><label>Thumbnail image</label>' +
+            uploadWidget('thumb', item.thumbnail ? [item.thumbnail] : [], false) + '</div>' +
+        '</div>' +
+
+        '<div class="two-col">' +
+          '<div class="card">' +
+            '<span class="tone-tag tone-public">Public version</span>' +
+            '<div class="field"><label>Title</label><input type="text" id="f-pub-title" value="' + esc(item.public.title) + '"></div>' +
+            '<div class="field"><label>Card summary</label><input type="text" id="f-pub-summary" value="' + esc(item.public.summary) + '"></div>' +
+            '<div class="field"><label>Description</label>' + toolbar('f-pub-desc') +
+              '<textarea id="f-pub-desc" rows="10">' + esc(item.public.description) + '</textarea></div>' +
+            '<div class="field"><label>Gallery images</label>' + uploadWidget('pub-gallery', item.public.gallery, true) + '</div>' +
+            '<div class="field"><label>Downloadable files</label>' + downloadWidget('pub-downloads', item.public.downloads) + '</div>' +
+          '</div>' +
+          '<div class="card">' +
+            '<span class="tone-tag tone-portfolio">Portfolio version</span>' +
+            '<div class="field"><label>Title</label><input type="text" id="f-port-title" value="' + esc(item.portfolio.title) + '"></div>' +
+            '<div class="field"><label>Card summary</label><input type="text" id="f-port-summary" value="' + esc(item.portfolio.summary) + '"></div>' +
+            '<div class="field"><label>Description</label>' + toolbar('f-port-desc') +
+              '<textarea id="f-port-desc" rows="10">' + esc(item.portfolio.description) + '</textarea></div>' +
+            '<div class="field"><label>Gallery images</label>' + uploadWidget('port-gallery', item.portfolio.gallery, true) + '</div>' +
+            '<div class="field"><label>Downloadable files</label>' + downloadWidget('port-downloads', item.portfolio.downloads) + '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          '<button class="btn btn-primary" onclick="saveCurrentItem(false)">Publish</button>' +
+          '<button class="btn btn-draft" onclick="saveCurrentItem(true)">Save as draft</button>' +
+          '<button class="btn" onclick="cancelForm()">Cancel</button>' +
+        '</div>';
+    } else {
+      el.innerHTML =
+        '<div class="card">' +
+          '<h2 style="font-size:1.2rem;">' + (isNew ? 'New Blog Post' : 'Edit Blog Post') + '</h2>' +
+          '<div class="field"><label>URL slug</label>' +
+            '<input type="text" id="f-id" value="' + esc(item.id) + '" placeholder="my-post-title" ' + (isNew ? '' : 'disabled') + '>' +
+            '<p class="hint">Lowercase, hyphens only. Can\'t be changed after creating.</p></div>' +
+          '<div class="checkbox-row"><label><input type="checkbox" id="f-draft" ' + (item.draft ? 'checked' : '') + '> Save as draft (hidden from visitors)</label></div>' +
+          '<div class="field"><label>Title</label><input type="text" id="f-title" value="' + esc(item.title) + '"></div>' +
+          '<div class="field"><label>Date</label><input type="date" id="f-date" value="' + esc(item.date) + '"></div>' +
+          '<div class="field"><label>Card summary</label><input type="text" id="f-summary" value="' + esc(item.summary) + '"></div>' +
+          '<div class="field"><label>Thumbnail image</label>' + uploadWidget('thumb', item.thumbnail ? [item.thumbnail] : [], false) + '</div>' +
+          '<div class="field"><label>Post content</label>' + toolbar('f-body') +
+            '<textarea id="f-body" rows="14">' + esc(item.body) + '</textarea></div>' +
+        '</div>' +
+        '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          '<button class="btn btn-primary" onclick="saveCurrentItem(false)">Publish</button>' +
+          '<button class="btn btn-draft" onclick="saveCurrentItem(true)">Save as draft</button>' +
+          '<button class="btn" onclick="cancelForm()">Cancel</button>' +
+        '</div>';
+    }
+  }
+
+  function esc(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── Markdown toolbar ─────────────────────────────────────────────────────────
+  function toolbar(textareaId) {
+    return '<div class="toolbar">' +
+      '<button type="button" onclick="wrapSel(\'' + textareaId + '\',\'**\',\'**\')"><b>B</b></button>' +
+      '<button type="button" onclick="wrapSel(\'' + textareaId + '\',\'*\',\'*\')"><i>I</i></button>' +
+      '<button type="button" onclick="prefixLine(\'' + textareaId + '\',\'## \')">H2</button>' +
+      '<button type="button" onclick="prefixLine(\'' + textareaId + '\',\'- \')">List</button>' +
+    '</div>';
+  }
+  function wrapSel(id, before, after) {
+    var ta = document.getElementById(id);
+    var s = ta.selectionStart, e = ta.selectionEnd;
+    var sel = ta.value.substring(s, e);
+    ta.value = ta.value.substring(0, s) + before + sel + after + ta.value.substring(e);
+    ta.focus();
+    ta.selectionStart = s + before.length;
+    ta.selectionEnd = s + before.length + sel.length;
+  }
+  function prefixLine(id, prefix) {
+    var ta = document.getElementById(id);
+    var s = ta.selectionStart;
+    var lineStart = ta.value.lastIndexOf('\n', s - 1) + 1;
+    ta.value = ta.value.substring(0, lineStart) + prefix + ta.value.substring(lineStart);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = s + prefix.length;
+  }
+
+  // ── Upload widgets ───────────────────────────────────────────────────────────
+  // uploadWidget renders a list of existing images + an "Add image" file input.
+  // Data is tracked in window.__uploads[fieldKey] = [paths...]
+  window.__uploads = {};
+  function uploadWidget(fieldKey, existingPaths, multiple) {
+    window.__uploads[fieldKey] = existingPaths.slice();
+    return '<div class="upload-list" id="upload-list-' + fieldKey + '">' + renderUploadItems(fieldKey) + '</div>' +
+      '<input type="file" accept="image/*" ' + (multiple ? 'multiple' : '') + ' onchange="handleImageUpload(\'' + fieldKey + '\', this, ' + (multiple ? 'true' : 'false') + ')">';
+  }
+  function renderUploadItems(fieldKey) {
+    return window.__uploads[fieldKey].map(function (path, i) {
+      return '<div class="upload-item"><img src="' + path + '" onerror="this.style.display=\'none\'">' +
+        '<span class="path">' + path + '</span>' +
+        '<button type="button" onclick="removeUpload(\'' + fieldKey + '\',' + i + ')">&times;</button></div>';
+    }).join('');
+  }
+  function removeUpload(fieldKey, i) {
+    window.__uploads[fieldKey].splice(i, 1);
+    document.getElementById('upload-list-' + fieldKey).innerHTML = renderUploadItems(fieldKey);
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageUpload(fieldKey, inputEl, multiple) {
+    var id = document.getElementById('f-id').value.trim();
+    if (!id) { alert('Set a URL slug first, before uploading images.'); inputEl.value = ''; return; }
+    var files = Array.from(inputEl.files);
+    if (!multiple) files = files.slice(0, 1);
+    showStatus('Uploading ' + files.length + ' image(s)…', false);
+    try {
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var base64 = await fileToBase64(file);
+        var path = 'images/projects/' + id + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+        var result = await callApi({ action: 'upload', path: path, contentBase64: base64 });
+        if (!multiple) window.__uploads[fieldKey] = [result.path];
+        else window.__uploads[fieldKey].push(result.path);
+      }
+      document.getElementById('upload-list-' + fieldKey).innerHTML = renderUploadItems(fieldKey);
+      hideStatus();
+    } catch (e) {
+      showStatus('Upload failed: ' + e.message, true);
+    }
+    inputEl.value = '';
+  }
+
+  // Downloads widget: label + file, tracked as window.__downloads[fieldKey] = [{label,file,meta}]
+  window.__downloads = {};
+  function downloadWidget(fieldKey, existing) {
+    window.__downloads[fieldKey] = JSON.parse(JSON.stringify(existing || []));
+    return '<div class="upload-list" id="download-list-' + fieldKey + '">' + renderDownloadItems(fieldKey) + '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<input type="text" id="dl-label-' + fieldKey + '" placeholder="Button label, e.g. Project files (.zip)" style="flex:1;">' +
+        '<input type="file" id="dl-file-' + fieldKey + '" style="max-width:160px;">' +
+      '</div>' +
+      '<button type="button" class="btn btn-sm" style="margin-top:8px;" onclick="handleFileUpload(\'' + fieldKey + '\')">Add file</button>';
+  }
+  function renderDownloadItems(fieldKey) {
+    return window.__downloads[fieldKey].map(function (d, i) {
+      return '<div class="upload-item"><span class="path">' + esc(d.label) + ' — ' + d.file + '</span>' +
+        '<button type="button" onclick="removeDownload(\'' + fieldKey + '\',' + i + ')">&times;</button></div>';
+    }).join('');
+  }
+  function removeDownload(fieldKey, i) {
+    window.__downloads[fieldKey].splice(i, 1);
+    document.getElementById('download-list-' + fieldKey).innerHTML = renderDownloadItems(fieldKey);
+  }
+  async function handleFileUpload(fieldKey) {
+    var id = document.getElementById('f-id').value.trim();
+    if (!id) { alert('Set a URL slug first, before uploading files.'); return; }
+    var labelInput = document.getElementById('dl-label-' + fieldKey);
+    var fileInput = document.getElementById('dl-file-' + fieldKey);
+    var label = labelInput.value.trim();
+    var file = fileInput.files[0];
+    if (!label || !file) { alert('Add both a label and a file.'); return; }
+    showStatus('Uploading file…', false);
+    try {
+      var base64 = await fileToBase64(file);
+      var path = 'files/' + id + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+      var result = await callApi({ action: 'upload', path: path, contentBase64: base64 });
+      window.__downloads[fieldKey].push({ label: label, file: result.path, meta: '' });
+      document.getElementById('download-list-' + fieldKey).innerHTML = renderDownloadItems(fieldKey);
+      labelInput.value = '';
+      fileInput.value = '';
+      hideStatus();
+    } catch (e) {
+      showStatus('Upload failed: ' + e.message, true);
+    }
+  }
+
+  // ── Save ─────────────────────────────────────────────────────────────────────
+  async function saveCurrentItem(asDraft) {
+    var id = slugify(document.getElementById('f-id').value);
+    if (!id) { alert('Please set a URL slug.'); return; }
+
+    var item;
+    if (state.editingType === 'project') {
+      var tags = document.getElementById('f-tags').value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      item = {
+        id: id,
+        draft: asDraft,
+        thumbnail: (window.__uploads['thumb'] && window.__uploads['thumb'][0]) || '',
+        showOnPublic: document.getElementById('f-public').checked,
+        showOnPortfolio: document.getElementById('f-portfolio').checked,
+        public: {
+          title: document.getElementById('f-pub-title').value,
+          summary: document.getElementById('f-pub-summary').value,
+          tags: tags,
+          description: document.getElementById('f-pub-desc').value,
+          gallery: window.__uploads['pub-gallery'] || [],
+          downloads: window.__downloads['pub-downloads'] || [],
+        },
+        portfolio: {
+          title: document.getElementById('f-port-title').value,
+          summary: document.getElementById('f-port-summary').value,
+          tags: tags,
+          description: document.getElementById('f-port-desc').value,
+          gallery: window.__uploads['port-gallery'] || [],
+          downloads: window.__downloads['port-downloads'] || [],
+        },
+      };
+    } else {
+      item = {
+        id: id,
+        draft: asDraft,
+        title: document.getElementById('f-title').value,
+        date: document.getElementById('f-date').value,
+        summary: document.getElementById('f-summary').value,
+        thumbnail: (window.__uploads['thumb'] && window.__uploads['thumb'][0]) || '',
+        body: document.getElementById('f-body').value,
+      };
+    }
+
+    showStatus(asDraft ? 'Saving draft…' : 'Publishing…', false);
+    try {
+      await callApi({ action: 'save', type: state.editingType, item: item });
+      hideStatus();
+      await loadList();
+    } catch (e) {
+      showStatus('Save failed: ' + e.message, true);
+    }
+  }
+</script>
+</body>
+</html>
