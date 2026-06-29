@@ -70,56 +70,6 @@
       }
     },
     {
-      "id": "desk-plant-monitor",
-      "draft": false,
-      "thumbnail": "/images/projects/desk-plant-monitor/thumb.svg",
-      "showOnPublic": true,
-      "showOnPortfolio": true,
-      "public": {
-        "title": "Desk plant moisture monitor",
-        "summary": "A pocket-sized gadget that politely complains before your office plant dies of thirst.",
-        "tags": [
-          "arduino",
-          "3d-printing",
-          "beginner-friendly"
-        ],
-        "description": "My desk plant has died on me three separate times. Three! So I built a tiny gadget to guilt-trip me into watering it before disaster number four.\n\n## What it does\n\nA soil moisture probe sits in the pot and checks in every hour. When the soil gets too dry, a little LED on the box turns from green to amber to \"okay, this is an emergency\" red. No app, no notifications, just a light that judges you from across the room.\n\n## What you'll need\n\n- 1x Arduino Nano (or any Arduino board you have lying around)\n- 1x capacitive soil moisture sensor\n- 1x RGB LED\n- A 3D printed enclosure (files below) or a small project box\n\n## Build notes\n\nThe full wiring diagram and code are in the download below, with comments explaining each step. Print time for the enclosure is about 90 minutes on a standard FDM printer.",
-        "gallery": [
-          "/images/projects/desk-plant-monitor/gallery-1.svg",
-          "/images/projects/desk-plant-monitor/gallery-2.svg"
-        ],
-        "downloads": [
-          {
-            "label": "Arduino code + wiring diagram (.zip)",
-            "file": "/files/desk-plant-monitor/sample-files.zip",
-            "meta": "placeholder file"
-          }
-        ]
-      },
-      "portfolio": {
-        "title": "IoT-based plant moisture monitoring system",
-        "summary": "Designed and built a low-power embedded sensor system that monitors soil moisture and surfaces a real-time status indicator.",
-        "tags": [
-          "embedded systems",
-          "iot",
-          "c++",
-          "sensor calibration"
-        ],
-        "description": "## Problem\n\nOffice plants were dying due to inconsistent watering schedules, with no reliable way to know moisture levels without manual checks.\n\n## Approach\n\nDesigned a battery-powered sensor unit using a capacitive soil moisture probe and an Arduino-based microcontroller. Calibrated sensor thresholds against a manual moisture meter to establish reliable wet/dry boundaries, then implemented a simple three-state visual indicator to communicate status without requiring an app or network connection.\n\n## Engineering challenges\n\nSensor readings drifted over time due to mineral buildup on the probe. Solved by adding a periodic calibration routine and switching to a corrosion-resistant probe coating. Enclosure design also required iterating on ventilation to prevent moisture ingress into the electronics bay.\n\n## Outcome\n\nDeployed across multiple desk plants with zero watering-related losses over a six-month test period, at a build cost of under fifteen dollars per unit.",
-        "gallery": [
-          "/images/projects/desk-plant-monitor/gallery-1.svg",
-          "/images/projects/desk-plant-monitor/gallery-2.svg"
-        ],
-        "downloads": [
-          {
-            "label": "Project files (.zip)",
-            "file": "/files/desk-plant-monitor/sample-files.zip",
-            "meta": "placeholder file"
-          }
-        ]
-      }
-    },
-    {
       "id": "arcade-cabinet",
       "draft": false,
       "thumbnail": "/images/projects/arcade-cabinet/thumb.svg",
