@@ -68,42 +68,6 @@
         "gallery": [],
         "downloads": []
       }
-    },
-    {
-      "id": "arcade-cabinet",
-      "draft": false,
-      "thumbnail": "/images/projects/arcade-cabinet/thumb.svg",
-      "showOnPublic": true,
-      "showOnPortfolio": true,
-      "public": {
-        "title": "Retro arcade cabinet build",
-        "summary": "Built a mini arcade cabinet from scratch loaded with classic games, because adulting is better with high scores.",
-        "tags": [
-          "woodworking",
-          "raspberry-pi",
-          "gaming"
-        ],
-        "description": "This one took a whole weekend and most of my patience, but it was worth it the moment the marquee lit up for the first time.\n\n## The build\n\nCabinet body is cut from MDF using a simple template, glued and screwed at the joints, then primed and painted. Inside lives a Raspberry Pi running a popular emulation front-end, wired up to real arcade buttons and a joystick through a USB encoder board.\n\n## Lessons learned\n\nCutting the control panel hole for the joystick is the part everyone underestimates. Measure twice, drill once, and maybe buy an extra joystick mount just in case.",
-        "gallery": [
-          "/images/projects/arcade-cabinet/gallery-1.svg"
-        ],
-        "downloads": []
-      },
-      "portfolio": {
-        "title": "Custom arcade cabinet — hardware and software integration",
-        "summary": "End-to-end build combining fabrication, electronics wiring, and Linux-based emulation software configuration.",
-        "tags": [
-          "hardware integration",
-          "raspberry-pi",
-          "linux",
-          "fabrication"
-        ],
-        "description": "## Scope\n\nDesigned and fabricated a full-size arcade cabinet, then integrated a Raspberry Pi 4 running a Linux-based emulation stack with physical arcade controls through a GPIO-to-USB encoder.\n\n## Technical challenges\n\nDiagnosed and resolved an input-lag issue traced to emulator frame-timing settings. Wrote a safe-shutdown script triggered by a physical switch to prevent filesystem corruption from abrupt power loss, a common failure mode in Pi-based builds without a defined shutdown sequence.\n\n## Outcome\n\nDelivered a fully functional system demonstrating cross-disciplinary skill across fabrication, electronics wiring, and embedded software configuration.",
-        "gallery": [
-          "/images/projects/arcade-cabinet/gallery-1.svg"
-        ],
-        "downloads": []
-      }
     }
   ]
 }
