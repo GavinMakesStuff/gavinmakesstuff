@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Draft — Gavin makes stuff Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #12181c; --ink-raised: #1b232a; --ink-border: #2a343b;
+      --trace: #3dd9b8; --solder: #ff7a52;
+      --paper: #ece8de; --muted: #8b9499;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--ink); color: var(--paper);
+      font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; }
+    h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 600; margin: 0 0 0.4em; }
+    p { margin: 0 0 1em; }
+    a { color: var(--trace); }
+
+    /* ── layout ── */
+    #auth-gate { display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; flex-direction: column; gap: 16px; text-align: center; padding: 24px; }
+    .admin-wrap { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+    .admin-nav { background: var(--ink-raised); border-bottom: 1px solid var(--ink-border);
+      padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .admin-nav .logo { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 1.1rem; }
+    .admin-nav-links { display: flex; gap: 20px; align-items: center; }
+    .admin-nav-links a { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+    .admin-nav-links a:hover, .admin-nav-links a.active { color: var(--paper); }
+
+    /* ── form ── */
+    .card { background: var(--ink-raised); border: 1px solid var(--ink-border);
+      border-radius: var(--radius); padding: 28px; margin-bottom: 28px; }
+    label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--paper); }
+    .hint { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+    input[type=text], textarea, select {
+      width: 100%; background: var(--ink); border: 1px solid var(--ink-border);
+      border-radius: 6px; padding: 10px 14px; color: var(--paper);
+      font-family: 'Inter', sans-serif; font-size: 0.95rem; resize: vertical; }
+    input[type=text]:focus, textarea:focus, select:focus {
+      outline: 2px solid var(--trace); outline-offset: 1px; }
+    .field { margin-bottom: 20px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .checkbox-group { display: flex; gap: 24px; flex-wrap: wrap; }
+    .checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer;
+      font-weight: 400; margin: 0; }
+    input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--trace); cursor: pointer; }
+
+    /* ── buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px;
+      border-radius: 8px; border: 1px solid var(--ink-border); background: transparent;
+      color: var(--paper); font-family: 'Inter', sans-serif; font-size: 0.95rem;
+      font-weight: 500; cursor: pointer; white-space: nowrap; text-decoration: none; }
+    .btn:hover { background: var(--ink-border); }
+    .btn-primary { background: var(--trace); border-color: var(--trace); color: #08221c; }
+    .btn-primary:hover { background: #34c2a4; }
+    .btn-draft { background: var(--ink-border); border-color: var(--muted); color: var(--paper); }
+    .btn-danger { background: transparent; border-color: #e05555; color: #e05555; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
+
+    /* ── result area ── */
+    #result-area { display: none; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 680px) { .result-grid { grid-template-columns: 1fr; } }
+    .result-panel { background: var(--ink-raised); border: 1px solid var(--ink-border);
+      border-radius: var(--radius); overflow: hidden; }
+    .result-panel-head { padding: 14px 18px; border-bottom: 1px solid var(--ink-border);
+      display: flex; align-items: center; justify-content: space-between; }
+    .result-panel-head h3 { margin: 0; font-size: 1rem; }
+    .panel-badge { font-size: 0.72rem; padding: 3px 9px; border-radius: 100px; font-weight: 500; }
+    .badge-public { background: rgba(61,217,184,0.12); color: var(--trace); border: 1px solid rgba(61,217,184,0.3); }
+    .badge-portfolio { background: rgba(255,122,82,0.12); color: var(--solder); border: 1px solid rgba(255,122,82,0.3); }
+    .result-panel textarea { border: none; border-radius: 0; background: var(--ink); min-height: 280px;
+      font-size: 0.88rem; line-height: 1.5; padding: 16px; }
+
+    /* ── status / spinner ── */
+    .status-bar { padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;
+      background: rgba(61,217,184,0.08); border: 1px solid rgba(61,217,184,0.2);
+      font-size: 0.9rem; display: none; align-items: center; gap: 10px; }
+    .status-bar.visible { display: flex; }
+    .status-bar.error { background: rgba(224,85,85,0.08); border-color: rgba(224,85,85,0.3); color: #e05555; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--ink-border);
+      border-top-color: var(--trace); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-title { font-size: 1.5rem; margin-bottom: 6px; }
+    .section-sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
+    .divider { border: none; border-top: 1px solid var(--ink-border); margin: 32px 0; }
+
+    #user-bar { font-size: 0.85rem; color: var(--muted); }
+    #logout-btn { background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 0.85rem; padding: 0; text-decoration: underline; }
+    #logout-btn:hover { color: var(--paper); }
+  </style>
+</head>
+<body>
+
+<!-- Auth gate shown while checking login -->
+<div id="auth-gate">
+  <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+  <p style="color:var(--muted);">Checking login…</p>
+</div>
+
+<!-- Main app (hidden until authenticated) -->
+<div id="app" style="display:none;">
+
+  <nav class="admin-nav">
+    <span class="logo">Gavin makes stuff — Admin</span>
+    <div class="admin-nav-links">
+      <a href="/admin/ai-draft.html" class="active">AI Draft</a>
+      <a href="/admin/manage.html">Manage Projects</a>
+      <a href="/public/index.html" target="_blank">View Site</a>
+      <span id="user-bar"></span>
+      <button id="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </nav>
+
+  <div class="admin-wrap">
+    <h1 class="section-title">Create a new project</h1>
+    <p class="section-sub">Fill in the details below and the AI will write both the casual public version and the professional portfolio version for you. You can edit them before saving.</p>
+
+    <!-- ── STEP 1: Input ── -->
+    <div class="card">
+      <div class="field">
+        <label for="project-name">Project name</label>
+        <input type="text" id="project-name" placeholder="e.g. Desk plant moisture monitor">
+      </div>
+
+      <div class="field">
+        <label for="project-summary">Describe your project in plain language</label>
+        <textarea id="project-summary" rows="6"
+          placeholder="What did you build? How did you build it? What went wrong along the way? What are you most proud of? Write however feels natural — the more detail the better. The AI will turn this into polished write-ups."></textarea>
+        <p class="hint">You don't need to write well here. Just describe it like you'd explain it to a friend.</p>
+      </div>
+
+      <div class="field">
+        <label for="project-tags">Tags / skills involved (comma separated)</label>
+        <input type="text" id="project-tags" placeholder="e.g. arduino, 3d-printing, c++, beginner-friendly">
+      </div>
+
+      <div class="field">
+        <label>Post this project on:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="show-public" checked> Public workshop section</label>
+          <label><input type="checkbox" id="show-portfolio" checked> Portfolio section</label>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="generate-btn" onclick="generateDraft()">
+          Generate with AI
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Status bar ── -->
+    <div class="status-bar" id="status-bar">
+      <div class="spinner" id="status-spinner"></div>
+      <span id="status-text">Writing your project write-ups…</span>
+    </div>
+
+    <!-- ── STEP 2: Result ── -->
+    <div id="result-area">
+      <hr class="divider">
+      <h2 class="section-title" style="font-size:1.3rem;margin-bottom:4px;">Review &amp; edit</h2>
+      <p class="section-sub" style="margin-bottom:20px;">The AI has written both versions below. Edit anything before saving — the text boxes are fully editable.</p>
+
+      <div class="result-grid">
+        <!-- Public panel -->
+        <div class="result-panel">
+          <div class="result-panel-head">
+            <h3>Public version</h3>
+            <span class="panel-badge badge-public">Workshop</span>
+          </div>
+          <div style="padding:14px 16px 0;border-bottom:1px solid var(--ink-border);">
+            <div class="field" style="margin-bottom:12px;">
+              <label style="font-size:0.8rem;color:var(--muted);">CARD TITLE</label>
+              <input type="text" id="pub-title" placeholder="Public title">
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label style="font-size:0.8rem;color:var(--muted);">CARD SUMMARY (one sentence)</label>
+              <input type="text" id="pub-summary" placeholder="Short card description">
+            </div>
+          </div>
+          <div style="padding:10px 14px 4px;border-bottom:1px solid var(--ink-border);">
+            <label style="font-size:0.8rem;color:var(--muted);">FULL DESCRIPTION (markdown)</label>
+          </div>
+          <textarea id="pub-description" placeholder="Full public description will appear here…"></textarea>
+        </div>
+
+        <!-- Portfolio panel -->
+        <div class="result-panel">
+          <div class="result-panel-head">
+            <h3>Portfolio version</h3>
+            <span class="panel-badge badge-portfolio">Professional</span>
+          </div>
+          <div style="padding:14px 16px 0;border-bottom:1px solid var(--ink-border);">
+            <div class="field" style="margin-bottom:12px;">
+              <label style="font-size:0.8rem;color:var(--muted);">CARD TITLE</label>
+              <input type="text" id="port-title" placeholder="Portfolio title">
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label style="font-size:0.8rem;color:var(--muted);">CARD SUMMARY (one sentence)</label>
+              <input type="text" id="port-summary" placeholder="Short card description">
+            </div>
+          </div>
+          <div style="padding:10px 14px 4px;border-bottom:1px solid var(--ink-border);">
+            <label style="font-size:0.8rem;color:var(--muted);">FULL DESCRIPTION (markdown)</label>
+          </div>
+          <textarea id="port-description" placeholder="Full portfolio description will appear here…"></textarea>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:24px;">
+        <button class="btn btn-primary" id="publish-btn" onclick="saveProject(false)">
+          Publish to site
+        </button>
+        <button class="btn btn-draft" id="draft-btn" onclick="saveProject(true)">
+          Save as draft
+        </button>
+        <button class="btn btn-danger" onclick="resetForm()">
+          Start over
+        </button>
+      </div>
+      <p class="hint" style="margin-top:10px;">
+        <strong>Publish:</strong> goes live immediately. &nbsp;
+        <strong>Save as draft:</strong> saved but hidden from visitors — edit and publish later via Manage Projects.
+      </p>
+    </div>
+
+  </div><!-- /admin-wrap -->
+</div><!-- /app -->
+
+<script>
+  // ── Authentication (GitHub OAuth, shared with Decap CMS's login system) ────
+  var currentToken = sessionStorage.getItem('gh_token');
+  var currentUsername = sessionStorage.getItem('gh_username');
+
+  function showLoginGate() {
+    document.getElementById('auth-gate').innerHTML =
+      '<h2 style="font-family:\'Poppins\',sans-serif;margin-bottom:6px;">Admin Login</h2>' +
+      '<p style="color:var(--muted);max-width:320px;text-align:center;">Log in with the GitHub account that owns this site.</p>' +
+      '<button class="btn btn-primary" onclick="loginWithGitHub()">Log in with GitHub</button>';
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+
+  function showApp() {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-bar').textContent = currentUsername || '';
+  }
+
+  function loginWithGitHub() {
+    var popup = window.open('/api/auth', 'github-oauth', 'width=600,height=700');
+    if (!popup) {
+      showStatus('Your browser blocked the login popup. Allow popups for this site and try again.', true);
+      return;
+    }
+
+    function handler(e) {
+      if (typeof e.data !== 'string') return;
+
+      // Step 1: the popup pings us to confirm we're listening — echo back
+      if (e.data === 'authorizing:github') {
+        popup.postMessage('authorizing:github', '*');
+        return;
+      }
+
+      // Step 2: the popup sends the real token
+      if (e.data.indexOf('authorization:github:success:') === 0) {
+        var payload = JSON.parse(e.data.slice('authorization:github:success:'.length));
+        currentToken = payload.token;
+        sessionStorage.setItem('gh_token', currentToken);
+        window.removeEventListener('message', handler);
+
+        // Grab the username for display, then show the app
+        fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + currentToken } })
+          .then(function (r) { return r.json(); })
+          .then(function (u) {
+            currentUsername = u.login || '';
+            sessionStorage.setItem('gh_username', currentUsername);
+            showApp();
+          })
+          .catch(function () { showApp(); });
+      }
+    }
+
+    window.addEventListener('message', handler);
+  }
+
+  function logout() {
+    sessionStorage.removeItem('gh_token');
+    sessionStorage.removeItem('gh_username');
+    currentToken = null;
+    currentUsername = null;
+    showLoginGate();
+  }
+
+  // On page load: show the app right away if we have a saved token.
+  // Any actual admin action will be rejected server-side if it's invalid
+  // or expired, at which point you'd just need to log in again.
+  if (currentToken) {
+    showApp();
+  } else {
+    showLoginGate();
+  }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 325888cf3dbad481c29d675d925ec2d21bcf105e
+
+  // ── AI Generation ───────────────────────────────────────────────────────────
+  async function generateDraft() {
+    var name    = document.getElementById('project-name').value.trim();
+    var summary = document.getElementById('project-summary').value.trim();
+    var tags    = document.getElementById('project-tags').value.trim();
+
+    if (!name || !summary) {
+      showStatus('Please fill in the project name and description first.', true);
+      return;
+    }
+
+    setLoading(true);
+    showStatus('Writing your project write-ups… this takes about 10–15 seconds.', false);
+
+    var token = currentToken;
+
+    try {
+      var res = await fetch('/api/ai-draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          projectName:     name,
+          summary:         summary,
+          tags:            tags,
+          showOnPublic:    document.getElementById('show-public').checked,
+          showOnPortfolio: document.getElementById('show-portfolio').checked,
+          saveToSite:      false,  // just generate, don't save yet
+        }),
+      });
+
+      var data = await res.json();
+
+      if (!res.ok) {
+        showStatus('Error: ' + (data.error || 'Something went wrong. Try again.'), true);
+        setLoading(false);
+        return;
+      }
+
+      // Populate result fields
+      document.getElementById('pub-title').value       = data.generated.public.title;
+      document.getElementById('pub-summary').value     = data.generated.public.summary;
+      document.getElementById('pub-description').value = data.generated.public.description;
+      document.getElementById('port-title').value      = data.generated.portfolio.title;
+      document.getElementById('port-summary').value    = data.generated.portfolio.summary;
+      document.getElementById('port-description').value= data.generated.portfolio.description;
+
+      // Store the generated project ID for saving later
+      document.getElementById('result-area').dataset.projectId = data.project.id;
+
+      hideStatus();
+      document.getElementById('result-area').style.display = 'block';
+      document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      showStatus('Network error — check your connection and try again.', true);
+    }
+
+    setLoading(false);
+  }
+
+  // ── Save Project ────────────────────────────────────────────────────────────
+  async function saveProject(asDraft) {
+    var name    = document.getElementById('project-name').value.trim();
+    var tags    = document.getElementById('project-tags').value.trim();
+    var id      = document.getElementById('result-area').dataset.projectId;
+
+    setLoading(true, asDraft ? 'Saving draft…' : 'Publishing to site…');
+
+    var token = currentToken;
+
+    try {
+      var res = await fetch('/api/ai-draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          projectName:     name,
+          projectId:       id,
+          tags:            tags,
+          showOnPublic:    document.getElementById('show-public').checked,
+          showOnPortfolio: document.getElementById('show-portfolio').checked,
+          saveDraft:       asDraft,
+          saveToSite:      true,
+          // Send back the (possibly edited) generated content
+          generated: {
+            public: {
+              title:       document.getElementById('pub-title').value,
+              summary:     document.getElementById('pub-summary').value,
+              description: document.getElementById('pub-description').value,
+            },
+            portfolio: {
+              title:       document.getElementById('port-title').value,
+              summary:     document.getElementById('port-summary').value,
+              description: document.getElementById('port-description').value,
+            },
+          },
+        }),
+      });
+
+      var data = await res.json();
+
+      if (!res.ok) {
+        showStatus('Save failed: ' + (data.error || 'Unknown error. Try again.'), true);
+        setLoading(false);
+        return;
+      }
+
+      hideStatus();
+      showStatus(
+        asDraft
+          ? '✓ Draft saved! It\'s hidden from visitors. Edit, publish, and add images/files any time in Manage Projects.'
+          : '✓ Published! Your site will update in about 30 seconds. Add images and files any time in Manage Projects.',
+        false
+      );
+      document.getElementById('publish-btn').disabled = true;
+      document.getElementById('draft-btn').disabled   = true;
+
+    } catch (err) {
+      showStatus('Network error — check your connection and try again.', true);
+    }
+
+    setLoading(false);
+  }
+
+  // ── UI helpers ──────────────────────────────────────────────────────────────
+  function showStatus(msg, isError) {
+    var bar = document.getElementById('status-bar');
+    var txt = document.getElementById('status-text');
+    var spinner = document.getElementById('status-spinner');
+    txt.textContent = msg;
+    bar.className = 'status-bar visible' + (isError ? ' error' : '');
+    spinner.style.display = isError ? 'none' : 'block';
+  }
+  function hideStatus() {
+    document.getElementById('status-bar').className = 'status-bar';
+  }
+  function setLoading(on, msg) {
+    var btn = document.getElementById('generate-btn');
+    btn.disabled = on;
+    btn.textContent = on ? 'Working…' : 'Generate with AI';
+    if (on && msg) showStatus(msg, false);
+  }
+  function resetForm() {
+    document.getElementById('project-name').value    = '';
+    document.getElementById('project-summary').value = '';
+    document.getElementById('project-tags').value    = '';
+    document.getElementById('result-area').style.display = 'none';
+    document.getElementById('publish-btn').disabled  = false;
+    document.getElementById('draft-btn').disabled    = false;
+    hideStatus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
