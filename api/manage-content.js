@@ -2,13 +2,13 @@
    VERCEL FUNCTION: /api/manage-content
    Powers admin/manage.html. Handles listing, saving, deleting,
    and uploading images/files for both projects and blog posts.
-   Reuses the same GitHub-login token used everywhere else in
-   the admin panel — no separate password system.
-
-   Required Vercel environment variables (same as ai-draft.js):
-     GITHUB_REPO
-     ALLOWED_GITHUB_USER
+   Images are automatically compressed and converted to WebP.
    ============================================================ */
+
+let sharp;
+try { sharp = require('sharp'); } catch (e) { sharp = null; }
+
+const IMAGE_EXTS = /\.(jpe?g|png|gif|bmp|tiff?|webp)$/i;
 
 const FILE_FOR_TYPE = {
   project: 'data/projects.json',
@@ -140,11 +140,27 @@ module.exports = async function (req, res) {
 
     // ── UPLOAD: commit an image or file, return its site path ───────────────
     if (action === 'upload') {
-      const path = body.path; // e.g. images/projects/my-id/thumb.jpg
-      const contentBase64 = body.contentBase64;
+      let path = body.path;
+      let contentBase64 = body.contentBase64;
       if (!path || !contentBase64) {
         res.status(400).json({ error: 'Missing path or contentBase64.' });
         return;
+      }
+
+      // Auto-convert images to WebP and compress (max 1920px, 82% quality)
+      if (IMAGE_EXTS.test(path) && sharp) {
+        try {
+          const inputBuffer = Buffer.from(contentBase64, 'base64');
+          const webpBuffer = await sharp(inputBuffer)
+            .rotate() // honour EXIF orientation
+            .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer();
+          contentBase64 = webpBuffer.toString('base64');
+          path = path.replace(IMAGE_EXTS, '.webp');
+        } catch (e) {
+          console.error('sharp conversion failed, uploading original:', e.message);
+        }
       }
       // Check whether the file already exists (need its sha to overwrite)
       let sha;
