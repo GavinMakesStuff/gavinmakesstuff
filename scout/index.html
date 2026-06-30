@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scout — Job Intelligence</title>
+  <link rel="icon" type="image/png" href="media/scoutfavicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    #scout-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg, #F0F4F7);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Nunito", sans-serif;
+    }
+    #scout-gate .gate-box {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, #C9D7E0);
+      border-radius: 16px; padding: 40px 36px;
+      max-width: 380px; width: 90%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,90,122,0.14);
+    }
+    #scout-gate img { height: 48px; margin-bottom: 16px; }
+    #scout-gate h2 { color: var(--teal, #005A7A); margin: 0 0 6px; font-size: 1.4rem; }
+    #scout-gate p  { color: var(--text-muted, #3C5468); margin: 0 0 20px; font-size: 0.9rem; }
+    #scout-gate input[type=password] {
+      width: 100%; padding: 10px 14px; border-radius: 8px;
+      border: 1.5px solid var(--border, #C9D7E0);
+      font-size: 1rem; font-family: inherit;
+      background: var(--surface-2, #F5F8FA);
+      color: var(--text, #0D2233); margin-bottom: 12px;
+    }
+    #scout-gate input[type=password]:focus { outline: 2px solid var(--teal, #005A7A); }
+    #scout-gate .gate-btn {
+      width: 100%; padding: 11px; border-radius: 8px;
+      background: var(--teal, #005A7A); color: #fff;
+      border: none; font-size: 1rem; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+    }
+    #scout-gate .gate-btn:hover { background: var(--teal-mid, #006E96); }
+    #scout-gate .gate-error { color: var(--red, #A4291B); font-size: 0.85rem; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+<!-- ══════════════════════════════════════
+     PASSWORD GATE
+     ══════════════════════════════════════ -->
+<div id="scout-gate">
+  <div class="gate-box">
+    <img src="media/Scout_Logo_2.png" alt="Scout" onerror="this.style.display='none'">
+    <h2>Scout</h2>
+    <p>Enter the access password to continue.</p>
+    <input type="password" id="gate-pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkGatePassword()">
+    <button class="gate-btn" onclick="checkGatePassword()">Enter</button>
+    <div class="gate-error" id="gate-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TOP NAVIGATION
+     ══════════════════════════════════════ -->
+<nav class="topbar">
+  <a class="logo" href="#">
+    <img src="media/Scout Logo.png" alt="Scout"
+         onerror="this.style.display='none';document.getElementById('logo-text-fallback').style.display='block'" />
+    <span id="logo-text-fallback" class="logo-text" style="display:none">Scout</span>
+  </a>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('jobs', this)">Job Search</button>
+  </div>
+  <div class="nav-right">
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle dark mode" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     GUIDE BANNER + PANEL
+     ══════════════════════════════════════ -->
+<div class="guide-banner" onclick="toggleGuide()">
+  <span class="guide-banner-icon">💡</span>
+  <span class="guide-banner-text">How to use Scout, click to expand</span>
+  <span class="guide-banner-chevron" id="guide-chevron">▼</span>
+</div>
+
+<div class="guide-panel" id="guide-panel">
+  <div class="guide-inner">
+    <div class="guide-title">Getting started with Scout</div>
+    <div class="guide-subtitle">Follow these steps to analyze job postings, track applications, and stay organized.</div>
+
+    <div class="guide-steps">
+
+      <div class="guide-step">
+        <div class="guide-step-num">1</div>
+        <div class="guide-step-title">Set up your profile</div>
+        <div class="guide-step-body">
+          Click <b>Edit profile</b> to enter your background, target industry, salary expectation and currency, years of experience, certifications, and what kind of work you're looking for.<br><br>
+          Optionally <b>upload your resume</b> (PDF or Word) to auto-fill your profile.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">2</div>
+        <div class="guide-step-title">Share your location (optional)</div>
+        <div class="guide-step-body">
+          Click <b>📍 Share my location</b> so Scout can calculate the approximate driving distance from you to each job's work address. This is entirely optional.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">3</div>
+        <div class="guide-step-title">Paste job descriptions</div>
+        <div class="guide-step-body">
+          Copy the full text of any job posting and paste it into the text area. Click <b>+ Add another job posting</b> to analyze several at once.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">4</div>
+        <div class="guide-step-title">Analyze and review results</div>
+        <div class="guide-step-body">
+          Click <b>Analyze</b> and watch the progress bar while Scout scores each posting out of 10, summarizes the role, checks benefits, reputation, and work location.<br><br>
+          Use the <b>filter bar</b> to focus on High, Partial, or Low matches.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">5</div>
+        <div class="guide-step-title">Highlight key postings</div>
+        <div class="guide-step-body">
+          Click the <b>☆ star</b> next to any job title to highlight it as a priority. Starred postings are saved automatically so the highlight has somewhere to live.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">6</div>
+        <div class="guide-step-title">Save and track applications</div>
+        <div class="guide-step-body">
+          Click <b>☆ Save</b> to bookmark a job. Click <b>✉ Mark Applied</b> to move it to your Applications tracker, where you can log the date applied, follow up status, notes, and a contact.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">7</div>
+        <div class="guide-step-title">Find a contact and follow up</div>
+        <div class="guide-step-body">
+          On any saved or applied posting, click <b>🔍 Find contact</b> to search for an HR or hiring manager email, or enter one manually if you come across it elsewhere.
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-step-num">8</div>
+        <div class="guide-step-title">Grab resume keywords</div>
+        <div class="guide-step-body">
+          Each card includes Hard Skills, Soft Skills, and Industry Terms. Click any keyword to copy it, or <b>⎘ Copy all</b> for the full list.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="guide-tips">
+      <span class="guide-tips-icon">💡</span>
+      <div class="guide-tips-body">
+        <b>Tips for best results:</b> Paste the <em>complete</em> job description, the more text Scout has, the more accurate the analysis.
+        Fill in your <b>years of experience</b> and <b>certifications</b>, since these have the biggest effect on match scoring accuracy.
+        Everything you enter stays stored locally in your browser and persists between sessions.
+      </div>
+    </div>
+
+    <div class="guide-close-row">
+      <button class="btn btn-ghost btn-sm" onclick="toggleGuide()">Close guide ▲</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     TAB: JOB SEARCH
+     ══════════════════════════════════════ -->
+<div id="tab-jobs" class="tab-panel active">
+  <div class="page">
+
+    <!-- Input Panel -->
+    <div class="input-panel">
+      <div class="input-panel-top">
+
+        <div class="input-label">Paste job descriptions</div>
+
+        <div class="input-hint" style="margin-bottom:10px;">
+          📋 Copy any job posting text and paste it below. Add multiple postings using the button beneath.
+        </div>
+
+        <div class="job-slots" id="job-slots"></div>
+
+        <button class="add-slot-btn" onclick="addJobSlot()">
+          + Add another job posting
+        </button>
+      </div>
+
+      <div class="input-actions">
+        <button class="btn btn-primary" onclick="analyzeJobs()">&#9656; Analyze</button>
+        <button class="btn btn-ghost"   onclick="clearAll()">Clear all</button>
+      </div>
+
+      <!-- Profile Pills -->
+      <div class="profile-bar" id="profile-pills-row">
+        <span class="profile-bar-label">Profile</span>
+        <button class="btn btn-ghost btn-sm" onclick="openProfileEditor()" style="margin-left:auto">
+          Edit profile
+        </button>
+      </div>
+
+      <!-- Location -->
+      <div class="resume-bar" style="border-top:1px solid var(--border-dim);">
+        <span class="resume-bar-label">Location <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);font-size:0.68rem;">(optional)</span></span>
+        <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)">
+          📍 Share my location
+        </button>
+        <span id="location-badge" style="font-size:0.75rem;font-family:var(--font-mono);color:var(--text-dim);">
+          📍 Not shared, distance won't be calculated
+        </span>
+      </div>
+
+      <!-- Resume Upload -->
+      <div class="resume-bar">
+        <span class="resume-bar-label">Resume <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);font-size:0.68rem;">(optional)</span></span>
+        <label style="cursor:pointer;">
+          <input
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            style="display:none;"
+            onchange="handleResumeUpload(this)"
+          />
+          <span class="btn btn-ghost btn-sm"
+                onclick="this.parentElement.querySelector('input').click()">
+            ⬆ Upload PDF or Word
+          </span>
+        </label>
+        <span id="resume-upload-status" style="font-size:0.75rem;font-family:var(--font-mono);color:var(--text-dim);">
+          No resume uploaded yet
+        </span>
+      </div>
+    </div>
+
+    <!-- Sub-Tab Navigation -->
+    <div class="subtab-nav">
+      <button id="subtab-results-btn" class="subtab-btn active" onclick="switchSubtab('results')">
+        Results
+      </button>
+      <button id="subtab-saved-btn" class="subtab-btn" onclick="switchSubtab('saved')">
+        Saved <span class="subtab-count" id="saved-count">0</span>
+      </button>
+      <button id="subtab-applied-btn" class="subtab-btn" onclick="switchSubtab('applied')">
+        Applied <span class="subtab-count" id="applied-count">0</span>
+      </button>
+    </div>
+
+    <!-- Results Panel -->
+    <div id="subtab-results" class="subtab-panel active">
+      <div id="status-bar" class="status-bar" style="display:none">
+        <div class="status-counts">
+          <div class="status-count"><span class="dot dot-green"></span><span id="count-high">0</span> High match (7–10)</div>
+          <div class="status-count"><span class="dot dot-amber"></span><span id="count-mid">0</span> Partial match (4–6)</div>
+          <div class="status-count"><span class="dot dot-red"></span><span id="count-low">0</span> Low match (1–3)</div>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="filterResults('all', this)">All</button>
+          <button class="filter-btn"        onclick="filterResults('high', this)">High</button>
+          <button class="filter-btn"        onclick="filterResults('mid', this)">Partial</button>
+          <button class="filter-btn"        onclick="filterResults('low', this)">Low</button>
+        </div>
+      </div>
+      <div id="results-container">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">No results yet</div>
+          <div class="empty-sub">Paste a job description above and click Analyze.<br>
+            <a href="#" onclick="toggleGuide();return false;" style="color:var(--teal);font-weight:700;font-size:0.82rem;">Need help? Open the guide ↑</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Panel -->
+    <div id="subtab-saved" class="subtab-panel">
+      <div class="preview-section-label">Quick preview</div>
+      <div class="preview-strip" id="saved-preview-strip"></div>
+      <div id="saved-container">
+        <div class="saved-empty">No saved jobs yet.<br>
+          Click <b>☆ Save</b> on any result card to bookmark it here.
+        </div>
+      </div>
+    </div>
+
+    <!-- Applied Panel -->
+    <div id="subtab-applied" class="subtab-panel">
+      <div class="preview-section-label">Quick preview</div>
+      <div class="preview-strip" id="applied-preview-strip"></div>
+      <div id="applied-container">
+        <div class="saved-empty">No applications tracked yet.<br>
+          Click <b>✉ Mark Applied</b> on any job card to move it here.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     PROFILE MODAL
+     ══════════════════════════════════════ -->
+<div id="profile-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Edit Job Search Profile</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:18px;padding:10px 14px;background:var(--teal-light);border-radius:var(--radius-xs);border-left:3px solid var(--teal);">
+      💡 The more detail you provide here, the more accurate Scout's match scores will be. Years of experience and certifications matter most.
+    </div>
+    <div class="modal-fields-grid">
+      <label class="field-label">
+        Current role / background
+        <input id="p-role" class="field-input"
+               placeholder="e.g. Mid-level tech employee with 4 years experience in project coordination" />
+      </label>
+      <label class="field-label">
+        Target industry
+        <input id="p-industry" class="field-input"
+               placeholder="e.g. Mining industry preferred, open to oil and gas or construction" />
+      </label>
+      <label class="field-label">
+        Minimum salary
+        <input id="p-salary" class="field-input"
+               placeholder="e.g. 70,000/yr or 35/hr minimum" />
+      </label>
+      <label class="field-label">
+        Currency
+        <select id="p-currency" class="field-input">
+          <option value="USD">USD, US Dollar ($)</option>
+          <option value="CAD">CAD, Canadian Dollar (CA$)</option>
+          <option value="GBP">GBP, British Pound (£)</option>
+          <option value="EUR">EUR, Euro (€)</option>
+          <option value="AUD">AUD, Australian Dollar (AU$)</option>
+          <option value="NZD">NZD, New Zealand Dollar (NZ$)</option>
+          <option value="JPY">JPY, Japanese Yen (¥)</option>
+          <option value="INR">INR, Indian Rupee (₹)</option>
+          <option value="MXN">MXN, Mexican Peso (MX$)</option>
+          <option value="CHF">CHF, Swiss Franc</option>
+          <option value="ZAR">ZAR, South African Rand (R)</option>
+        </select>
+      </label>
+      <label class="field-label">
+        Years of experience
+        <input id="p-experience" class="field-input"
+               placeholder="e.g. 4 years total, 1 year in project coordination, no mining experience" />
+      </label>
+      <label class="field-label">
+        Travel willingness
+        <input id="p-travel" class="field-input"
+               placeholder="e.g. Willing to travel up to 50%, open to camp-based rotational work" />
+      </label>
+      <label class="field-label">
+        Certifications and qualifications
+        <input id="p-certs" class="field-input"
+               placeholder="e.g. PMP, First Aid Level 1, WHMIS, Class 5 Driver's Licence" />
+      </label>
+      <label class="field-label">
+        Other preferences / notes
+        <textarea id="p-notes" class="field-input" style="resize:vertical;min-height:68px;"
+                  placeholder="e.g. Prefer project management roles, open to coordinator or scheduler titles"></textarea>
+      </label>
+    </div>
+    <label class="field-label" style="margin-top:13px;">
+      What kind of work are you looking for?
+      <textarea id="p-jobgoal" class="field-input" style="resize:vertical;min-height:80px;"
+                placeholder="e.g. Looking for a project management role in mining or resources. Ideally site based or hybrid with a path to senior leadership."></textarea>
+    </label>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+      <button class="btn btn-ghost"   onclick="closeProfileEditor()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     WELCOME MODAL (first ever visit only)
+     ══════════════════════════════════════ -->
+<div id="welcome-modal" class="modal-overlay">
+  <div class="modal-box welcome-box">
+    <div class="welcome-icon">👋</div>
+    <div class="welcome-title">Welcome to Scout</div>
+    <div class="welcome-body">
+      Before you analyze your first job posting, it helps to set up your profile so Scout knows your background, salary expectations, and experience. You can upload a resume to fill most of this in automatically, or skip ahead and add it later.<br><br>
+      This is entirely optional, you can run an analysis right away without a profile.
+    </div>
+    <div class="welcome-actions">
+      <button class="btn btn-primary" onclick="welcomeSetUpProfile()">Set up my profile</button>
+      <button class="btn btn-ghost" onclick="dismissWelcome(true)">Skip for now</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     SCRIPTS
+     ══════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/jobs.js"></script>
+
+
+<script>
+(function () {
+  var SAVED_KEY = 'scout-pw-ok';
+
+  // If already verified this session, skip the gate immediately
+  if (sessionStorage.getItem(SAVED_KEY) === 'yes') {
+    document.getElementById('scout-gate').style.display = 'none';
+    return;
+  }
+
+  // Block the rest of the page until password is entered
+  // (gate overlay covers everything with z-index: 9999)
+  window.__scoutPassword = '';
+
+  window.checkGatePassword = function () {
+    var pw = document.getElementById('gate-pw').value;
+    var errEl = document.getElementById('gate-error');
+
+    fetch('/api/scout-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-scout-password': pw
+      },
+      // Minimal valid Anthropic body just to test the password
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: '.' }] })
+    }).then(function (res) {
+      if (res.status === 401) {
+        errEl.style.display = 'block';
+        errEl.textContent = 'Incorrect password. Try again.';
+        document.getElementById('gate-pw').value = '';
+        document.getElementById('gate-pw').focus();
+      } else {
+        // Password is valid — store it for the session and hide the gate
+        window.__scoutPassword = pw;
+        sessionStorage.setItem(SAVED_KEY, 'yes');
+        sessionStorage.setItem('scout-pw', pw);
+        window.__scoutPassword = pw;
+        document.getElementById('scout-gate').style.display = 'none';
+      }
+    }).catch(function () {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Could not verify. Check your connection and try again.';
+    });
+  };
+})();
+
+// Restore the password for API calls when coming back to a verified session
+(function () {
+  if (sessionStorage.getItem('scout-pw')) {
+    window.__scoutPassword = sessionStorage.getItem('scout-pw');
+  }
+})();
+</script>
+</body>
+</html>
