@@ -1,17 +1,9 @@
 /* ============================================================
    VERCEL FUNCTION: /api/ai-draft
-   Called by admin/ai-draft.html.
-   1. Verifies the caller is logged in as the allowed GitHub user
-   2. Calls the Anthropic API to generate both write-up versions
-   3. If saveToSite is true, commits the updated projects.json
-      back to GitHub (using the caller's own GitHub token) so
-      the site rebuilds automatically.
-
-   Required Vercel environment variables:
-     ANTHROPIC_API_KEY     — from console.anthropic.com
-     GITHUB_REPO           — e.g. "GavinMakesStuff/gavinmakesstuff"
-     ALLOWED_GITHUB_USER   — your GitHub username (lowercase doesn't
-                             matter, compared case-insensitively)
+   - Generates public and/or portfolio write-ups (only for
+     selected sections — not both if only one is checked)
+   - Optionally generates a companion blog post
+   - Commits updated projects.json and/or blog.json to GitHub
    ============================================================ */
 
 module.exports = async function (req, res) {
@@ -20,10 +12,9 @@ module.exports = async function (req, res) {
     return;
   }
 
-  // ── Verify the caller is actually logged in as you ─────────────────────────
+  const identityUser = req.headers['x-forwarded-user'];
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
   if (!token) {
     res.status(401).json({ error: 'Not logged in.' });
     return;
@@ -46,15 +37,15 @@ module.exports = async function (req, res) {
 
   const allowedUser = (process.env.ALLOWED_GITHUB_USER || '').toLowerCase();
   if (!allowedUser || githubUser.login.toLowerCase() !== allowedUser) {
-    res.status(403).json({ error: 'This GitHub account is not authorized to use this admin panel.' });
+    res.status(403).json({ error: 'This GitHub account is not authorized.' });
     return;
   }
 
-  // ── Parse request body ──────────────────────────────────────────────────
   const body = req.body || {};
   const {
     projectName, projectId, summary, tags,
     showOnPublic = true, showOnPortfolio = true,
+    generateBlogPost = false,
     saveDraft = false, saveToSite = false,
     generated: userEdited,
   } = body;
@@ -69,7 +60,7 @@ module.exports = async function (req, res) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  // ── AI generation (skipped on the save-only call, which sends userEdited) ──
+  // ── AI generation ─────────────────────────────────────────────────────────
   let generated = userEdited;
 
   if (!generated) {
@@ -78,28 +69,34 @@ module.exports = async function (req, res) {
       return;
     }
 
-    const prompt = `You are writing project documentation for a personal maker/builder website called "Gavin Makes Stuff".
+    // Build sections string so AI only writes what's needed
+    const sectionsNeeded = [];
+    if (showOnPublic)    sectionsNeeded.push('PUBLIC');
+    if (showOnPortfolio) sectionsNeeded.push('PORTFOLIO');
+    if (generateBlogPost) sectionsNeeded.push('BLOG');
 
-Given the raw notes below, produce TWO polished write-ups:
-1. A PUBLIC version — casual, first-person, fun and conversational, like telling a friend about a cool build. Include personality. Celebrate wins and laugh at mistakes.
-2. A PORTFOLIO version — professional, first-person, focused on technical skill, problem-solving, and measurable outcomes. Use a structure like ## Problem, ## Approach, ## Outcome.
+    const sectionInstructions = [];
+    if (showOnPublic) sectionInstructions.push(
+      '"public": { "title": "...", "summary": "...", "description": "..." } — casual, first-person, fun tone'
+    );
+    if (showOnPortfolio) sectionInstructions.push(
+      '"portfolio": { "title": "...", "summary": "...", "description": "..." } — professional, use ## Problem / ## Approach / ## Outcome structure'
+    );
+    if (generateBlogPost) sectionInstructions.push(
+      '"blog": { "title": "...", "summary": "...", "body": "...", "seoTitle": "...", "metaDescription": "...", "keywords": ["..."] } — narrative first-person blog post, body in markdown. seoTitle is the optimised meta title (under 60 chars). metaDescription is the meta description (under 155 chars). keywords is an array of 5–8 target terms for SEO/AEO.'
+    );
+
+    const prompt = `You are writing content for a personal maker/builder website called "Gavin Makes Stuff".
+
+Generate ONLY these sections (do not add extras): ${sectionsNeeded.join(', ')}
 
 Project name: ${projectName}
 Skills/tags: ${tags || 'not specified'}
-Raw notes from Gavin: ${summary}
+Raw notes: ${summary}
 
-Respond ONLY with a valid JSON object — no markdown fences, no extra text, nothing outside the JSON:
+Respond ONLY with a valid JSON object (no markdown fences, no extra text):
 {
-  "public": {
-    "title": "casual title here",
-    "summary": "one sentence card summary (fun, punchy)",
-    "description": "full markdown description — use ## headings and bullet points where it helps"
-  },
-  "portfolio": {
-    "title": "professional title here",
-    "summary": "one sentence card summary (professional, outcome-focused)",
-    "description": "full markdown description using ## Problem, ## Approach, ## Outcome structure"
-  }
+  ${sectionInstructions.join(',\n  ')}
 }`;
 
     let aiData;
@@ -113,13 +110,12 @@ Respond ONLY with a valid JSON object — no markdown fences, no extra text, not
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
+          max_tokens: 3000,
           messages: [{ role: 'user', content: prompt }],
         }),
       });
       aiData = await aiRes.json();
       if (!aiRes.ok) {
-        console.error('Anthropic error', aiData);
         res.status(502).json({ error: 'AI service error. Check your ANTHROPIC_API_KEY in Vercel.' });
         return;
       }
@@ -132,96 +128,101 @@ Respond ONLY with a valid JSON object — no markdown fences, no extra text, not
     try {
       generated = JSON.parse(raw);
     } catch (e) {
-      console.error('JSON parse failed', raw);
       res.status(500).json({ error: 'Could not parse the AI response. Try again.' });
       return;
     }
   }
 
-  // ── Build the project entry ────────────────────────────────────────────────
+  // ── Build project entry ────────────────────────────────────────────────────
   const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
 
+  const emptySection = { title: '', summary: '', tags: tagList, description: '', gallery: [], downloads: [] };
+
   const newProject = {
-    id: id,
+    id,
     draft: saveDraft,
+    appUrl: body.appUrl || '',
     thumbnail: '',
-    showOnPublic: showOnPublic,
-    showOnPortfolio: showOnPortfolio,
-    public: {
-      title: generated.public.title,
-      summary: generated.public.summary,
-      tags: tagList,
-      description: generated.public.description,
-      gallery: [],
-      downloads: [],
-    },
-    portfolio: {
-      title: generated.portfolio.title,
-      summary: generated.portfolio.summary,
-      tags: tagList,
-      description: generated.portfolio.description,
-      gallery: [],
-      downloads: [],
-    },
+    showOnPublic,
+    showOnPortfolio,
+    public: showOnPublic && generated.public
+      ? { ...emptySection, ...generated.public, tags: tagList }
+      : emptySection,
+    portfolio: showOnPortfolio && generated.portfolio
+      ? { ...emptySection, ...generated.portfolio, tags: tagList }
+      : emptySection,
   };
 
-  // ── Save to GitHub using the caller's OWN token ─────────────────────────────
+  // ── Blog post entry (if requested) ────────────────────────────────────────
+  let newBlogPost = null;
+  if (generateBlogPost && generated.blog) {
+    newBlogPost = {
+      id: id + '-post',
+      draft: saveDraft,
+      title: generated.blog.title || projectName,
+      date: new Date().toISOString().slice(0, 10),
+      summary: generated.blog.summary || '',
+      thumbnail: '',
+      body: generated.blog.body || '',
+      seo: {
+        title: generated.blog.seoTitle || '',
+        metaDescription: generated.blog.metaDescription || '',
+        keywords: generated.blog.keywords || [],
+      },
+    };
+  }
+
+  // ── Commit to GitHub ──────────────────────────────────────────────────────
   if (saveToSite) {
     const repo = process.env.GITHUB_REPO;
     if (!repo) {
-      res.status(500).json({ error: 'GITHUB_REPO environment variable is missing in Vercel.' });
+      res.status(500).json({ error: 'GITHUB_REPO environment variable is missing.' });
       return;
     }
 
-    const ghUrl = 'https://api.github.com/repos/' + repo + '/contents/data/projects.json';
+    const ghHeaders = {
+      Authorization: 'Bearer ' + token,
+      'User-Agent': 'gavinmakesstuff-admin',
+      'Content-Type': 'application/json',
+    };
 
-    let ghGetRes, ghData;
-    try {
-      ghGetRes = await fetch(ghUrl, {
-        headers: { Authorization: 'Bearer ' + token, 'User-Agent': 'gavinmakesstuff-admin' },
+    async function readJson(path) {
+      const r = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, { headers: ghHeaders });
+      const d = await r.json();
+      if (!r.ok) throw new Error('Could not read ' + path + ': ' + d.message);
+      return { parsed: JSON.parse(Buffer.from(d.content, 'base64').toString('utf8')), sha: d.sha };
+    }
+    async function writeJson(path, dataObj, sha, message) {
+      const encoded = Buffer.from(JSON.stringify(dataObj, null, 2)).toString('base64');
+      const r = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
+        method: 'PUT', headers: ghHeaders,
+        body: JSON.stringify({ message, content: encoded, sha }),
       });
-      ghData = await ghGetRes.json();
-      if (!ghGetRes.ok) {
-        console.error('GitHub GET error', ghData);
-        res.status(502).json({ error: 'Could not read projects.json from GitHub. Check GITHUB_REPO is correct.' });
-        return;
+      const d = await r.json();
+      if (!r.ok) throw new Error('Could not write ' + path + ': ' + d.message);
+    }
+
+    try {
+      // Save project
+      const { parsed: projects, sha: projSha } = await readJson('data/projects.json');
+      const idx = projects.projects.findIndex(p => p.id === id);
+      if (idx >= 0) projects.projects[idx] = newProject;
+      else projects.projects.unshift(newProject);
+      await writeJson('data/projects.json', projects, projSha, (saveDraft ? 'Draft: ' : 'Publish: ') + id);
+
+      // Save blog post if generated
+      if (newBlogPost) {
+        const { parsed: blog, sha: blogSha } = await readJson('data/blog.json');
+        const bIdx = blog.posts.findIndex(p => p.id === newBlogPost.id);
+        if (bIdx >= 0) blog.posts[bIdx] = newBlogPost;
+        else blog.posts.unshift(newBlogPost);
+        await writeJson('data/blog.json', blog, blogSha, (saveDraft ? 'Draft blog: ' : 'Blog post: ') + newBlogPost.id);
       }
-    } catch (e) {
-      res.status(502).json({ error: 'Could not reach GitHub.' });
-      return;
-    }
-
-    const currentContent = JSON.parse(Buffer.from(ghData.content, 'base64').toString('utf8'));
-    const idx = currentContent.projects.findIndex(p => p.id === id);
-    if (idx >= 0) {
-      currentContent.projects[idx] = newProject;
-    } else {
-      currentContent.projects.unshift(newProject);
-    }
-
-    const encoded = Buffer.from(JSON.stringify(currentContent, null, 2)).toString('base64');
-
-    const ghPut = await fetch(ghUrl, {
-      method: 'PUT',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'User-Agent': 'gavinmakesstuff-admin',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: (saveDraft ? 'Draft: ' : 'Publish: ') + id,
-        content: encoded,
-        sha: ghData.sha,
-      }),
-    });
-
-    if (!ghPut.ok) {
-      const err = await ghPut.json();
-      console.error('GitHub PUT error', err);
-      res.status(502).json({ error: 'Could not save to GitHub: ' + (err.message || 'unknown error') });
+    } catch (err) {
+      res.status(502).json({ error: err.message });
       return;
     }
   }
 
-  res.status(200).json({ project: newProject, generated: generated });
+  res.status(200).json({ project: newProject, generated, blogPost: newBlogPost });
 };
