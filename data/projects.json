@@ -1,6 +1,30 @@
 {
   "projects": [
     {
+      "id": "scout-a-personal-job-search-companion",
+      "draft": true,
+      "appUrl": "https://www.gavinmakesstuff.com/scout/",
+      "thumbnail": "",
+      "showOnPublic": false,
+      "showOnPortfolio": true,
+      "public": {
+        "title": "",
+        "summary": "",
+        "tags": [],
+        "description": "",
+        "gallery": [],
+        "downloads": []
+      },
+      "portfolio": {
+        "title": "scout - A Personal Job Search Companion",
+        "summary": "A locally hosted job search dashboard that uses AI to analyze job postings against a personal candidate profile, returning fit scores, structured breakdowns, and ready-to-use application materials.",
+        "tags": [],
+        "description": "## Problem\n\nDuring an active career change job search with a mid-level technology background and new professional certification, I faced a recurring challenge: postings often looked promising but actually required years of direct industry experience or designations I didn't yet hold. Manually reading every listing to discover misalignment was slow and draining, making it easy to either waste time on poor fits or second-guess strong ones.\n\n## Approach\n\nI designed and built Scout as a self-hosted application with a single-action workflow: paste a job posting, get instant analysis. The tool evaluates each posting against a stored candidate profile and returns a strict 1-10 fit score with written rationale, automatic extraction of salary, benefits, employer reputation, location type, commute distance, and resume/cover letter keywords organized by category. The application runs entirely client-side in HTML, CSS, and JavaScript with local browser storage—no account, server, or external database required. Key design decisions prioritized ease of use, genuine convenience over encouragement, and honest assessment over inflated scores.\n\n## Outcome\n\nScout now handles batch analysis of multiple postings, tracks applications with follow-up dates and contact details, surfaces hiring manager contacts via dedicated search, and supports dark/light themes with multi-currency salary handling. The tool has become an active part of my daily job search workflow, reducing evaluation time per listing, providing a consistent basis for comparing different roles, and delivering keyword sets that feed directly into tailored applications. Beyond practical benefit, it demonstrates the ability to scope a real problem, design a working solution, and refine it iteratively through genuine use.",
+        "gallery": [],
+        "downloads": []
+      }
+    },
+    {
       "id": "desk-plant-monitor",
       "draft": false,
       "thumbnail": "/images/projects/desk-plant-monitor/thumb.svg",
@@ -72,7 +96,7 @@
         "downloads": []
       },
       "portfolio": {
-        "title": "Custom arcade cabinet \u2014 hardware and software integration",
+        "title": "Custom arcade cabinet — hardware and software integration",
         "summary": "End-to-end build combining fabrication, electronics wiring, and Linux-based emulation software configuration.",
         "tags": [
           "hardware integration",
