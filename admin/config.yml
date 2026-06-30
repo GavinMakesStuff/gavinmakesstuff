@@ -54,6 +54,12 @@ collections:
                 widget: boolean
                 default: true
 
+              - name: appUrl
+                label: "Live app URL (optional — adds a 'Try the app' button on the project page)"
+                widget: string
+                required: false
+                hint: "e.g. /scout/ or https://example.com — always opens in a new tab"
+
               # ── PUBLIC VERSION ─────────────────────────────────────────────
               - name: public
                 label: "Public version (casual, fun tone)"
