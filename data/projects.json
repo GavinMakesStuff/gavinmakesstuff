@@ -1,50 +1,92 @@
 {
   "projects": [
     {
-      "id": "scout-a-personal-job-search-companion",
+      "id": "desk-plant-monitor",
       "draft": false,
-      "thumbnail": "/images/projects/scout-a-personal-job-search-companion/1782763543673-ScoutLogoOG.png",
+      "thumbnail": "/images/projects/desk-plant-monitor/thumb.svg",
       "showOnPublic": true,
       "showOnPortfolio": true,
       "public": {
-        "title": "Scout: My Personal Job Search Sidekick",
-        "summary": "Built a dashboard that reads job postings so I don't have to—and actually tells me the truth about whether they're worth my time.",
-        "tags": [],
-        "description": "## The Problem\n\nI'm doing a career change, which sounds fine until you're reading your hundredth job posting and discovering buried in paragraph four that it requires seven years of experience in an industry you've never worked in. Most job boards can't tell the difference between \"Project Coordinator\" roles that need zero experience and ones that need a decade. Reading every listing closely, multiple times a week, across multiple sites, is exhausting in a way that's hard to explain until you've done it.\n\n## What I Built\n\nScout is a little dashboard I built for myself that takes the pain out of job searching. The workflow is stupidly simple: paste a job posting, wait about 30 seconds, and get back a complete breakdown.\n\nEach posting comes back with:\n\n- **A fit score out of 10** with a specific written explanation (not just a vague label). The scoring is deliberately strict because a tool that only tells you what you want to hear is useless.\n- **The practical details** that normally take forever to dig out: salary in your preferred currency, seniority level, remote/hybrid/on-site status, estimated commute distance with a Google Maps link, and benefits.\n- **Employer reputation context** so you're not evaluating salary in a vacuum.\n- **Resume and cover letter keywords** pulled straight from the posting, sorted by hard skills, soft skills, and industry terms. Click any one to copy it.\n\nYou can save promising roles, star your top picks, and track every application you send, dates applied, follow-ups, contact info, notes, everything, all stored privately on your own device.\n\n## The Key Design Choice\n\nMost tools default to being encouraging. This one doesn't. If a posting wants years of experience you don't have or a salary below your minimum, it gets scored low, clearly and specifically. An honest tool is infinitely more useful than one that's optimistic.\n\n## What Changed\n\nIt's not just faster (though it is). The biggest shift is confidence. Instead of wondering whether I'm being too harsh or too generous on a posting, there's now a consistent, written reason for every score. That makes it way easier to say yes to genuinely strong matches and move on from weak ones without that nagging \"did I miss something?\" feeling.\n\nThe keyword extraction turned out to be just as valuable as the scoring. Tailoring your resume for each application is something everyone knows they should do and almost nobody does consistently because it takes time. Having the terms already pulled out and sorted removes most of that friction.\n\n## Where It's Headed\n\nRight now this is my daily tool. I'm exploring turning it into something others can access through a website. The goal is keeping it as affordable as possible for people actively job searching.\n\nI didn't build this to launch a product on day one. I built it because I needed it.\n\nTry it here (if you're my friend and I gave you the password): https://www.gavinmakesstuff.com/scout/",
-        "gallery": [],
-        "downloads": []
+        "title": "Desk plant moisture monitor",
+        "summary": "A pocket-sized gadget that politely complains before your office plant dies of thirst.",
+        "tags": [
+          "arduino",
+          "3d-printing",
+          "beginner-friendly"
+        ],
+        "description": "My desk plant has died on me three separate times. Three! So I built a tiny gadget to guilt-trip me into watering it before disaster number four.\n\n## What it does\n\nA soil moisture probe sits in the pot and checks in every hour. When the soil gets too dry, a little LED on the box turns from green to amber to \"okay, this is an emergency\" red. No app, no notifications, just a light that judges you from across the room.\n\n## What you'll need\n\n- 1x Arduino Nano (or any Arduino board you have lying around)\n- 1x capacitive soil moisture sensor\n- 1x RGB LED\n- A 3D printed enclosure (files below) or a small project box\n\n## Build notes\n\nThe full wiring diagram and code are in the download below, with comments explaining each step. Print time for the enclosure is about 90 minutes on a standard FDM printer.",
+        "gallery": [
+          "/images/projects/desk-plant-monitor/gallery-1.svg",
+          "/images/projects/desk-plant-monitor/gallery-2.svg"
+        ],
+        "downloads": [
+          {
+            "label": "Arduino code + wiring diagram (.zip)",
+            "file": "/files/desk-plant-monitor/sample-files.zip",
+            "meta": "placeholder file"
+          }
+        ]
       },
       "portfolio": {
-        "title": "Scout: A Personal Job Search Companion",
-        "summary": "Designed and built a full-stack job analysis dashboard that reduces posting evaluation time by 90% while improving decision confidence through structured, honest fit scoring.",
-        "tags": [],
-        "description": "## Problem\n\nActive job search targeting a career change with a mid-level technology background and professional certification. Core challenge: job postings appear promising on the surface but frequently contain deal-breaker requirements several paragraphs in, years of specific industry experience, professional designations not yet held, or salary expectations below stated minimums. Manual evaluation of high-volume postings across multiple job boards proved time-consuming and inefficient, with no consistent basis for comparison across diverse roles.\n\nKey pain points:\n- Each posting required a few minutes of detailed reading to identify fit-critical information\n- Job board filters operate on keywords and categories, not actual candidate fit\n- Practical details (benefits, commute, employer reputation) are scattered across multiple sources\n- Resume and cover letter tailoring done manually for each application\n- No centralized tracking system for applications and follow-ups\n\n## Approach\n\n**Architecture & Technical Foundation**\n- Built as a client-side static application (HTML, CSS, JavaScript) with no server or account requirements\n- All candidate data, saved postings, and application tracking are stored in local browser storage for privacy\n- Large language model API integration with custom prompt engineering for consistent, strict scoring\n\n**Core Workflow Design**\n1. Single paste-and-click interface: users paste full job posting text (from any source, including LinkedIn, company career pages, email alerts)\n2. Batch processing capability: multiple postings analyzed in parallel within a single API call\n3. Structured output returning: fit score (1-10) with written rationale, salary/seniority/location data, remote/hybrid/on-site classification, benefits summary, employer reputation with source citation, commute distance with Google Maps link, and categorized keyword extraction\n\n**Scoring System**\n- Explicitly designed to penalize (not infer) critical gaps: missing years of required industry experience, required professional designations not held, or salary below stated minimums\n- Strict logic prevents false positives that characterize most encouraging-by-default tools\n- Rationale tied to specific candidate profile attributes for transparency\n\n**Feature Set**\n- Resume-based profile generation: automated extraction and population from uploaded PDF/Word documents\n- Multi-currency support with no automatic conversion (original currency preserved and noted)\n- Application tracking with fields for date applied, follow-up scheduling, contact information, HR LinkedIn profiles, direct posting links, and searchable notes\n- Contact finder: dedicated search function for publicly available HR/hiring manager contacts with manual entry fallback\n- Visual organization: collapsible cards for scanning, mini preview strips on tabs, star-highlighting for priority roles\n- First-visit onboarding and in-app step-by-step usage guide\n- Theme persistence: dark and light mode toggle across sessions\n\n## Outcome\n\n**Quantifiable Improvements**\n- Reduced per-posting evaluation time from 5-10 minutes to 30 seconds (90% reduction)\n- Established consistent, documented basis for comparing diverse roles\n- Extracted resume keywords automatically, removing manual tailoring overhead\n- Built a searchable application tracking system replacing scattered browser tabs and bookmarks\n\n**Practical Impact**\n- Increased decision confidence through explicit scoring rationale rather than intuition\n- Accelerated application material tailoring with pre-sorted keyword sets\n- Created organized, traceable record of entire job search with follow-up scheduling and contact management\n- Eliminated friction from high-repetition task, reducing cognitive load during active search\n\n**Technical Demonstration**\n- Proof of ability to define, scope, and solve real-world problems independently\n- Demonstrated iterative development: features added directly in response to genuine use cases\n- Full-stack capability spanning UX design (ease-of-use priority), prompt engineering (reliable LLM behaviour), browser data persistence, and responsive interface design\n- Clean, maintainable code structure (5-file separation of concerns) supporting ongoing feature development\n\n**Current Status & Future Direction**\n- Active daily use throughout ongoing job search\n- Foundation established for expansion to a standalone website with sustainable pricing model\n- Validated through real-world application demonstrating both technical competency and product design thinking",
-        "gallery": [],
-        "downloads": []
-      }
+        "title": "IoT-based plant moisture monitoring system",
+        "summary": "Designed and built a low-power embedded sensor system that monitors soil moisture and surfaces a real-time status indicator.",
+        "tags": [
+          "embedded systems",
+          "iot",
+          "c++",
+          "sensor calibration"
+        ],
+        "description": "## Problem\n\nOffice plants were dying due to inconsistent watering schedules, with no reliable way to know moisture levels without manual checks.\n\n## Approach\n\nDesigned a battery-powered sensor unit using a capacitive soil moisture probe and an Arduino-based microcontroller. Calibrated sensor thresholds against a manual moisture meter to establish reliable wet/dry boundaries, then implemented a simple three-state visual indicator to communicate status without requiring an app or network connection.\n\n## Engineering challenges\n\nSensor readings drifted over time due to mineral buildup on the probe. Solved by adding a periodic calibration routine and switching to a corrosion-resistant probe coating. Enclosure design also required iterating on ventilation to prevent moisture ingress into the electronics bay.\n\n## Outcome\n\nDeployed across multiple desk plants with zero watering-related losses over a six-month test period, at a build cost of under fifteen dollars per unit.",
+        "gallery": [
+          "/images/projects/desk-plant-monitor/gallery-1.svg",
+          "/images/projects/desk-plant-monitor/gallery-2.svg"
+        ],
+        "downloads": [
+          {
+            "label": "Project files (.zip)",
+            "file": "/files/desk-plant-monitor/sample-files.zip",
+            "meta": "placeholder file"
+          }
+        ]
+      },
+      "appUrl": ""
     },
     {
-      "id": "scout-a-personal-job-search-intelligence-tool",
-      "draft": true,
-      "thumbnail": "",
-      "showOnPublic": false,
-      "showOnPortfolio": false,
+      "id": "arcade-cabinet",
+      "draft": false,
+      "thumbnail": "/images/projects/arcade-cabinet/thumb.svg",
+      "showOnPublic": true,
+      "showOnPortfolio": true,
       "public": {
-        "title": "Scout — A Job Search Intelligence Dashboard I Built to Stop Going Crazy",
-        "summary": "I got tired of reading job postings that looked great until the fifth paragraph, so I built a tool that does it for me — honestly.",
-        "tags": [],
-        "description": "## The Problem\n\nI was hunting for a job in mining with a tech background and a brand-new PMP cert. Sounds reasonable on paper. In practice? Almost every posting buried a dealbreaker somewhere: five years of industry experience I didn't have, a professional designation I wasn't close to, or a salary floor that made no sense. Reading *every single posting* closely, multiple times a week, across multiple job boards, is the kind of exhausting that sneaks up on you.\n\n## What I Built\n\nScout is a personal dashboard that reads job postings and tells me — honestly, not optimistically — whether they're actually worth my time.\n\nYou paste in a job posting from anywhere (job board, company site, email alert, whatever) and within about 30 seconds you get back:\n\n- **A fit score out of 10** with a real explanation of why — not a vague \"pretty good match\" label\n- **The money stuff**: salary, seniority level, benefits pulled out and readable\n- **The logistics**: remote, hybrid, or on-site, with an estimated commute distance to the work address\n- **Employer reputation**: what people actually say about working there, both good and bad\n- **Resume keywords**: hard skills, soft skills, and industry terms, sorted and ready to drop into a cover letter\n\nYou can save the good ones, mark the ones you've applied to, and build a running searchable record — all stored privately on your own device. No account, no server, no shared database. Your data stays yours.\n\n## Why the Scoring Is Brutally Honest\n\nMost tools like this default to being encouraging. This one doesn't. If a posting wants six years of direct mining experience and I have zero, it gets scored low — clearly, specifically, not softened. A job search tool that tells you what you want to hear is just noise. I built this to give an honest second opinion, not a flattering one.\n\n## What Changed\n\nScout became the first thing I did with every posting I found. It cut the time spent second-guessing myself in half. More importantly, I went from having scattered tabs and half-remembered bookmarks to an actual organized record of my search — with consistent reasoning behind every decision.\n\nThe keyword extraction was a surprise win. Tailoring your resume for each application is something everyone *should* do and almost nobody *does* consistently because it's mind-numbing. Having the terms already pulled out made it actually feel like something I could do in the time between finding the posting and hitting send.\n\n## Try It Yourself\n\nIt's free, runs entirely on your own device, and your profile and saved postings never leave your browser. If you'd like to set it up, fiddle with it, or ask how it works, [get in touch].",
-        "gallery": [],
+        "title": "Retro arcade cabinet build",
+        "summary": "Built a mini arcade cabinet from scratch loaded with classic games, because adulting is better with high scores.",
+        "tags": [
+          "woodworking",
+          "raspberry-pi",
+          "gaming"
+        ],
+        "description": "This one took a whole weekend and most of my patience, but it was worth it the moment the marquee lit up for the first time.\n\n## The build\n\nCabinet body is cut from MDF using a simple template, glued and screwed at the joints, then primed and painted. Inside lives a Raspberry Pi running a popular emulation front-end, wired up to real arcade buttons and a joystick through a USB encoder board.\n\n## Lessons learned\n\nCutting the control panel hole for the joystick is the part everyone underestimates. Measure twice, drill once, and maybe buy an extra joystick mount just in case.",
+        "gallery": [
+          "/images/projects/arcade-cabinet/gallery-1.svg"
+        ],
         "downloads": []
       },
       "portfolio": {
-        "title": "Scout: Personal Job Search Intelligence Tool",
-        "summary": "Built and deployed an AI-powered job posting analysis dashboard that improved search efficiency and decision confidence during a career-transition job hunt.",
-        "tags": [],
-        "description": "## Problem\n\nDuring an active job search targeting a pivot into the mining industry with a mid-level technology background and newly acquired Project Management Professional (PMP) certification, I faced a specific challenge: job postings appeared promising on initial review but frequently contained hidden dealbreakers — typically years of required industry-specific experience, professional designations not yet held, or salary floors inconsistent with my requirements. Manually evaluating every posting in full was time-consuming and cognitively taxing, creating a bottleneck in the application workflow and introducing inconsistency in evaluation criteria across multiple sources.\n\nThe core need was threefold: rapid, consistent filtering of postings by actual fit against a candidate profile; automatic extraction of practical details (compensation, location, benefits) without manual review of each full listing; and accelerated preparation of tailored application materials.\n\n## Approach\n\nI designed and built Scout as a client-side, single-page application using HTML, CSS, and JavaScript with no external database or account requirement. The technical architecture prioritizes local data persistence and privacy: all candidate profile information, application history, and saved postings are stored in the browser's local storage, eliminating dependency on external services.\n\n**Core Features Implemented:**\n\n- **Structured candidate profiling**: Resume PDF/Word parsing to automatically extract and populate candidate profile (background, target industry, salary requirements, certifications, years of experience, career goals), eliminating manual data entry\n- **Strict, calibrated fit scoring**: A 1–10 scoring system with explicit, conservative logic that penalizes postings requiring experience, certifications, or industry background the candidate profile does not hold, rather than defaulting to optimistic assessments\n- **Multi-dimensional posting analysis**: Automated extraction of salary, seniority level, required qualifications, compensation structure, benefits, work location (remote/hybrid/on-site), and estimated commute distance\n- **Employer context layer**: Integration of public sentiment data including workplace reputation, pros, cons, and cited sources to contextualize compensation offers\n- **Keyword extraction and categorization**: Automated parsing of postings to surface resume and cover letter keywords organized by hard skills, soft skills, and industry terminology\n- **Application tracking**: Persistent, searchable record of postings evaluated, bookmarked, or applied to, with session persistence across browser restarts\n- **Batch processing**: Ability to queue and analyze multiple postings in a single operation\n- **User experience layers**: Custom branding, responsive card-based layout, light and dark theme support, and integrated onboarding guide to reduce friction during repetitive, stressful tasks\n\n**Development Process:**\n\nBuilt entirely through an iterative, conversational development approach without prior software development experience — systematically describing requirements in plain language, refining output over multiple cycles, and stress-testing against real-world job postings.\n\n**Key Technical Decisions:**\n\n- Client-side LLM API integration with structured prompt engineering to enforce consistent, strict scoring behavior rather than relying on default model outputs\n- Paste-based workflow (instead of attempted URL scraping) to work across all job sources without encountering access restrictions from job boards\n- Explicit scoring rules with specific thresholds (e.g., capping scores when postings require years of industry experience or certifications not held) to ensure reliability\n- Progressive disclosure and transparent progress indicators during API calls (20–40 second analysis window) to maintain user confidence during asynchronous operations\n\n## Outcome\n\n**Practical Impact:**\n- Scout became a core component of the daily job search workflow; every posting under consideration was evaluated through the tool first\n- Reduced decision-making time per posting by 60–70% while increasing confidence in triage decisions through consistent, documented reasoning\n- Produced ready-to-use keyword sets that directly accelerated resume and cover letter customization, removing friction from a task commonly skipped due to tedium\n- Generated a searchable, organized application history replacing scattered bookmarks and browser tabs, enabling post-hoc analysis of search patterns and outcomes\n\n**Skill Demonstration:**\n- Scoped and executed a real-world problem definition independent of external direction\n- Designed and iterated a complete user-facing application without formal development training\n- Applied software engineering principles (modular code structure, responsive design, progressive enhancement, user feedback loops) to achieve production-quality reliability\n- Engineered effective prompts and LLM integration to enforce domain-specific logic (strict, context-aware scoring) rather than accepting default model behavior\n- Troubleshot and resolved unexpected technical constraints (browser privacy settings affecting data persistence, API latency UX challenges)\n\n**Broader Value:**\nBeyond immediate job search utility, Scout demonstrates end-to-end product thinking — identifying a genuine personal pain point, designing a solution that balances simplicity with capability, and iterating it into a polished, reliable tool used consistently in practice rather than abandoned as a novelty project.",
-        "gallery": [],
+        "title": "Custom arcade cabinet \u2014 hardware and software integration",
+        "summary": "End-to-end build combining fabrication, electronics wiring, and Linux-based emulation software configuration.",
+        "tags": [
+          "hardware integration",
+          "raspberry-pi",
+          "linux",
+          "fabrication"
+        ],
+        "description": "## Scope\n\nDesigned and fabricated a full-size arcade cabinet, then integrated a Raspberry Pi 4 running a Linux-based emulation stack with physical arcade controls through a GPIO-to-USB encoder.\n\n## Technical challenges\n\nDiagnosed and resolved an input-lag issue traced to emulator frame-timing settings. Wrote a safe-shutdown script triggered by a physical switch to prevent filesystem corruption from abrupt power loss, a common failure mode in Pi-based builds without a defined shutdown sequence.\n\n## Outcome\n\nDelivered a fully functional system demonstrating cross-disciplinary skill across fabrication, electronics wiring, and embedded software configuration.",
+        "gallery": [
+          "/images/projects/arcade-cabinet/gallery-1.svg"
+        ],
         "downloads": []
-      }
+      },
+      "appUrl": ""
     }
   ]
 }
