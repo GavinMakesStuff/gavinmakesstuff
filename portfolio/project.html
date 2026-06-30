@@ -9,15 +9,7 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="portfolio">
-  <nav class="site-nav">
-    <div class="container">
-      <a class="logo" href="/portfolio/index.html">Gavin Krohn</a>
-      <ul class="nav-links">
-        <li><a href="/portfolio/index.html" class="active">Projects</a></li>
-        <li><a href="mailto:you@example.com">Contact</a></li>
-      </ul>
-    </div>
-  </nav>
+  <div id="site-nav-placeholder"></div>
 
   <div class="container detail-header">
     <a class="back-link" href="/portfolio/index.html">← Back to all projects</a>
@@ -25,10 +17,7 @@
   </div>
 
   <footer class="site-footer">
-    <div class="container">
-      <span>© 2026 Gavin Krohn</span>
-      <span><a href="mailto:you@example.com">you@example.com</a></span>
-    </div>
+    <div class="container"><span>© 2026 Gavin Krohn</span></div>
   </footer>
 
   <div class="lightbox-overlay" id="lightbox-overlay" onclick="closeLightbox()">
@@ -38,11 +27,9 @@
 
   <script src="/js/shared.js"></script>
   <script>
+    injectNav('portfolio');
     (async function () {
-      try {
-        const res = await fetch('/data/projects.json');
-        initProjects(await res.json());
-      } catch (e) { console.error('Data load failed', e); }
+      try { var res = await fetch('/data/projects.json'); initProjects(await res.json()); } catch (e) { console.error(e); }
       renderProjectDetail('portfolio');
     })();
   </script>
