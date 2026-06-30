@@ -113,7 +113,7 @@
     <div class="admin-nav-links">
       <a href="/admin/ai-draft.html">AI Draft</a>
       <a href="/admin/manage.html" class="active">Manage Projects</a>
-      <a href="/public/index.html" target="_blank">View Site</a>
+      <a href="/studio/index.html" target="_blank">View Site</a>
       <span id="user-bar"></span>
       <button id="logout-btn" onclick="logout()">Log out</button>
     </div>
@@ -322,9 +322,11 @@
             '<p class="hint">Lowercase, hyphens only. Used in the page URL and for uploaded file paths. Can\'t be changed after creating.</p></div>' +
           '<div class="checkbox-row">' +
             '<label><input type="checkbox" id="f-draft" ' + (item.draft ? 'checked' : '') + '> Save as draft (hidden from visitors)</label>' +
-            '<label><input type="checkbox" id="f-public" ' + (item.showOnPublic ? 'checked' : '') + '> Show on Public</label>' +
+            '<label><input type="checkbox" id="f-public" ' + (item.showOnPublic ? 'checked' : '') + '> Show on The Studio</label>' +
             '<label><input type="checkbox" id="f-portfolio" ' + (item.showOnPortfolio ? 'checked' : '') + '> Show on Portfolio</label>' +
           '</div>' +
+          '<div class="field"><label>Live app URL (optional — adds a "Try the app" button)</label>' +
+            '<input type="text" id="f-app-url" value="' + esc(item.appUrl || '') + '" placeholder="e.g. /scout/ or https://example.com"></div>' +
           '<div class="field"><label>Tags (comma separated, shared by both versions)</label>' +
             '<input type="text" id="f-tags" value="' + esc((item.public.tags || []).join(', ')) + '"></div>' +
           '<div class="field"><label>Thumbnail image</label>' +
@@ -519,6 +521,7 @@
       item = {
         id: id,
         draft: asDraft,
+        appUrl: document.getElementById('f-app-url').value.trim(),
         thumbnail: (window.__uploads['thumb'] && window.__uploads['thumb'][0]) || '',
         showOnPublic: document.getElementById('f-public').checked,
         showOnPortfolio: document.getElementById('f-portfolio').checked,
