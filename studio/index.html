@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Studio — Gavin makes stuff</title>
+  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div id="site-nav-placeholder"></div>
+
+  <header class="hero">
+    <div class="container">
+      <h1>I build stuff, then write about it.</h1>
+      <p class="lede">Arduino gadgets, woodworking experiments, and the occasional thing that catches fire a little. Grab the files, follow along, and build your own.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/studio/projects.html">Browse projects</a>
+        <a class="btn" href="/studio/blog.html">Read the blog</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-heading">
+        <h2>Recent projects</h2>
+        <a href="/studio/projects.html">See all projects →</a>
+      </div>
+      <div id="featured-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-heading">
+        <h2>Latest from the blog</h2>
+        <a href="/studio/blog.html">See all posts →</a>
+      </div>
+      <div id="featured-blog-list" class="blog-list"><div class="empty-state">Loading…</div></div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Gavin makes stuff</span>
+    </div>
+  </footer>
+
+  <script src="/js/shared.js"></script>
+  <script>
+    injectNav('studio');
+    (async function () {
+      try {
+        var pRes = await fetch('/data/projects.json');
+        var bRes = await fetch('/data/blog.json');
+        initProjects(await pRes.json());
+        initBlog(await bRes.json());
+      } catch (e) { console.error('Data load failed', e); }
+      renderProjectCards('featured-projects-grid', 'studio', '/studio/project.html', 3);
+      renderBlogCards('featured-blog-list', '/studio/blog-post.html', 1);
+    })();
+  </script>
+</body>
+</html>

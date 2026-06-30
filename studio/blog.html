@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — The Studio</title>
+  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div id="site-nav-placeholder"></div>
+
+  <header class="hero" style="padding-bottom:24px;">
+    <div class="container">
+      <h1>Blog</h1>
+      <p class="lede">The stories behind the projects, plus whatever else is on my mind.</p>
+    </div>
+  </header>
+
+  <section class="section" style="padding-top:0;">
+    <div class="container">
+      <div id="blog-posts-list" class="blog-list"><div class="empty-state">Loading…</div></div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container"><span>© 2026 Gavin makes stuff</span></div>
+  </footer>
+
+  <script src="/js/shared.js"></script>
+  <script>
+    injectNav('studio');
+    (async function () {
+      try { var res = await fetch('/data/blog.json'); initBlog(await res.json()); } catch (e) { console.error(e); }
+      renderBlogCards('blog-posts-list', '/studio/blog-post.html');
+    })();
+  </script>
+</body>
+</html>

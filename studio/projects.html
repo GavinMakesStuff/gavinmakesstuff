@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects — The Studio</title>
+  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div id="site-nav-placeholder"></div>
+
+  <header class="hero" style="padding-bottom:24px;">
+    <div class="container">
+      <h1>Projects</h1>
+      <p class="lede">Everything I've built and shared so far. Click any card for the full write-up, photos, and downloadable files.</p>
+    </div>
+  </header>
+
+  <section class="section" style="padding-top:0;">
+    <div class="container">
+      <div id="all-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container"><span>© 2026 Gavin makes stuff</span></div>
+  </footer>
+
+  <script src="/js/shared.js"></script>
+  <script>
+    injectNav('studio');
+    (async function () {
+      try { var res = await fetch('/data/projects.json'); initProjects(await res.json()); } catch (e) { console.error(e); }
+      renderProjectCards('all-projects-grid', 'studio', '/studio/project.html');
+    })();
+  </script>
+</body>
+</html>
