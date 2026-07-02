@@ -5,46 +5,465 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gavin makes stuff</title>
   <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0C0D0E;
+      --surface:  #131416;
+      --surface-2:#0F1011;
+      --border:   #1E2022;
+      --border-h: #2C2F32;
+      --red:      #D93025;
+      --white:    #F2EFE9;
+      --muted:    #6B7075;
+      --radius:   14px;
+      --gap:      10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── nav ── */
+    .top-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    /* ── outer layout ── */
+    .page-body {
+      padding: 24px 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      min-height: calc(100vh - 61px);
+    }
+
+    /* ── main bento ── */
+    .bento-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: var(--gap);
+      flex: 1;
+      min-height: 480px;
+    }
+
+    /* hero */
+    .cell-hero {
+      grid-column: 1;
+      grid-row: 1 / 3;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      position: relative;
+      overflow: hidden;
+    }
+    .gms-ghost {
+      position: absolute;
+      top: -0.1em;
+      left: -0.06em;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(100px, 16vw, 180px);
+      line-height: 1;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--border-h);
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: -0.04em;
+      white-space: nowrap;
+    }
+    .hero-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 12px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 1px;
+      background: var(--red);
+      flex-shrink: 0;
+    }
+    .hero-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .hero-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 260px;
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .hero-location {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      position: relative;
+    }
+    .hero-location::before {
+      content: '◎';
+      color: var(--red);
+      font-size: 0.62rem;
+    }
+
+    /* section cells */
+    .cell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color 0.18s ease, transform 0.18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .cell:hover {
+      border-color: var(--red);
+      transform: translateY(-3px);
+    }
+    .cell:hover .cell-arrow { color: var(--red); }
+    .cell:hover .cell-icon-wrap { background: var(--red); }
+
+    .cell-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .cell-icon-wrap {
+      width: 40px; height: 40px;
+      border-radius: 9px;
+      background: var(--border-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s ease;
+      flex-shrink: 0;
+    }
+    .cell-icon-wrap svg {
+      width: 18px; height: 18px;
+      stroke: var(--white);
+      fill: none;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .cell-arrow {
+      font-size: 1rem;
+      color: var(--muted);
+      transition: color 0.18s;
+    }
+    .cell-body { margin-top: 24px; }
+    .cell-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .cell-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.2rem, 2vw, 1.65rem);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 7px;
+    }
+    .cell-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* tools row */
+    .tools-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+    }
+    .tools-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tools-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .tools-row {
+      display: flex;
+      gap: var(--gap);
+      flex-wrap: wrap;
+    }
+    .cell-tool {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: border-color 0.18s ease, transform 0.18s ease;
+      min-width: 200px;
+      flex: 0 0 auto;
+    }
+    .cell-tool:hover {
+      border-color: var(--red);
+      transform: translateY(-2px);
+    }
+    .cell-tool:hover .cell-icon-wrap { background: var(--red); }
+    .cell-tool .cell-icon-wrap {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--border-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+    .cell-tool .cell-icon-wrap svg {
+      width: 16px; height: 16px;
+      stroke: var(--white);
+      fill: none;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .tool-info { flex: 1; min-width: 0; }
+    .tool-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 2px;
+    }
+    .tool-desc {
+      font-size: 0.74rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tool-badge {
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      border: 1px solid var(--border-h);
+      flex-shrink: 0;
+    }
+    .tool-badge.private {
+      background: rgba(217,48,37,0.08);
+      color: var(--red);
+      border-color: rgba(217,48,37,0.25);
+    }
+
+    /* responsive */
+    @media (max-width: 960px) {
+      .bento-main {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+        min-height: unset;
+      }
+      .cell-hero {
+        grid-column: 1 / 3;
+        grid-row: 1;
+        min-height: 240px;
+      }
+    }
+    @media (max-width: 580px) {
+      .bento-main { grid-template-columns: 1fr; }
+      .cell-hero { grid-column: 1; }
+      .page-body { padding: 12px; }
+      .top-nav { padding: 16px 16px; }
+      .nav-links { gap: 14px; }
+      .cell-tool { min-width: unset; flex: 1 1 calc(50% - var(--gap)); }
+    }
+  </style>
 </head>
 <body>
-  <div id="site-nav-placeholder"></div>
 
-  <div class="router-wrap" style="position:relative; overflow:hidden;">
-    <svg class="hero-trace" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M -40 90 L 200 90 L 250 50 L 1240 50" fill="none" stroke="#2A8F79" stroke-width="2"/>
-      <path d="M -40 150 L 160 150 L 210 110 L 480 110 L 530 70 L 1240 70" fill="none" stroke="#2A8F79" stroke-width="2"/>
-      <path d="M -40 700 L 220 700 L 270 740 L 1240 740" fill="none" stroke="#2A8F79" stroke-width="2"/>
-      <path d="M -40 760 L 180 760 L 230 720 L 1240 720" fill="none" stroke="#2A8F79" stroke-width="2"/>
-      <circle cx="250" cy="50" r="5" fill="#FF7A52"/>
-      <circle cx="210" cy="110" r="5" fill="#3DD9B8"/>
-      <circle cx="530" cy="70" r="5" fill="#3DD9B8"/>
-      <circle cx="270" cy="740" r="5" fill="#FF7A52"/>
-      <circle cx="230" cy="720" r="5" fill="#3DD9B8"/>
-    </svg>
-    <div class="container" style="text-align:center; margin-bottom:36px; position:relative; z-index:1;">
-      <h1 style="margin-bottom:8px;">Gavin makes stuff</h1>
-      <p style="color:var(--color-muted); font-size:1.05rem;">Pick where you'd like to go.</p>
+  <nav class="top-nav">
+    <span class="nav-logo">Gavin Krohn</span>
+    <ul class="nav-links">
+      <li><a href="/studio/index.html">The Studio</a></li>
+      <li><a href="/portfolio/index.html">Portfolio</a></li>
+      <li><a href="/studio/blog.html">Blog</a></li>
+      <li><a href="/contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-body">
+
+    <div class="bento-main">
+
+      <!-- hero -->
+      <div class="cell-hero">
+        <div class="gms-ghost" aria-hidden="true">GMS</div>
+        <div>
+          <p class="hero-eyebrow">Designer &amp; Maker</p>
+          <h1 class="hero-name">Gavin<br>makes<br>stuff.</h1>
+          <p class="hero-desc">UI/UX design, hardware builds, and the occasional thing that catches fire a little.</p>
+          <p class="hero-location">Vancouver, BC</p>
+        </div>
+      </div>
+
+      <!-- The Studio -->
+      <a class="cell" href="/studio/index.html">
+        <div class="cell-top">
+          <div class="cell-icon-wrap">
+            <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <span class="cell-arrow">↗</span>
+        </div>
+        <div class="cell-body">
+          <p class="cell-label">Workshop</p>
+          <p class="cell-name">The Studio</p>
+          <p class="cell-desc">Projects, builds, files to download, and steps to follow.</p>
+        </div>
+      </a>
+
+      <!-- Portfolio -->
+      <a class="cell" href="/portfolio/index.html">
+        <div class="cell-top">
+          <div class="cell-icon-wrap">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <span class="cell-arrow">↗</span>
+        </div>
+        <div class="cell-body">
+          <p class="cell-label">Professional</p>
+          <p class="cell-name">Portfolio</p>
+          <p class="cell-desc">Selected work, problems solved, skills behind them.</p>
+        </div>
+      </a>
+
+      <!-- Blog -->
+      <a class="cell" href="/studio/blog.html">
+        <div class="cell-top">
+          <div class="cell-icon-wrap">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <span class="cell-arrow">↗</span>
+        </div>
+        <div class="cell-body">
+          <p class="cell-label">Writing</p>
+          <p class="cell-name">Blog</p>
+          <p class="cell-desc">Stories behind the builds, lessons learned, and what's next.</p>
+        </div>
+      </a>
+
+      <!-- Contact -->
+      <a class="cell" href="/contact.html">
+        <div class="cell-top">
+          <div class="cell-icon-wrap">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <span class="cell-arrow">↗</span>
+        </div>
+        <div class="cell-body">
+          <p class="cell-label">Get in touch</p>
+          <p class="cell-name">Contact</p>
+          <p class="cell-desc">LinkedIn, Dribbble, email — find me where it makes sense.</p>
+        </div>
+      </a>
+
+    </div><!-- /bento-main -->
+
+    <!-- tools row -->
+    <div class="tools-section">
+      <p class="tools-label">Tools</p>
+      <div class="tools-row">
+
+        <a class="cell-tool" href="/scout/">
+          <div class="cell-icon-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><polyline points="11,8 11,14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </div>
+          <div class="tool-info">
+            <p class="tool-name">Scout</p>
+            <p class="tool-desc">AI-powered job analysis</p>
+          </div>
+          <span class="tool-badge private">Private</span>
+        </a>
+
+        <!-- add future tools here — copy the .cell-tool block above -->
+
+      </div>
     </div>
 
-    <div class="router-grid" style="position:relative; z-index:1;">
-      <a class="router-card" href="/studio/index.html" style="text-decoration:none; color:inherit;">
-        <h2>The Studio</h2>
-        <p>Projects, builds, and a blog about everything that has gone wrong (and occasionally right) along the way. Open to anyone who likes making things.</p>
-      </a>
-      <a class="router-card" href="/portfolio/index.html" style="text-decoration:none; color:inherit;">
-        <h2>Portfolio</h2>
-        <p>A professional look at the projects I've built, the problems they solved, and the skills behind them.</p>
-      </a>
-    </div>
-  </div>
+  </div><!-- /page-body -->
 
-  <footer class="site-footer">
-    <div class="container"><span>© 2026 Gavin makes stuff</span></div>
-  </footer>
-
-  <script src="/js/shared.js"></script>
-  <script>injectNav(null);</script>
 </body>
 </html>
