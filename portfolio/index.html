@@ -5,41 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gavin Krohn — Portfolio</title>
   <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body class="portfolio">
+<body>
   <div id="site-nav-placeholder"></div>
 
-  <header class="hero">
-    <div class="container">
-      <div class="bio-section">
-        <img src="/images/site/headshot-placeholder.svg" alt="Headshot — replace with a real photo" style="width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--color-ink-raised);">
-        <div>
-          <h1 style="margin-bottom:6px;">Gavin Krohn</h1>
-          <p class="lede" style="margin-bottom:0;">Replace this with a short professional summary — your background, the kind of work you're looking for, and a couple of skills to highlight. Two to three sentences is plenty.</p>
-        </div>
+  <div class="container">
+    <div class="bio-section">
+      <img src="/images/site/headshot-placeholder.svg" alt="Gavin Krohn — replace with a real photo">
+      <div>
+        <p class="hero-eyebrow" style="margin-top:16px;">Designer &amp; Maker</p>
+        <h1>Gavin Krohn</h1>
+        <p>Replace this with a short professional summary — your background, the kind of work you're looking for, and the skills you most want to highlight. Two to three sentences is plenty.</p>
       </div>
     </div>
-  </header>
+  </div>
 
-  <section class="section" style="padding-top:16px;">
+  <section class="section" style="padding-top:0;">
     <div class="container">
       <div class="section-heading"><h2>Selected projects</h2></div>
-      <div id="portfolio-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
+      <div id="portfolio-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
     </div>
   </section>
 
   <footer class="site-footer">
-    <div class="container"><span>© 2026 Gavin Krohn</span></div>
+    <div class="container">
+      <span>© 2026 Gavin Krohn</span>
+      <a href="mailto:REPLACE_WITH_EMAIL" style="color:var(--color-muted);">REPLACE_WITH_EMAIL</a>
+    </div>
   </footer>
 
   <script src="/js/shared.js"></script>
   <script>
-    injectNav('portfolio');
+    injectNav('portfolio', false);
     (async function () {
-      try { var res = await fetch('/data/projects.json'); initProjects(await res.json()); } catch (e) { console.error(e); }
-      renderProjectCards('portfolio-projects-grid', 'portfolio', '/portfolio/project.html');
+      try { var r = await fetch('/data/projects.json'); initProjects(await r.json()); } catch(e) { console.error(e); }
+      renderProjectCards('portfolio-grid', 'portfolio', '/portfolio/project.html');
     })();
   </script>
 </body>
