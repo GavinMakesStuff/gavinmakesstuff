@@ -3,13 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Projects — The Studio</title>
+  <title>Projects — Gavin makes stuff</title>
   <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div id="site-nav-placeholder"></div>
+  <nav class="site-nav">
+    <div class="container">
+      <a class="logo" href="/public/index.html">Gavin makes stuff</a>
+      <ul class="nav-links">
+        <li><a href="/public/index.html">Home</a></li>
+        <li><a href="/public/projects.html" class="active">Projects</a></li>
+        <li><a href="/public/blog.html">Blog</a></li>
+        <li><a href="https://www.paypal.com/" class="btn btn-donate" target="_blank" rel="noopener">Buy me a coffee</a></li>
+      </ul>
+    </div>
+  </nav>
 
   <header class="hero" style="padding-bottom:24px;">
     <div class="container">
@@ -25,15 +35,20 @@
   </section>
 
   <footer class="site-footer">
-    <div class="container"><span>© 2026 Gavin makes stuff</span></div>
+    <div class="container">
+      <span>© 2026 Gavin makes stuff</span>
+      <span>Built with plain HTML, CSS, and JS</span>
+    </div>
   </footer>
 
   <script src="/js/shared.js"></script>
   <script>
-    injectNav('studio');
     (async function () {
-      try { var res = await fetch('/data/projects.json'); initProjects(await res.json()); } catch (e) { console.error(e); }
-      renderProjectCards('all-projects-grid', 'studio', '/studio/project.html');
+      try {
+        const res = await fetch('/data/projects.json');
+        initProjects(await res.json());
+      } catch (e) { console.error('Data load failed', e); }
+      renderProjectCards('all-projects-grid', 'public', '/public/project.html');
     })();
   </script>
 </body>
