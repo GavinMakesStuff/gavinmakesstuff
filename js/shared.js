@@ -5,7 +5,6 @@
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
-
 function initProjects(data) { window.PROJECTS = data.projects || []; }
 function initBlog(data)     { window.BLOG_POSTS = data.posts || []; }
 
@@ -18,46 +17,47 @@ function renderMarkdown(text) {
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
   }
   var lines = String(text).split('\n');
-  var html = '', inList = false, paragraphBuffer = [];
-  function flushParagraph() {
-    if (paragraphBuffer.length) {
-      html += '<p>' + inlineFormat(paragraphBuffer.join(' ')) + '</p>';
-      paragraphBuffer = [];
-    }
+  var html = '', inList = false, buf = [];
+  function flush() {
+    if (buf.length) { html += '<p>' + inlineFormat(buf.join(' ')) + '</p>'; buf = []; }
   }
   lines.forEach(function (line) {
-    var trimmed = line.trim();
-    if (trimmed === '') { flushParagraph(); return; }
-    var h2 = trimmed.match(/^##\s+(.*)/);
-    var h3 = trimmed.match(/^###\s+(.*)/);
-    var li = trimmed.match(/^[-*]\s+(.*)/);
-    if (h2)       { flushParagraph(); if (inList) { html += '</ul>'; inList = false; } html += '<h2>' + inlineFormat(h2[1]) + '</h2>'; }
-    else if (h3)  { flushParagraph(); if (inList) { html += '</ul>'; inList = false; } html += '<h3>' + inlineFormat(h3[1]) + '</h3>'; }
-    else if (li)  { flushParagraph(); if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inlineFormat(li[1]) + '</li>'; }
-    else          { if (inList) { html += '</ul>'; inList = false; } paragraphBuffer.push(trimmed); }
+    var t = line.trim();
+    if (!t) { flush(); return; }
+    var h2 = t.match(/^##\s+(.*)/), h3 = t.match(/^###\s+(.*)/), li = t.match(/^[-*]\s+(.*)/);
+    if (h2)      { flush(); if (inList) { html += '</ul>'; inList = false; } html += '<h2>' + inlineFormat(h2[1]) + '</h2>'; }
+    else if (h3) { flush(); if (inList) { html += '</ul>'; inList = false; } html += '<h3>' + inlineFormat(h3[1]) + '</h3>'; }
+    else if (li) { flush(); if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inlineFormat(li[1]) + '</li>'; }
+    else         { if (inList) { html += '</ul>'; inList = false; } buf.push(t); }
   });
-  flushParagraph();
+  flush();
   if (inList) html += '</ul>';
   return html;
 }
 
-/* ---- Shared nav ---- */
-// currentSection: 'studio' | 'portfolio' | 'contact'
-function buildNav(currentSection) {
+/* ---- Nav builder ---- */
+// section: 'studio' | 'portfolio' | 'contact' | null
+// showDonate: boolean — adds donate link for studio pages
+function buildNav(section, showDonate) {
   var links = [
-    { label: 'The Studio', href: '/studio/index.html', key: 'studio' },
+    { label: 'The Studio', href: '/studio/index.html',    key: 'studio' },
     { label: 'Portfolio',  href: '/portfolio/index.html', key: 'portfolio' },
-    { label: 'Contact',    href: '/contact.html', key: 'contact' },
+    { label: 'Blog',       href: '/studio/blog.html',     key: 'blog' },
+    { label: 'Contact',    href: '/contact.html',         key: 'contact' },
   ];
+  var donateHtml = showDonate
+    ? '<li><a href="https://www.paypal.com/" class="btn btn-donate" target="_blank" rel="noopener">Support</a></li>'
+    : '';
   return (
     '<nav class="site-nav">' +
       '<div class="container">' +
         '<a class="logo" href="/index.html">Gavin makes stuff</a>' +
-        '<button class="nav-toggle" aria-label="Open menu" onclick="toggleMobileNav()">☰</button>' +
+        '<button class="nav-toggle" aria-label="Toggle menu" onclick="toggleMobileNav()">☰</button>' +
         '<ul class="nav-links" id="main-nav-links">' +
           links.map(function (l) {
-            return '<li><a href="' + l.href + '"' + (l.key === currentSection ? ' class="active"' : '') + '>' + l.label + '</a></li>';
+            return '<li><a href="' + l.href + '"' + (l.key === section ? ' class="active"' : '') + '>' + l.label + '</a></li>';
           }).join('') +
+          donateHtml +
         '</ul>' +
       '</div>' +
     '</nav>'
@@ -69,15 +69,16 @@ function toggleMobileNav() {
   if (el) el.classList.toggle('open');
 }
 
-function injectNav(currentSection) {
-  var placeholder = document.getElementById('site-nav-placeholder');
-  if (placeholder) placeholder.outerHTML = buildNav(currentSection);
+function injectNav(section, showDonate) {
+  var ph = document.getElementById('site-nav-placeholder');
+  if (ph) ph.outerHTML = buildNav(section, showDonate);
 }
 
 /* ---- Project cards ---- */
 function renderProjectCards(containerId, section, detailPageUrl, limit) {
   var container = document.getElementById(containerId);
   if (!container) return;
+  var dataKey = (section === 'studio') ? 'public' : 'portfolio';
   var visible = (window.PROJECTS || []).filter(function (p) {
     if (p.draft) return false;
     return section === 'studio' ? p.showOnPublic : p.showOnPortfolio;
@@ -88,7 +89,7 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
     return;
   }
   container.innerHTML = visible.map(function (project) {
-    var content = project[section === 'studio' ? 'public' : 'portfolio'];
+    var content = project[dataKey];
     var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
     return (
       '<div class="card">' +
@@ -105,8 +106,9 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
   }).join('');
 }
 
-/* ---- Project detail page ---- */
+/* ---- Project detail ---- */
 function renderProjectDetail(section) {
+  var dataKey = (section === 'studio') ? 'public' : 'portfolio';
   var id = getQueryParam('id');
   var project = (window.PROJECTS || []).find(function (p) { return p.id === id; });
   var root = document.getElementById('project-detail-root');
@@ -115,25 +117,26 @@ function renderProjectDetail(section) {
     root.innerHTML = '<div class="empty-state">Couldn\'t find that project.</div>';
     return;
   }
-  var content = project[section === 'studio' ? 'public' : 'portfolio'];
+  var content = project[dataKey];
   var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
 
-  var appLinkHtml = (project.appUrl)
-    ? '<div style="margin-bottom:20px;"><a class="btn btn-primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a></div>'
+  var appLinkHtml = project.appUrl
+    ? '<div class="app-link-row"><a class="btn btn-primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a></div>'
     : '';
 
   var galleryHtml = (content.gallery && content.gallery.length)
     ? '<div class="gallery-grid">' +
         content.gallery.map(function (src) {
-          return '<img src="' + src + '" alt="' + content.title + ' gallery image" onclick="openLightbox(\'' + src + '\')" tabindex="0">';
+          return '<img src="' + src + '" alt="' + content.title + '" onclick="openLightbox(\'' + src + '\')" tabindex="0">';
         }).join('') +
       '</div>'
     : '';
 
   var downloadsHtml = (content.downloads && content.downloads.length)
-    ? '<div class="downloads-box"><h3>Files</h3>' +
+    ? '<div class="downloads-box"><h3>Downloads</h3>' +
         content.downloads.map(function (d) {
-          return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div><a class="btn btn-primary" href="' + d.file + '" download>Download</a></div>';
+          return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
+            '<a class="btn btn-primary" href="' + d.file + '" download>Download</a></div>';
         }).join('') +
       '</div>'
     : '';
@@ -164,9 +167,11 @@ function renderBlogCards(containerId, detailPageUrl, limit) {
     return (
       '<div class="blog-list-item">' +
         '<a href="' + detailPageUrl + '?id=' + post.id + '"><img src="' + post.thumbnail + '" alt="' + post.title + '"></a>' +
-        '<div><div class="post-date">' + formatDate(post.date) + '</div>' +
-        '<h3><a href="' + detailPageUrl + '?id=' + post.id + '">' + post.title + '</a></h3>' +
-        '<p class="card-summary">' + post.summary + '</p></div>' +
+        '<div>' +
+          '<div class="post-date">' + formatDate(post.date) + '</div>' +
+          '<h3><a href="' + detailPageUrl + '?id=' + post.id + '">' + post.title + '</a></h3>' +
+          '<p class="card-summary">' + post.summary + '</p>' +
+        '</div>' +
       '</div>'
     );
   }).join('');
@@ -194,12 +199,12 @@ function formatDate(str) {
 
 /* ---- Lightbox ---- */
 function openLightbox(src) {
-  var overlay = document.getElementById('lightbox-overlay');
-  var img = document.getElementById('lightbox-image');
-  if (!overlay || !img) return;
-  img.src = src; overlay.classList.add('open');
+  var o = document.getElementById('lightbox-overlay');
+  var i = document.getElementById('lightbox-image');
+  if (!o || !i) return;
+  i.src = src; o.classList.add('open');
 }
 function closeLightbox() {
-  var overlay = document.getElementById('lightbox-overlay');
-  if (overlay) overlay.classList.remove('open');
+  var o = document.getElementById('lightbox-overlay');
+  if (o) o.classList.remove('open');
 }
