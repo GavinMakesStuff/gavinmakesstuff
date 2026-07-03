@@ -11,11 +11,11 @@
 <body>
   <nav class="site-nav">
     <div class="container">
-      <a class="logo" href="/public/index.html">Gavin makes stuff</a>
+      <a class="logo" href="/studio/index.html">Gavin makes stuff</a>
       <ul class="nav-links">
-        <li><a href="/public/index.html">Home</a></li>
-        <li><a href="/public/projects.html" class="active">Projects</a></li>
-        <li><a href="/public/blog.html">Blog</a></li>
+        <li><a href="/studio/index.html">Home</a></li>
+        <li><a href="/studio/projects.html" class="active">Projects</a></li>
+        <li><a href="/studio/blog.html">Blog</a></li>
         <li><a href="https://www.paypal.com/" class="btn btn-donate" target="_blank" rel="noopener">Buy me a coffee</a></li>
       </ul>
     </div>
@@ -48,7 +48,7 @@
         const res = await fetch('/data/projects.json');
         initProjects(await res.json());
       } catch (e) { console.error('Data load failed', e); }
-      renderProjectCards('all-projects-grid', 'public', '/public/project.html');
+      renderProjectCards('all-projects-grid', 'studio', '/studio/project.html');
     })();
   </script>
 </body>
