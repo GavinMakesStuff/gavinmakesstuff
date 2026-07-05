@@ -5,82 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Draft — Admin</title>
   <meta name="robots" content="noindex, nofollow">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --ink:#12181c;--ink-raised:#1b232a;--ink-border:#2a343b;
-      --trace:#3dd9b8;--solder:#ff7a52;--paper:#ece8de;--muted:#8b9499;--radius:10px;
-    }
-    *{box-sizing:border-box;}
-    html,body{margin:0;padding:0;background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;font-size:16px;line-height:1.6;}
-    h1,h2,h3{font-family:'Poppins',sans-serif;font-weight:600;margin:0 0 0.4em;}
-    p{margin:0 0 1em;}
-    a{color:var(--trace);}
+    :root{--ink:#0C0D0E;--ink-r:#131416;--ink-r2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--paper:#F2EFE9;--muted:#6B7075;--radius:10px;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+    h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-.02em;}
+    a{color:var(--red);}
     #auth-gate{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px;}
-    .admin-wrap{max-width:960px;margin:0 auto;padding:32px 24px 80px;}
-    .admin-nav{background:var(--ink-raised);border-bottom:1px solid var(--ink-border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-    .admin-nav .logo{font-family:'Poppins',sans-serif;font-weight:600;font-size:1.1rem;}
-    .admin-nav-links{display:flex;gap:20px;align-items:center;}
-    .admin-nav-links a{color:var(--muted);font-size:0.9rem;text-decoration:none;}
-    .admin-nav-links a:hover,.admin-nav-links a.active{color:var(--paper);}
-    .card{background:var(--ink-raised);border:1px solid var(--ink-border);border-radius:var(--radius);padding:28px;margin-bottom:28px;}
-    label{display:block;font-size:0.9rem;font-weight:500;margin-bottom:6px;color:var(--paper);}
-    .hint{font-size:0.82rem;color:var(--muted);margin-top:4px;}
-    input[type=text],textarea,select{width:100%;background:var(--ink);border:1px solid var(--ink-border);border-radius:6px;padding:10px 14px;color:var(--paper);font-family:'Inter',sans-serif;font-size:0.95rem;resize:vertical;}
-    input[type=text]:focus,textarea:focus{outline:2px solid var(--trace);outline-offset:1px;}
-    .field{margin-bottom:20px;}
-    .checkbox-group{display:flex;gap:24px;flex-wrap:wrap;}
-    .checkbox-group label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin:0;}
-    input[type=checkbox]{width:18px;height:18px;accent-color:var(--trace);cursor:pointer;}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;border:1px solid var(--ink-border);background:transparent;color:var(--paper);font-family:'Inter',sans-serif;font-size:0.95rem;font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none;}
-    .btn:hover{background:var(--ink-border);}
-    .btn-primary{background:var(--trace);border-color:var(--trace);color:#08221c;}
-    .btn-primary:hover{background:#34c2a4;}
-    .btn-draft{background:var(--ink-border);border-color:var(--muted);color:var(--paper);}
-    .btn-danger{background:transparent;border-color:#e05555;color:#e05555;}
-    .btn:disabled{opacity:0.5;cursor:not-allowed;}
-    .btn-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px;}
+    .admin-nav{background:var(--ink-r);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+    .admin-nav .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.04em;text-transform:uppercase;}
+    .nav-links{display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
+    .nav-links a{color:var(--muted);font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;text-decoration:none;transition:color .15s;}
+    .nav-links a:hover,.nav-links a.active{color:var(--paper);}
+    #logout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;padding:0;font-family:'Inter',sans-serif;}
+    #user-bar{font-size:.75rem;color:var(--muted);}
+    .admin-wrap{max-width:960px;margin:0 auto;padding:28px 24px 80px;}
+    .card{background:var(--ink-r);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;}
+    label{display:block;font-size:.78rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+    .hint{font-size:.75rem;color:var(--muted);margin-top:4px;}
+    input[type=text],input[type=url],textarea{width:100%;background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--paper);font-family:'Inter',sans-serif;font-size:.9rem;resize:vertical;transition:border-color .15s;}
+    input:focus,textarea:focus{outline:none;border-color:var(--red);}
+    .field{margin-bottom:18px;}
+    .checkbox-group{display:flex;gap:20px;flex-wrap:wrap;}
+    .checkbox-group label,.check-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;font-size:.88rem;letter-spacing:0;text-transform:none;color:var(--paper);margin:0;}
+    input[type=checkbox]{width:16px;height:16px;accent-color:var(--red);cursor:pointer;}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--paper);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none;}
+    .btn:hover{background:var(--border);}
+    .btn-primary{background:var(--red);border-color:var(--red);color:#fff;}
+    .btn-primary:hover{background:#bc251c;}
+    .btn-ghost{background:var(--border);border-color:var(--muted);}
+    .btn-danger{border-color:#e05555;color:#e05555;}
+    .btn-danger:hover{background:rgba(224,85,85,.1);}
+    .btn:disabled{opacity:.45;cursor:not-allowed;}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px;}
+    .section-title{font-size:1.4rem;margin-bottom:6px;}
+    .section-sub{color:var(--muted);margin-bottom:22px;font-size:.9rem;}
+    .divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
     #result-area{display:none;}
-    .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
-    @media(max-width:680px){.result-grid{grid-template-columns:1fr;}}
-    .result-panel{background:var(--ink-raised);border:1px solid var(--ink-border);border-radius:var(--radius);overflow:hidden;}
-    .result-panel-head{padding:14px 18px;border-bottom:1px solid var(--ink-border);display:flex;align-items:center;justify-content:space-between;}
-    .result-panel-head h3{margin:0;font-size:1rem;}
-    .panel-badge{font-size:0.72rem;padding:3px 9px;border-radius:100px;font-weight:500;}
-    .badge-public{background:rgba(61,217,184,0.12);color:var(--trace);border:1px solid rgba(61,217,184,0.3);}
-    .badge-portfolio{background:rgba(255,122,82,0.12);color:var(--solder);border:1px solid rgba(255,122,82,0.3);}
-    .badge-blog{background:rgba(148,120,255,0.12);color:#a78bff;border:1px solid rgba(148,120,255,0.3);}
-    .result-panel textarea{border:none;border-radius:0;background:var(--ink);min-height:240px;font-size:0.88rem;line-height:1.5;padding:16px;}
-    .seo-box{background:rgba(61,217,184,0.05);border:1px solid rgba(61,217,184,0.15);border-radius:8px;padding:14px 16px;margin-top:12px;font-size:0.85rem;}
-    .seo-box strong{color:var(--trace);}
-    .seo-tag{display:inline-block;background:var(--ink-border);border-radius:4px;padding:2px 8px;margin:2px;font-size:0.78rem;}
-    .status-bar{padding:14px 18px;border-radius:8px;margin-bottom:20px;background:rgba(61,217,184,0.08);border:1px solid rgba(61,217,184,0.2);font-size:0.9rem;display:none;align-items:center;gap:10px;}
+    .result-grid{display:grid;gap:16px;}
+    .result-panel{background:var(--ink-r);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+    .result-panel-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .result-panel-head h3{margin:0;font-size:.95rem;}
+    .panel-badge{font-size:.65rem;padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+    .badge-studio{background:rgba(61,217,184,.08);color:#3dd9b8;border:1px solid rgba(61,217,184,.2);}
+    .badge-portfolio{background:rgba(217,48,37,.08);color:var(--red);border:1px solid rgba(217,48,37,.2);}
+    .badge-blog{background:rgba(148,120,255,.12);color:#a78bff;border:1px solid rgba(148,120,255,.3);}
+    .result-panel textarea{border:none;border-radius:0;background:var(--ink);min-height:220px;font-size:.85rem;line-height:1.55;padding:14px;width:100%;color:var(--paper);resize:vertical;font-family:'Inter',sans-serif;}
+    .result-panel textarea:focus{outline:none;}
+    .result-panel input[type=text]{border:none;border-bottom:1px solid var(--border);border-radius:0;font-size:.88rem;padding:10px 14px;}
+    .panel-field-label{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 14px 4px;border-bottom:1px solid var(--border);}
+    .seo-box{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.15);border-radius:8px;padding:14px;margin:10px 14px 14px;font-size:.82rem;}
+    .seo-box strong{color:#16a34a;}
+    .seo-tag{display:inline-block;background:var(--border);border-radius:4px;padding:2px 7px;margin:2px;font-size:.75rem;}
+    .status-bar{padding:12px 16px;border-radius:8px;margin-bottom:18px;background:rgba(217,48,37,.06);border:1px solid rgba(217,48,37,.15);font-size:.85rem;display:none;align-items:center;gap:10px;}
     .status-bar.visible{display:flex;}
-    .status-bar.error{background:rgba(224,85,85,0.08);border-color:rgba(224,85,85,0.3);color:#e05555;}
-    .spinner{width:18px;height:18px;border:2px solid var(--ink-border);border-top-color:var(--trace);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+    .status-bar.ok{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2);color:#16a34a;}
+    .status-bar.error{background:rgba(224,85,85,.08);border-color:rgba(224,85,85,.3);color:#e05555;}
+    .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
     @keyframes spin{to{transform:rotate(360deg);}}
-    .section-title{font-size:1.5rem;margin-bottom:6px;}
-    .section-sub{color:var(--muted);margin-bottom:24px;font-size:0.95rem;}
-    .divider{border:none;border-top:1px solid var(--ink-border);margin:32px 0;}
-    #user-bar{font-size:0.85rem;color:var(--muted);}
-    #logout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0;text-decoration:underline;}
-    #logout-btn:hover{color:var(--paper);}
   </style>
 </head>
 <body>
 
 <div id="auth-gate">
-  <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+  <div class="spinner" style="width:28px;height:28px;border-width:3px;"></div>
   <p style="color:var(--muted);">Checking login…</p>
 </div>
 
 <div id="app" style="display:none;">
   <nav class="admin-nav">
-    <span class="logo">Gavin makes stuff — Admin</span>
-    <div class="admin-nav-links">
+    <span class="logo">Admin</span>
+    <div class="nav-links">
       <a href="/admin/ai-draft.html" class="active">AI Draft</a>
-      <a href="/admin/manage.html">Manage Projects</a>
-      <a href="/studio/index.html" target="_blank">View Site</a>
+      <a href="/admin/manage.html">Manage</a>
+      <a href="/admin/analytics.html">Analytics</a>
+      <a href="/studio/index.html" target="_blank">View Site ↗</a>
       <span id="user-bar"></span>
       <button id="logout-btn" onclick="logout()">Log out</button>
     </div>
@@ -88,7 +88,7 @@
 
   <div class="admin-wrap">
     <h1 class="section-title">Create a new project</h1>
-    <p class="section-sub">Fill in the details below and AI will write the selected versions for you. You can edit them before saving.</p>
+    <p class="section-sub">Describe your project and AI will write the write-ups for the sections you select. Edit anything before saving.</p>
 
     <div class="card">
       <div class="field">
@@ -97,24 +97,24 @@
       </div>
       <div class="field">
         <label for="project-summary">Describe your project in plain language</label>
-        <textarea id="project-summary" rows="6" placeholder="What did you build? How did you build it? What went wrong? What are you proud of? Write however feels natural — the more detail the better."></textarea>
-        <p class="hint">You don't need to write well here. Just describe it like you'd explain it to a friend.</p>
+        <textarea id="project-summary" rows="6" placeholder="What did you build? How did it work? What went wrong? What are you proud of? Write however feels natural — the AI will handle the formatting."></textarea>
+        <p class="hint">No need to write well here. Just describe it like you'd explain it to a friend.</p>
       </div>
       <div class="field">
         <label for="project-tags">Tags / skills involved (comma separated)</label>
         <input type="text" id="project-tags" placeholder="e.g. arduino, 3d-printing, c++, beginner-friendly">
       </div>
       <div class="field">
-        <label for="project-app-url">Live app URL (optional)</label>
-        <input type="text" id="project-app-url" placeholder="e.g. /scout/ or https://example.com">
-        <p class="hint">If this project has a live app, adds a "Try the app" button on the project page.</p>
+        <label for="project-app-url">Live app / project URL (optional)</label>
+        <input type="url" id="project-app-url" placeholder="e.g. /scout/ or https://example.com">
+        <p class="hint">Adds a "Try the app" button on the project detail page.</p>
       </div>
       <div class="field">
         <label>Generate write-ups for:</label>
         <div class="checkbox-group">
-          <label><input type="checkbox" id="show-public" checked onchange="updatePanels()"> The Studio (public)</label>
-          <label><input type="checkbox" id="show-portfolio" checked onchange="updatePanels()"> Portfolio</label>
-          <label><input type="checkbox" id="gen-blog" onchange="updatePanels()"> Blog post</label>
+          <label class="check-label"><input type="checkbox" id="show-public" checked onchange="updatePanels()"> The Studio (public)</label>
+          <label class="check-label"><input type="checkbox" id="show-portfolio" checked onchange="updatePanels()"> Portfolio</label>
+          <label class="check-label"><input type="checkbox" id="gen-blog" onchange="updatePanels()"> Blog post</label>
         </div>
       </div>
       <div class="btn-row">
@@ -124,277 +124,188 @@
 
     <div class="status-bar" id="status-bar">
       <div class="spinner" id="status-spinner"></div>
-      <span id="status-text">Writing your project write-ups…</span>
+      <span id="status-text"></span>
     </div>
 
     <div id="result-area">
       <hr class="divider">
-      <h2 class="section-title" style="font-size:1.3rem;margin-bottom:4px;">Review &amp; edit</h2>
-      <p class="section-sub" style="margin-bottom:20px;">Edit anything before saving — the text boxes are fully editable.</p>
-
+      <h2 class="section-title" style="font-size:1.2rem;margin-bottom:4px;">Review &amp; edit</h2>
+      <p class="section-sub" style="margin-bottom:18px;">Edit anything before saving — the text boxes are fully editable.</p>
       <div class="result-grid" id="result-panels"></div>
-
-      <div class="btn-row" style="margin-top:24px;">
+      <div class="btn-row" style="margin-top:20px;">
         <button class="btn btn-primary" id="publish-btn" onclick="saveProject(false)">Publish to site</button>
-        <button class="btn btn-draft" id="draft-btn" onclick="saveProject(true)">Save as draft</button>
+        <button class="btn btn-ghost" id="draft-btn" onclick="saveProject(true)">Save as draft</button>
         <button class="btn btn-danger" onclick="resetForm()">Start over</button>
       </div>
-      <p class="hint" style="margin-top:10px;">
-        <strong>Publish:</strong> goes live immediately. &nbsp;
-        <strong>Save as draft:</strong> saved but hidden from visitors — edit and publish later via Manage Projects.
-      </p>
+      <p class="hint" style="margin-top:10px;"><strong>Publish:</strong> goes live in ~30 seconds. &nbsp;<strong>Save as draft:</strong> hidden from visitors — edit and publish later in Manage.</p>
     </div>
   </div>
 </div>
 
 <script>
-  var currentToken = sessionStorage.getItem('gh_token');
-  var currentUsername = sessionStorage.getItem('gh_username');
+var currentToken=sessionStorage.getItem('gh_token');
+var currentUsername=sessionStorage.getItem('gh_username');
 
-  function showLoginGate() {
-    document.getElementById('auth-gate').innerHTML =
-      '<h2 style="font-family:\'Poppins\',sans-serif;margin-bottom:6px;">Admin Login</h2>' +
-      '<p style="color:var(--muted);max-width:320px;text-align:center;">Log in with the GitHub account that owns this site.</p>' +
-      '<button class="btn btn-primary" onclick="loginWithGitHub()">Log in with GitHub</button>';
-    document.getElementById('auth-gate').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-  }
-
-  function showApp() {
-    document.getElementById('auth-gate').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('user-bar').textContent = currentUsername || '';
-  }
-
-  function loginWithGitHub() {
-    var popup = window.open('/api/auth', 'github-oauth', 'width=600,height=700');
-    if (!popup) { showStatus('Your browser blocked the login popup. Allow popups and try again.', true); return; }
-    function handler(e) {
-      if (typeof e.data !== 'string') return;
-      if (e.data === 'authorizing:github') { popup.postMessage('authorizing:github', '*'); return; }
-      if (e.data.indexOf('authorization:github:success:') === 0) {
-        var payload = JSON.parse(e.data.slice('authorization:github:success:'.length));
-        currentToken = payload.token;
-        sessionStorage.setItem('gh_token', currentToken);
-        window.removeEventListener('message', handler);
-        fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + currentToken } })
-          .then(function (r) { return r.json(); })
-          .then(function (u) { currentUsername = u.login || ''; sessionStorage.setItem('gh_username', currentUsername); showApp(); })
-          .catch(function () { showApp(); });
-      }
+function showLoginGate(){
+  document.getElementById('auth-gate').innerHTML=
+    '<h2 style="font-family:\'Space Grotesk\',sans-serif;margin-bottom:6px;">Admin Login</h2>'+
+    '<p style="color:var(--muted);max-width:300px;text-align:center;font-size:.9rem;">Log in with the GitHub account that owns this site.</p>'+
+    '<button class="btn btn-primary" onclick="loginWithGitHub()">Log in with GitHub</button>';
+  document.getElementById('auth-gate').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function showApp(){
+  document.getElementById('auth-gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-bar').textContent=currentUsername||'';
+}
+function loginWithGitHub(){
+  var popup=window.open('/api/auth','github-oauth','width=600,height=700');
+  if(!popup){showStatus('Popup blocked. Allow popups and try again.',true);return;}
+  function handler(e){
+    if(typeof e.data!=='string')return;
+    if(e.data==='authorizing:github'){popup.postMessage('authorizing:github','*');return;}
+    if(e.data.indexOf('authorization:github:success:')===0){
+      var payload=JSON.parse(e.data.slice('authorization:github:success:'.length));
+      currentToken=payload.token;
+      sessionStorage.setItem('gh_token',currentToken);
+      window.removeEventListener('message',handler);
+      fetch('https://api.github.com/user',{headers:{Authorization:'Bearer '+currentToken}})
+        .then(function(r){return r.json();})
+        .then(function(u){currentUsername=u.login||'';sessionStorage.setItem('gh_username',currentUsername);showApp();})
+        .catch(function(){showApp();});
     }
-    window.addEventListener('message', handler);
   }
+  window.addEventListener('message',handler);
+}
+function logout(){sessionStorage.removeItem('gh_token');sessionStorage.removeItem('gh_username');currentToken=null;currentUsername=null;showLoginGate();}
+if(currentToken){showApp();}else{showLoginGate();}
 
-  function logout() {
-    sessionStorage.removeItem('gh_token'); sessionStorage.removeItem('gh_username');
-    currentToken = null; currentUsername = null; showLoginGate();
-  }
+function showStatus(msg,isError,isOk){
+  var bar=document.getElementById('status-bar');
+  document.getElementById('status-text').textContent=msg;
+  document.getElementById('status-spinner').style.display=(isError||isOk)?'none':'block';
+  bar.className='status-bar visible'+(isError?' error':isOk?' ok':'');
+}
+function hideStatus(){document.getElementById('status-bar').className='status-bar';}
 
-  if (currentToken) { showApp(); } else { showLoginGate(); }
+function updatePanels(){
+  var showPublic=document.getElementById('show-public').checked;
+  var showPortfolio=document.getElementById('show-portfolio').checked;
+  var genBlog=document.getElementById('gen-blog').checked;
+  ['pub-panel','port-panel','blog-panel'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.style.display=id==='pub-panel'?(showPublic?'':'none'):id==='port-panel'?(showPortfolio?'':'none'):(genBlog?'':'none');
+  });
+  var cols=[showPublic,showPortfolio,genBlog].filter(Boolean).length;
+  var grid=document.getElementById('result-panels');
+  if(grid)grid.style.gridTemplateColumns=cols===1?'1fr':cols>=2?'1fr 1fr':'1fr';
+}
 
-  // ── Dynamic panels based on section selection ─────────────────────────────
-  function updatePanels() {
-    var showPublic    = document.getElementById('show-public').checked;
-    var showPortfolio = document.getElementById('show-portfolio').checked;
-    var genBlog       = document.getElementById('gen-blog').checked;
-    var panels = document.getElementById('result-panels');
-    if (!panels) return;
-    // Update column count
-    var cols = [showPublic, showPortfolio, genBlog].filter(Boolean).length;
-    panels.style.gridTemplateColumns = cols === 1 ? '1fr' : cols === 2 ? '1fr 1fr' : 'repeat(3, 1fr)';
-    // Show/hide each panel
-    ['pub-panel', 'port-panel', 'blog-panel'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.style.display =
-        id === 'pub-panel'  ? (showPublic    ? '' : 'none') :
-        id === 'port-panel' ? (showPortfolio ? '' : 'none') :
-                              (genBlog       ? '' : 'none');
-    });
-  }
+function buildResultPanels(showPublic,showPortfolio,genBlog){
+  var html='';
+  if(showPublic)html+=
+    '<div class="result-panel" id="pub-panel">'+
+      '<div class="result-panel-head"><h3>The Studio version</h3><span class="panel-badge badge-studio">Casual</span></div>'+
+      '<div class="panel-field-label">CARD TITLE</div><input type="text" id="pub-title">'+
+      '<div class="panel-field-label">CARD SUMMARY</div><input type="text" id="pub-summary">'+
+      '<div class="panel-field-label">FULL DESCRIPTION (markdown)</div>'+
+      '<textarea id="pub-description"></textarea>'+
+    '</div>';
+  if(showPortfolio)html+=
+    '<div class="result-panel" id="port-panel">'+
+      '<div class="result-panel-head"><h3>Portfolio version</h3><span class="panel-badge badge-portfolio">Professional</span></div>'+
+      '<div class="panel-field-label">CARD TITLE</div><input type="text" id="port-title">'+
+      '<div class="panel-field-label">CARD SUMMARY</div><input type="text" id="port-summary">'+
+      '<div class="panel-field-label">FULL DESCRIPTION (markdown)</div>'+
+      '<textarea id="port-description"></textarea>'+
+    '</div>';
+  if(genBlog)html+=
+    '<div class="result-panel" id="blog-panel">'+
+      '<div class="result-panel-head"><h3>Blog post</h3><span class="panel-badge badge-blog">Blog</span></div>'+
+      '<div class="panel-field-label">POST TITLE</div><input type="text" id="blog-title">'+
+      '<div class="panel-field-label">SUMMARY</div><input type="text" id="blog-summary">'+
+      '<div class="panel-field-label">POST BODY (markdown)</div>'+
+      '<textarea id="blog-body"></textarea>'+
+      '<div id="seo-box"></div>'+
+    '</div>';
+  document.getElementById('result-panels').innerHTML=html;
+  updatePanels();
+}
 
-  function buildResultPanels(showPublic, showPortfolio, genBlog) {
-    var html = '';
-    if (showPublic) html +=
-      '<div class="result-panel" id="pub-panel">' +
-        '<div class="result-panel-head"><h3>The Studio (public)</h3><span class="panel-badge badge-public">Casual</span></div>' +
-        '<div style="padding:14px 16px 0;border-bottom:1px solid var(--ink-border);">' +
-          '<div class="field" style="margin-bottom:12px;"><label style="font-size:0.8rem;color:var(--muted);">CARD TITLE</label><input type="text" id="pub-title"></div>' +
-          '<div class="field" style="margin-bottom:12px;"><label style="font-size:0.8rem;color:var(--muted);">CARD SUMMARY</label><input type="text" id="pub-summary"></div>' +
-        '</div>' +
-        '<div style="padding:10px 14px 4px;border-bottom:1px solid var(--ink-border);"><label style="font-size:0.8rem;color:var(--muted);">FULL DESCRIPTION (markdown)</label></div>' +
-        '<textarea id="pub-description"></textarea>' +
-      '</div>';
-
-    if (showPortfolio) html +=
-      '<div class="result-panel" id="port-panel">' +
-        '<div class="result-panel-head"><h3>Portfolio</h3><span class="panel-badge badge-portfolio">Professional</span></div>' +
-        '<div style="padding:14px 16px 0;border-bottom:1px solid var(--ink-border);">' +
-          '<div class="field" style="margin-bottom:12px;"><label style="font-size:0.8rem;color:var(--muted);">CARD TITLE</label><input type="text" id="port-title"></div>' +
-          '<div class="field" style="margin-bottom:12px;"><label style="font-size:0.8rem;color:var(--muted);">CARD SUMMARY</label><input type="text" id="port-summary"></div>' +
-        '</div>' +
-        '<div style="padding:10px 14px 4px;border-bottom:1px solid var(--ink-border);"><label style="font-size:0.8rem;color:var(--muted);">FULL DESCRIPTION (markdown)</label></div>' +
-        '<textarea id="port-description"></textarea>' +
-      '</div>';
-
-    if (genBlog) html +=
-      '<div class="result-panel" id="blog-panel">' +
-        '<div class="result-panel-head"><h3>Blog post</h3><span class="panel-badge badge-blog">Blog</span></div>' +
-        '<div style="padding:14px 16px 0;border-bottom:1px solid var(--ink-border);">' +
-          '<div class="field" style="margin-bottom:12px;"><label style="font-size:0.8rem;color:var(--muted);">POST TITLE</label><input type="text" id="blog-title"></div>' +
-          '<div class="field" style="margin-bottom:12px;"><label style="font-size:0.8rem;color:var(--muted);">SUMMARY</label><input type="text" id="blog-summary"></div>' +
-        '</div>' +
-        '<div style="padding:10px 14px 4px;border-bottom:1px solid var(--ink-border);"><label style="font-size:0.8rem;color:var(--muted);">POST BODY (markdown)</label></div>' +
-        '<textarea id="blog-body"></textarea>' +
-        '<div id="seo-box" style="padding:14px 16px;"></div>' +
-      '</div>';
-
-    document.getElementById('result-panels').innerHTML = html;
-    updatePanels();
-  }
-
-  // ── Generate ──────────────────────────────────────────────────────────────
-  async function generateDraft() {
-    var name    = document.getElementById('project-name').value.trim();
-    var summary = document.getElementById('project-summary').value.trim();
-    var tags    = document.getElementById('project-tags').value.trim();
-    var showPublic    = document.getElementById('show-public').checked;
-    var showPortfolio = document.getElementById('show-portfolio').checked;
-    var genBlog       = document.getElementById('gen-blog').checked;
-
-    if (!name || !summary) { showStatus('Please fill in the project name and description first.', true); return; }
-    if (!showPublic && !showPortfolio) { showStatus('Select at least one section to generate.', true); return; }
-
-    setLoading(true);
-    showStatus('Writing your project write-ups… this takes about 15–20 seconds.', false);
-
-    try {
-      var res = await fetch('/api/ai-draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken },
-        body: JSON.stringify({
-          projectName: name, summary: summary, tags: tags,
-          showOnPublic: showPublic, showOnPortfolio: showPortfolio,
-          generateBlogPost: genBlog, saveToSite: false,
-        }),
-      });
-
-      var data = await res.json();
-      if (!res.ok) { showStatus('Error: ' + (data.error || 'Something went wrong. Try again.'), true); setLoading(false); return; }
-
-      buildResultPanels(showPublic, showPortfolio, genBlog);
-      document.getElementById('result-area').dataset.projectId = data.project.id;
-
-      if (showPublic && data.generated.public) {
-        document.getElementById('pub-title').value       = data.generated.public.title || '';
-        document.getElementById('pub-summary').value     = data.generated.public.summary || '';
-        document.getElementById('pub-description').value = data.generated.public.description || '';
-      }
-      if (showPortfolio && data.generated.portfolio) {
-        document.getElementById('port-title').value       = data.generated.portfolio.title || '';
-        document.getElementById('port-summary').value     = data.generated.portfolio.summary || '';
-        document.getElementById('port-description').value = data.generated.portfolio.description || '';
-      }
-      if (genBlog && data.generated.blog) {
-        document.getElementById('blog-title').value   = data.generated.blog.title || '';
-        document.getElementById('blog-summary').value = data.generated.blog.summary || '';
-        document.getElementById('blog-body').value    = data.generated.blog.body || '';
-        var seoBox = document.getElementById('seo-box');
-        if (seoBox) seoBox.innerHTML =
-          '<div class="seo-box">' +
-            '<strong>SEO / AEO recommendations</strong><br>' +
-            '<strong>Meta title:</strong> ' + (data.generated.blog.seoTitle || '—') + '<br>' +
-            '<strong>Meta description:</strong> ' + (data.generated.blog.metaDescription || '—') + '<br>' +
-            '<strong>Keywords:</strong> ' + (data.generated.blog.keywords || []).map(function (k) { return '<span class="seo-tag">' + k + '</span>'; }).join('') +
-          '</div>';
-      }
-
-      hideStatus();
-      document.getElementById('result-area').style.display = 'block';
-      document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    } catch (err) { showStatus('Network error — check your connection and try again.', true); }
-    setLoading(false);
-  }
-
-  // ── Save ──────────────────────────────────────────────────────────────────
-  async function saveProject(asDraft) {
-    var name    = document.getElementById('project-name').value.trim();
-    var tags    = document.getElementById('project-tags').value.trim();
-    var appUrl  = document.getElementById('project-app-url').value.trim();
-    var id      = document.getElementById('result-area').dataset.projectId;
-    var showPublic    = document.getElementById('show-public').checked;
-    var showPortfolio = document.getElementById('show-portfolio').checked;
-    var genBlog       = document.getElementById('gen-blog').checked;
-
-    setLoading(true, asDraft ? 'Saving draft…' : 'Publishing to site…');
-
-    var generatedPayload = {};
-    if (showPublic) generatedPayload.public = {
-      title: document.getElementById('pub-title').value,
-      summary: document.getElementById('pub-summary').value,
-      description: document.getElementById('pub-description').value,
-    };
-    if (showPortfolio) generatedPayload.portfolio = {
-      title: document.getElementById('port-title').value,
-      summary: document.getElementById('port-summary').value,
-      description: document.getElementById('port-description').value,
-    };
-    if (genBlog) generatedPayload.blog = {
-      title: document.getElementById('blog-title').value,
-      summary: document.getElementById('blog-summary').value,
-      body: document.getElementById('blog-body').value,
-    };
-
-    try {
-      var res = await fetch('/api/ai-draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken },
-        body: JSON.stringify({
-          projectName: name, projectId: id, tags: tags, appUrl: appUrl,
-          showOnPublic: showPublic, showOnPortfolio: showPortfolio,
-          generateBlogPost: genBlog, saveDraft: asDraft, saveToSite: true,
-          generated: generatedPayload,
-        }),
-      });
-      var data = await res.json();
-      if (!res.ok) { showStatus('Save failed: ' + (data.error || 'Unknown error.'), true); setLoading(false); return; }
-      hideStatus();
-      showStatus(
-        asDraft
-          ? '✓ Draft saved! Hidden from visitors. Edit and publish any time in Manage Projects.'
-          : '✓ Published! Your site will update in about 30 seconds.',
-        false
-      );
-      document.getElementById('publish-btn').disabled = true;
-      document.getElementById('draft-btn').disabled   = true;
-    } catch (err) { showStatus('Network error — check your connection and try again.', true); }
-    setLoading(false);
-  }
-
-  // ── UI helpers ────────────────────────────────────────────────────────────
-  function showStatus(msg, isError) {
-    var bar = document.getElementById('status-bar');
-    document.getElementById('status-text').textContent = msg;
-    document.getElementById('status-spinner').style.display = isError ? 'none' : 'block';
-    bar.className = 'status-bar visible' + (isError ? ' error' : '');
-  }
-  function hideStatus() { document.getElementById('status-bar').className = 'status-bar'; }
-  function setLoading(on, msg) {
-    var btn = document.getElementById('generate-btn');
-    btn.disabled = on; btn.textContent = on ? 'Working…' : 'Generate with AI';
-    if (on && msg) showStatus(msg, false);
-  }
-  function resetForm() {
-    ['project-name','project-summary','project-tags','project-app-url'].forEach(function (id) {
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('result-area').style.display = 'none';
-    document.getElementById('publish-btn').disabled = false;
-    document.getElementById('draft-btn').disabled   = false;
+async function generateDraft(){
+  var name=document.getElementById('project-name').value.trim();
+  var summary=document.getElementById('project-summary').value.trim();
+  var tags=document.getElementById('project-tags').value.trim();
+  var showPublic=document.getElementById('show-public').checked;
+  var showPortfolio=document.getElementById('show-portfolio').checked;
+  var genBlog=document.getElementById('gen-blog').checked;
+  if(!name||!summary){showStatus('Please fill in the project name and description first.',true);return;}
+  if(!showPublic&&!showPortfolio){showStatus('Select at least one section to generate.',true);return;}
+  var btn=document.getElementById('generate-btn');
+  btn.disabled=true;btn.textContent='Working…';
+  showStatus('Writing your project write-ups… 15–20 seconds.',false);
+  try{
+    var res=await fetch('/api/ai-draft',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},
+      body:JSON.stringify({projectName:name,summary:summary,tags:tags,showOnPublic:showPublic,showOnPortfolio:showPortfolio,generateBlogPost:genBlog,saveToSite:false})});
+    var data=await res.json();
+    if(!res.ok){showStatus('Error: '+(data.error||'Something went wrong.'),true);btn.disabled=false;btn.textContent='Generate with AI';return;}
+    buildResultPanels(showPublic,showPortfolio,genBlog);
+    document.getElementById('result-area').dataset.projectId=data.project.id;
+    if(showPublic&&data.generated.public){document.getElementById('pub-title').value=data.generated.public.title||'';document.getElementById('pub-summary').value=data.generated.public.summary||'';document.getElementById('pub-description').value=data.generated.public.description||'';}
+    if(showPortfolio&&data.generated.portfolio){document.getElementById('port-title').value=data.generated.portfolio.title||'';document.getElementById('port-summary').value=data.generated.portfolio.summary||'';document.getElementById('port-description').value=data.generated.portfolio.description||'';}
+    if(genBlog&&data.generated.blog){
+      document.getElementById('blog-title').value=data.generated.blog.title||'';
+      document.getElementById('blog-summary').value=data.generated.blog.summary||'';
+      document.getElementById('blog-body').value=data.generated.blog.body||'';
+      var seoBox=document.getElementById('seo-box');
+      if(seoBox&&data.generated.blog.seoTitle)seoBox.innerHTML=
+        '<div class="seo-box"><strong>SEO / AEO recommendations</strong><br>'+
+        '<strong>Meta title:</strong> '+(data.generated.blog.seoTitle||'—')+'<br>'+
+        '<strong>Meta description:</strong> '+(data.generated.blog.metaDescription||'—')+'<br>'+
+        '<strong>Keywords:</strong> '+(data.generated.blog.keywords||[]).map(function(k){return'<span class="seo-tag">'+k+'</span>';}).join('')+
+        '</div>';
+    }
     hideStatus();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    document.getElementById('result-area').style.display='block';
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(err){showStatus('Network error — check your connection and try again.',true);}
+  btn.disabled=false;btn.textContent='Generate with AI';
+}
+
+async function saveProject(asDraft){
+  var name=document.getElementById('project-name').value.trim();
+  var tags=document.getElementById('project-tags').value.trim();
+  var appUrl=document.getElementById('project-app-url').value.trim();
+  var id=document.getElementById('result-area').dataset.projectId;
+  var showPublic=document.getElementById('show-public').checked;
+  var showPortfolio=document.getElementById('show-portfolio').checked;
+  var genBlog=document.getElementById('gen-blog').checked;
+  var generatedPayload={};
+  if(showPublic)generatedPayload.public={title:document.getElementById('pub-title').value,summary:document.getElementById('pub-summary').value,description:document.getElementById('pub-description').value};
+  if(showPortfolio)generatedPayload.portfolio={title:document.getElementById('port-title').value,summary:document.getElementById('port-summary').value,description:document.getElementById('port-description').value};
+  if(genBlog)generatedPayload.blog={title:document.getElementById('blog-title').value,summary:document.getElementById('blog-summary').value,body:document.getElementById('blog-body').value};
+  showStatus(asDraft?'Saving draft…':'Publishing…');
+  try{
+    var res=await fetch('/api/ai-draft',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},
+      body:JSON.stringify({projectName:name,projectId:id,tags:tags,appUrl:appUrl,showOnPublic:showPublic,showOnPortfolio:showPortfolio,generateBlogPost:genBlog,saveDraft:asDraft,saveToSite:true,generated:generatedPayload})});
+    var data=await res.json();
+    if(!res.ok){showStatus('Save failed: '+(data.error||'Unknown error.'),true);return;}
+    hideStatus();
+    showStatus(asDraft?'✓ Draft saved! Edit and publish any time in Manage.':'✓ Published! Site updates in ~30 seconds.',false,true);
+    document.getElementById('publish-btn').disabled=true;
+    document.getElementById('draft-btn').disabled=true;
+  }catch(err){showStatus('Network error — try again.',true);}
+}
+
+function resetForm(){
+  ['project-name','project-summary','project-tags','project-app-url'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('result-area').style.display='none';
+  document.getElementById('publish-btn').disabled=false;
+  document.getElementById('draft-btn').disabled=false;
+  hideStatus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 </script>
 </body>
 </html>
