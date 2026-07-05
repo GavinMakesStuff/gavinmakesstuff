@@ -1,7 +1,7 @@
 {
   "home": {
     "eyebrow": "Designer & Maker",
-    "tagline": "Gavin\nmakes\nstuff.",
+    "tagline": "Gavin\nMakes\nStuff.",
     "description": "UI/UX design, hardware builds, and the occasional thing that catches fire a little.",
     "location": "Vancouver, BC"
   },
@@ -19,17 +19,17 @@
   },
   "favicon": "/images/site/favicon.svg",
   "analytics": {
-    "ga4MeasurementId": ""
+    "ga4MeasurementId": "G-6HEQ8Q296E"
   },
   "creations": [
     {
       "id": "scout",
-      "name": "Scout",
+      "name": "scout",
       "description": "AI-powered job analysis",
       "url": "/scout/",
       "status": "private",
       "statusLabel": "",
-      "thumbnail": "",
+      "thumbnail": "/images/projects/site/1783257836022-scoutfavicon.webp",
       "showOnHome": true
     }
   ]
