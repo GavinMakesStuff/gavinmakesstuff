@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gavin Krohn — Portfolio</title>
-  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <title>Gavin Krohman — Portfolio</title>
+  <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -12,11 +12,11 @@
 
   <div class="container">
     <div class="bio-section">
-      <img src="/images/site/headshot-placeholder.svg" alt="Gavin Krohn — replace with a real photo">
+      <img id="bio-headshot" src="/images/site/headshot-placeholder.svg" alt="Gavin Krohman">
       <div>
         <p class="hero-eyebrow" style="margin-top:16px;">Designer &amp; Maker</p>
-        <h1>Gavin Krohn</h1>
-        <p>Replace this with a short professional summary — your background, the kind of work you're looking for, and the skills you most want to highlight. Two to three sentences is plenty.</p>
+        <h1 id="bio-name">Gavin Krohman</h1>
+        <p id="bio-summary">Replace this with a short professional summary — your background, the kind of work you're looking for, and the skills you most want to highlight.</p>
       </div>
     </div>
   </div>
@@ -30,8 +30,8 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>© 2026 Gavin Krohn</span>
-      <a href="mailto:REPLACE_WITH_EMAIL" style="color:var(--color-muted);">REPLACE_WITH_EMAIL</a>
+      <span>© 2026 Gavin Krohman</span>
+      <span id="footer-email"></span>
     </div>
   </footer>
 
@@ -39,7 +39,22 @@
   <script>
     injectNav('portfolio', false);
     (async function () {
-      try { var r = await fetch('/data/projects.json'); initProjects(await r.json()); } catch(e) { console.error(e); }
+      try {
+        var [pRes, sRes] = await Promise.all([fetch('/data/projects.json'), fetch('/data/site-settings.json')]);
+        initProjects(await pRes.json());
+        var s = await sRes.json();
+        initSettings(s);
+        if (s.favicon) document.getElementById('site-favicon').href = s.favicon;
+        if (s.bio) {
+          if (s.bio.headshot) document.getElementById('bio-headshot').src = s.bio.headshot;
+          if (s.bio.name)     document.getElementById('bio-name').textContent = s.bio.name;
+          if (s.bio.portfolioSummary) document.getElementById('bio-summary').textContent = s.bio.portfolioSummary;
+        }
+        if (s.contact && s.contact.email) {
+          var el = document.getElementById('footer-email');
+          el.innerHTML = '<a href="mailto:' + s.contact.email + '" style="color:var(--color-muted);">' + s.contact.email + '</a>';
+        }
+      } catch (e) { console.error(e); }
       renderProjectCards('portfolio-grid', 'portfolio', '/portfolio/project.html');
     })();
   </script>
