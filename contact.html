@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contact — Gavin makes stuff</title>
-  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -12,37 +12,16 @@
 
   <div class="contact-wrap">
     <div class="contact-hero">
-      <img src="/images/site/headshot-placeholder.svg" alt="Gavin Krohn">
+      <img id="contact-headshot" src="/images/site/headshot-placeholder.svg" alt="Gavin Krohman">
       <div>
-        <h1>Gavin Krohn</h1>
-        <p class="location">Vancouver, BC</p>
+        <h1 id="contact-name">Gavin Krohman</h1>
+        <p class="location" id="contact-location">Vancouver, BC</p>
       </div>
     </div>
 
-    <div class="contact-links">
-      <a class="contact-link-row" href="mailto:REPLACE_WITH_EMAIL">
-        <div class="contact-link-icon">✉️</div>
-        <div>
-          <div class="contact-link-label">Email</div>
-          <div class="contact-link-sub">REPLACE_WITH_EMAIL</div>
-        </div>
-      </a>
-
-      <a class="contact-link-row" href="https://www.linkedin.com/in/gavin-krohman/" target="_blank" rel="noopener">
-        <div class="contact-link-icon">💼</div>
-        <div>
-          <div class="contact-link-label">LinkedIn</div>
-          <div class="contact-link-sub">linkedin.com/in/gavin-krohman</div>
-        </div>
-      </a>
-
-      <a class="contact-link-row" href="https://dribbble.com/GavinKrohman" target="_blank" rel="noopener">
-        <div class="contact-link-icon">🏀</div>
-        <div>
-          <div class="contact-link-label">Dribbble</div>
-          <div class="contact-link-sub">dribbble.com/GavinKrohman</div>
-        </div>
-      </a>
+    <div class="contact-links" id="contact-links">
+      <!-- populated by JS from site-settings.json -->
+      <div class="empty-state" style="padding:20px 0;">Loading…</div>
     </div>
   </div>
 
@@ -51,6 +30,28 @@
   </footer>
 
   <script src="/js/shared.js"></script>
-  <script>injectNav('contact', false);</script>
+  <script>
+    injectNav('contact', false);
+    (async function () {
+      try {
+        var res = await fetch('/data/site-settings.json');
+        var s = await res.json();
+        initSettings(s);
+        if (s.favicon) document.getElementById('site-favicon').href = s.favicon;
+        if (s.bio) {
+          if (s.bio.headshot) document.getElementById('contact-headshot').src = s.bio.headshot;
+          if (s.bio.name)     document.getElementById('contact-name').textContent = s.bio.name;
+          if (s.bio.location) document.getElementById('contact-location').textContent = s.bio.location;
+        }
+        var c = s.contact || {};
+        var links = document.getElementById('contact-links');
+        links.innerHTML = [
+          c.email ? '<a class="contact-link-row" href="mailto:' + c.email + '"><div class="contact-link-icon">✉️</div><div><div class="contact-link-label">Email</div><div class="contact-link-sub">' + c.email + '</div></div></a>' : '',
+          c.linkedin ? '<a class="contact-link-row" href="' + c.linkedin + '" target="_blank" rel="noopener"><div class="contact-link-icon">💼</div><div><div class="contact-link-label">LinkedIn</div><div class="contact-link-sub">' + c.linkedin.replace('https://','') + '</div></div></a>' : '',
+          c.dribbble ? '<a class="contact-link-row" href="' + c.dribbble + '" target="_blank" rel="noopener"><div class="contact-link-icon">🏀</div><div><div class="contact-link-label">Dribbble</div><div class="contact-link-sub">' + c.dribbble.replace('https://','') + '</div></div></a>' : '',
+        ].filter(Boolean).join('') || '<p class="empty-state">No contact info added yet.</p>';
+      } catch (e) { console.error(e); }
+    })();
+  </script>
 </body>
 </html>
