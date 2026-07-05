@@ -5,39 +5,71 @@
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
-function initProjects(data) { window.PROJECTS = data.projects || []; }
-function initBlog(data)     { window.BLOG_POSTS = data.posts || []; }
+function initProjects(data)  { window.PROJECTS   = data.projects || []; }
+function initBlog(data)      { window.BLOG_POSTS  = data.posts    || []; }
+function initSettings(data)  { window.SITE_SETTINGS = data; }
 
 /* ---- Markdown renderer ---- */
 function renderMarkdown(text) {
   if (!text) return '';
+
   function inlineFormat(str) {
     return str
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
+
   var lines = String(text).split('\n');
-  var html = '', inList = false, buf = [];
+  var html = '', inUl = false, inOl = false, buf = [];
+
   function flush() {
-    if (buf.length) { html += '<p>' + inlineFormat(buf.join(' ')) + '</p>'; buf = []; }
+    if (buf.length) {
+      html += '<p>' + inlineFormat(buf.join(' ')) + '</p>';
+      buf = [];
+    }
   }
+  function closeList() {
+    if (inUl) { html += '</ul>'; inUl = false; }
+    if (inOl) { html += '</ol>'; inOl = false; }
+  }
+
   lines.forEach(function (line) {
     var t = line.trim();
     if (!t) { flush(); return; }
-    var h2 = t.match(/^##\s+(.*)/), h3 = t.match(/^###\s+(.*)/), li = t.match(/^[-*]\s+(.*)/);
-    if (h2)      { flush(); if (inList) { html += '</ul>'; inList = false; } html += '<h2>' + inlineFormat(h2[1]) + '</h2>'; }
-    else if (h3) { flush(); if (inList) { html += '</ul>'; inList = false; } html += '<h3>' + inlineFormat(h3[1]) + '</h3>'; }
-    else if (li) { flush(); if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inlineFormat(li[1]) + '</li>'; }
-    else         { if (inList) { html += '</ul>'; inList = false; } buf.push(t); }
+    var h2 = t.match(/^##\s+(.*)/);
+    var h3 = t.match(/^###\s+(.*)/);
+    var ul = t.match(/^[-*]\s+(.*)/);
+    var ol = t.match(/^\d+\.\s+(.*)/);
+
+    if (h2) {
+      flush(); closeList();
+      html += '<h2>' + inlineFormat(h2[1]) + '</h2>';
+    } else if (h3) {
+      flush(); closeList();
+      html += '<h3>' + inlineFormat(h3[1]) + '</h3>';
+    } else if (ul) {
+      flush();
+      if (inOl) { html += '</ol>'; inOl = false; }
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += '<li>' + inlineFormat(ul[1]) + '</li>';
+    } else if (ol) {
+      flush();
+      if (inUl) { html += '</ul>'; inUl = false; }
+      if (!inOl) { html += '<ol>'; inOl = true; }
+      html += '<li>' + inlineFormat(ol[1]) + '</li>';
+    } else {
+      closeList();
+      buf.push(t);
+    }
   });
+
   flush();
-  if (inList) html += '</ul>';
+  closeList();
   return html;
 }
 
 /* ---- Nav builder ---- */
-// section: 'studio' | 'portfolio' | 'contact' | null
-// showDonate: boolean — adds donate link for studio pages
 function buildNav(section, showDonate) {
   var links = [
     { label: 'The Studio', href: '/studio/index.html',    key: 'studio' },
@@ -68,7 +100,6 @@ function toggleMobileNav() {
   var el = document.getElementById('main-nav-links');
   if (el) el.classList.toggle('open');
 }
-
 function injectNav(section, showDonate) {
   var ph = document.getElementById('site-nav-placeholder');
   if (ph) ph.outerHTML = buildNav(section, showDonate);
@@ -135,8 +166,9 @@ function renderProjectDetail(section) {
   var downloadsHtml = (content.downloads && content.downloads.length)
     ? '<div class="downloads-box"><h3>Downloads</h3>' +
         content.downloads.map(function (d) {
+          var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
           return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
-            '<a class="btn btn-primary" href="' + d.file + '" download>Download</a></div>';
+            '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>Download</a></div>';
         }).join('') +
       '</div>'
     : '';
@@ -167,11 +199,9 @@ function renderBlogCards(containerId, detailPageUrl, limit) {
     return (
       '<div class="blog-list-item">' +
         '<a href="' + detailPageUrl + '?id=' + post.id + '"><img src="' + post.thumbnail + '" alt="' + post.title + '"></a>' +
-        '<div>' +
-          '<div class="post-date">' + formatDate(post.date) + '</div>' +
-          '<h3><a href="' + detailPageUrl + '?id=' + post.id + '">' + post.title + '</a></h3>' +
-          '<p class="card-summary">' + post.summary + '</p>' +
-        '</div>' +
+        '<div><div class="post-date">' + formatDate(post.date) + '</div>' +
+        '<h3><a href="' + detailPageUrl + '?id=' + post.id + '">' + post.title + '</a></h3>' +
+        '<p class="card-summary">' + post.summary + '</p></div>' +
       '</div>'
     );
   }).join('');
@@ -191,6 +221,36 @@ function renderBlogDetail() {
     '<img class="detail-thumb" src="' + post.thumbnail + '" alt="' + post.title + '" style="margin-bottom:28px;">' +
     '<div class="detail-body">' + renderMarkdown(post.body) + '</div>'
   );
+}
+
+/* ---- Creations section (homepage) ---- */
+function renderCreations(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var settings = window.SITE_SETTINGS;
+  var creations = (settings && settings.creations) ? settings.creations.filter(function (c) { return c.showOnHome; }) : [];
+
+  if (!creations.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  var statusLabels = { open: 'Open to All', private: 'Private', wip: 'Work In Progress' };
+
+  container.innerHTML = creations.map(function (c) {
+    var label = c.status === 'custom' ? (c.statusLabel || '') : (statusLabels[c.status] || c.status);
+    var badgeClass = c.status === 'private' ? 'tool-badge private' : c.status === 'wip' ? 'tool-badge wip' : 'tool-badge open';
+    var iconHtml = c.thumbnail
+      ? '<img src="' + c.thumbnail + '" alt="' + c.name + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">'
+      : '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#F2EFE9;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+    return (
+      '<a class="cell-tool" href="' + c.url + '">' +
+        '<div class="cell-icon-wrap">' + iconHtml + '</div>' +
+        '<div class="tool-info"><p class="tool-name">' + c.name + '</p><p class="tool-desc">' + c.description + '</p></div>' +
+        (label ? '<span class="' + badgeClass + '">' + label + '</span>' : '') +
+      '</a>'
+    );
+  }).join('');
 }
 
 function formatDate(str) {
