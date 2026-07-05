@@ -1,0 +1,36 @@
+{
+  "home": {
+    "eyebrow": "Designer & Maker",
+    "tagline": "Gavin\nmakes\nstuff.",
+    "description": "UI/UX design, hardware builds, and the occasional thing that catches fire a little.",
+    "location": "Vancouver, BC"
+  },
+  "bio": {
+    "headshot": "/images/site/headshot-placeholder.svg",
+    "name": "Gavin Krohman",
+    "location": "Vancouver, BC",
+    "portfolioSummary": "Replace this with a short professional summary — your background, the kind of work you're looking for, and the skills you most want to highlight. Two to three sentences is plenty.",
+    "studioSummary": ""
+  },
+  "contact": {
+    "email": "REPLACE_WITH_EMAIL",
+    "linkedin": "https://www.linkedin.com/in/gavin-krohman/",
+    "dribbble": "https://dribbble.com/GavinKrohman"
+  },
+  "favicon": "/images/site/favicon.svg",
+  "analytics": {
+    "ga4MeasurementId": ""
+  },
+  "creations": [
+    {
+      "id": "scout",
+      "name": "Scout",
+      "description": "AI-powered job analysis",
+      "url": "/scout/",
+      "status": "private",
+      "statusLabel": "",
+      "thumbnail": "",
+      "showOnHome": true
+    }
+  ]
+}
