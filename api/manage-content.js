@@ -1,8 +1,8 @@
 /* ============================================================
    VERCEL FUNCTION: /api/manage-content
-   Powers admin/manage.html. Handles listing, saving, deleting,
-   and uploading images/files for both projects and blog posts.
-   Images are automatically compressed and converted to WebP.
+   Handles list, save, delete, upload for projects/blog,
+   plus read/write for site-settings.json.
+   Images auto-compressed to WebP via sharp.
    ============================================================ */
 
 let sharp;
@@ -10,80 +10,53 @@ try { sharp = require('sharp'); } catch (e) { sharp = null; }
 
 const IMAGE_EXTS = /\.(jpe?g|png|gif|bmp|tiff?|webp)$/i;
 
-const FILE_FOR_TYPE = {
-  project: 'data/projects.json',
-  blog: 'data/blog.json',
-};
-const LIST_KEY_FOR_TYPE = {
-  project: 'projects',
-  blog: 'posts',
-};
-
 module.exports = async function (req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-  // ── Verify login ─────────────────────────────────────────────────────────
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) {
-    res.status(401).json({ error: 'Not logged in.' });
-    return;
-  }
+  if (!token) { res.status(401).json({ error: 'Not logged in.' }); return; }
 
   let githubUser;
   try {
-    const userRes = await fetch('https://api.github.com/user', {
+    const r = await fetch('https://api.github.com/user', {
       headers: { Authorization: 'Bearer ' + token, 'User-Agent': 'gavinmakesstuff-admin' },
     });
-    githubUser = await userRes.json();
-    if (!userRes.ok || !githubUser.login) {
-      res.status(401).json({ error: 'Could not verify your GitHub login. Try logging in again.' });
-      return;
-    }
-  } catch (e) {
-    res.status(401).json({ error: 'Could not reach GitHub to verify login.' });
-    return;
-  }
+    githubUser = await r.json();
+    if (!r.ok || !githubUser.login) { res.status(401).json({ error: 'Could not verify login.' }); return; }
+  } catch (e) { res.status(401).json({ error: 'Could not reach GitHub.' }); return; }
 
   const allowedUser = (process.env.ALLOWED_GITHUB_USER || '').toLowerCase();
   if (!allowedUser || githubUser.login.toLowerCase() !== allowedUser) {
-    res.status(403).json({ error: 'This GitHub account is not authorized to use this admin panel.' });
-    return;
+    res.status(403).json({ error: 'Not authorized.' }); return;
   }
 
   const repo = process.env.GITHUB_REPO;
-  if (!repo) {
-    res.status(500).json({ error: 'GITHUB_REPO environment variable is missing in Vercel.' });
-    return;
-  }
+  if (!repo) { res.status(500).json({ error: 'GITHUB_REPO missing.' }); return; }
 
   const body = req.body || {};
   const action = body.action;
-
   const ghHeaders = {
     Authorization: 'Bearer ' + token,
     'User-Agent': 'gavinmakesstuff-admin',
   };
 
-  // ── Helper: read a JSON content file from GitHub ────────────────────────
-  async function readJsonFile(path) {
+  const FILE_FOR_TYPE = { project: 'data/projects.json', blog: 'data/blog.json', settings: 'data/site-settings.json' };
+  const LIST_KEY_FOR_TYPE = { project: 'projects', blog: 'posts' };
+
+  async function readJson(path) {
     const r = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, { headers: ghHeaders });
     const d = await r.json();
     if (!r.ok) throw new Error(d.message || 'Could not read ' + path);
-    const parsed = JSON.parse(Buffer.from(d.content, 'base64').toString('utf8'));
-    return { parsed, sha: d.sha };
+    return { parsed: JSON.parse(Buffer.from(d.content, 'base64').toString('utf8')), sha: d.sha };
   }
 
-  // ── Helper: write a JSON content file to GitHub ─────────────────────────
-  async function writeJsonFile(path, dataObj, sha, message) {
+  async function writeJson(path, dataObj, sha, message) {
     const encoded = Buffer.from(JSON.stringify(dataObj, null, 2)).toString('base64');
     const r = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
       method: 'PUT',
       headers: { ...ghHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: message, content: encoded, sha: sha }),
+      body: JSON.stringify({ message, content: encoded, sha }),
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.message || 'Could not write ' + path);
@@ -91,92 +64,86 @@ module.exports = async function (req, res) {
   }
 
   try {
-    // ── LIST: return both projects and blog posts ──────────────────────────
+    // ── LIST ──────────────────────────────────────────────────────────────────
     if (action === 'list') {
-      const projects = await readJsonFile(FILE_FOR_TYPE.project);
-      const blog = await readJsonFile(FILE_FOR_TYPE.blog);
-      res.status(200).json({ projects: projects.parsed.projects, blog: blog.parsed.posts });
+      const [projects, blog, settings] = await Promise.all([
+        readJson(FILE_FOR_TYPE.project),
+        readJson(FILE_FOR_TYPE.blog),
+        readJson(FILE_FOR_TYPE.settings).catch(() => ({ parsed: {} })),
+      ]);
+      res.status(200).json({ projects: projects.parsed.projects, blog: blog.parsed.posts, settings: settings.parsed });
       return;
     }
 
-    // ── SAVE: insert or update one project or blog post ─────────────────────
+    // ── SAVE PROJECT / BLOG ───────────────────────────────────────────────────
     if (action === 'save') {
       const type = body.type;
       const item = body.item;
-      if (!FILE_FOR_TYPE[type] || !item || !item.id) {
-        res.status(400).json({ error: 'Missing type or item.' });
-        return;
-      }
+      if (!FILE_FOR_TYPE[type] || !item || !item.id) { res.status(400).json({ error: 'Missing type or item.' }); return; }
       const path = FILE_FOR_TYPE[type];
       const listKey = LIST_KEY_FOR_TYPE[type];
-      const { parsed, sha } = await readJsonFile(path);
+      const { parsed, sha } = await readJson(path);
       const idx = parsed[listKey].findIndex(p => p.id === item.id);
-      if (idx >= 0) {
-        parsed[listKey][idx] = item;
-      } else {
-        parsed[listKey].unshift(item);
-      }
-      await writeJsonFile(path, parsed, sha, (idx >= 0 ? 'Update ' : 'Add ') + type + ': ' + item.id);
+      if (idx >= 0) parsed[listKey][idx] = item;
+      else parsed[listKey].unshift(item);
+      await writeJson(path, parsed, sha, (idx >= 0 ? 'Update ' : 'Add ') + type + ': ' + item.id);
       res.status(200).json({ ok: true });
       return;
     }
 
-    // ── DELETE: remove one project or blog post ─────────────────────────────
+    // ── SAVE SETTINGS ─────────────────────────────────────────────────────────
+    if (action === 'save-settings') {
+      const newSettings = body.settings;
+      if (!newSettings) { res.status(400).json({ error: 'Missing settings.' }); return; }
+      const { sha } = await readJson(FILE_FOR_TYPE.settings);
+      await writeJson(FILE_FOR_TYPE.settings, newSettings, sha, 'Update site settings');
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // ── DELETE ────────────────────────────────────────────────────────────────
     if (action === 'delete') {
       const type = body.type;
       const id = body.id;
-      if (!FILE_FOR_TYPE[type] || !id) {
-        res.status(400).json({ error: 'Missing type or id.' });
-        return;
-      }
+      if (!FILE_FOR_TYPE[type] || !id) { res.status(400).json({ error: 'Missing type or id.' }); return; }
       const path = FILE_FOR_TYPE[type];
       const listKey = LIST_KEY_FOR_TYPE[type];
-      const { parsed, sha } = await readJsonFile(path);
+      const { parsed, sha } = await readJson(path);
       parsed[listKey] = parsed[listKey].filter(p => p.id !== id);
-      await writeJsonFile(path, parsed, sha, 'Delete ' + type + ': ' + id);
+      await writeJson(path, parsed, sha, 'Delete ' + type + ': ' + id);
       res.status(200).json({ ok: true });
       return;
     }
 
-    // ── UPLOAD: commit an image or file, return its site path ───────────────
+    // ── UPLOAD ────────────────────────────────────────────────────────────────
     if (action === 'upload') {
       let path = body.path;
       let contentBase64 = body.contentBase64;
-      if (!path || !contentBase64) {
-        res.status(400).json({ error: 'Missing path or contentBase64.' });
-        return;
-      }
+      if (!path || !contentBase64) { res.status(400).json({ error: 'Missing path or contentBase64.' }); return; }
 
-      // Auto-convert images to WebP and compress (max 1920px, 82% quality)
       if (IMAGE_EXTS.test(path) && sharp) {
         try {
           const inputBuffer = Buffer.from(contentBase64, 'base64');
           const webpBuffer = await sharp(inputBuffer)
-            .rotate() // honour EXIF orientation
+            .rotate()
             .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
             .webp({ quality: 82 })
             .toBuffer();
           contentBase64 = webpBuffer.toString('base64');
           path = path.replace(IMAGE_EXTS, '.webp');
-        } catch (e) {
-          console.error('sharp conversion failed, uploading original:', e.message);
-        }
+        } catch (e) { console.error('sharp failed:', e.message); }
       }
-      // Check whether the file already exists (need its sha to overwrite)
+
       let sha;
-      const existing = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, { headers: ghHeaders });
-      if (existing.ok) {
-        const existingData = await existing.json();
-        sha = existingData.sha;
-      }
+      try {
+        const existing = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, { headers: ghHeaders });
+        if (existing.ok) { const d = await existing.json(); sha = d.sha; }
+      } catch (e) {}
+
       const r = await fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
         method: 'PUT',
         headers: { ...ghHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'Upload: ' + path,
-          content: contentBase64,
-          sha: sha,
-        }),
+        body: JSON.stringify({ message: 'Upload: ' + path, content: contentBase64, sha }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.message || 'Upload failed');
