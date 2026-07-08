@@ -31,6 +31,10 @@
       "thumbnail": "/images/projects/scout-a-personal-job-search-companion/1782859654722-ScoutLogoOG.webp",
       "showOnPublic": true,
       "showOnPortfolio": true,
+      "showInCreations": true,
+      "status": "private",
+      "statusLabel": "",
+      "creationsThumbnail": "/images/projects/scout-a-personal-job-search-companion/1783548862045-scoutfaviconsquare.webp",
       "public": {
         "title": "scout - A Personal Job Search Companion",
         "summary": "A locally hosted job search dashboard that uses AI to analyze job postings against a personal candidate profile, returning fit scores, structured breakdowns, and ready-to-use application materials.",
