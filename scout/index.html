@@ -1,405 +1,482 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Scout — Job Intelligence</title>
-  <link rel="icon" type="image/png" href="media/scoutfavicon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <style>
-    #scout-gate {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--bg, #F0F4F7);
-      display: flex; align-items: center; justify-content: center;
-      font-family: "Nunito", sans-serif;
-    }
-    #scout-gate .gate-box {
-      background: var(--surface, #fff);
-      border: 1px solid var(--border, #C9D7E0);
-      border-radius: 16px; padding: 40px 36px;
-      max-width: 380px; width: 90%;
-      text-align: center;
-      box-shadow: 0 8px 32px rgba(0,90,122,0.14);
-    }
-    #scout-gate img { height: 48px; margin-bottom: 16px; }
-    #scout-gate h2 { color: var(--teal, #005A7A); margin: 0 0 6px; font-size: 1.4rem; }
-    #scout-gate p  { color: var(--text-muted, #3C5468); margin: 0 0 20px; font-size: 0.9rem; }
-    #scout-gate input[type=password] {
-      width: 100%; padding: 10px 14px; border-radius: 8px;
-      border: 1.5px solid var(--border, #C9D7E0);
-      font-size: 1rem; font-family: inherit;
-      background: var(--surface-2, #F5F8FA);
-      color: var(--text, #0D2233); margin-bottom: 12px;
-    }
-    #scout-gate input[type=password]:focus { outline: 2px solid var(--teal, #005A7A); }
-    #scout-gate .gate-btn {
-      width: 100%; padding: 11px; border-radius: 8px;
-      background: var(--teal, #005A7A); color: #fff;
-      border: none; font-size: 1rem; font-weight: 700;
-      font-family: inherit; cursor: pointer;
-    }
-    #scout-gate .gate-btn:hover { background: var(--teal-mid, #006E96); }
-    #scout-gate .gate-error { color: var(--red, #A4291B); font-size: 0.85rem; margin-top: 8px; display: none; }
-  </style>
+  <link rel="icon" type="image/png" href="media/scoutfavicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
 </head>
 <body>
+
 <!-- ══════════════════════════════════════
-     PASSWORD GATE
+     GUIDE BAR — clicks open popup modal
      ══════════════════════════════════════ -->
-<div id="scout-gate">
-  <div class="gate-box">
-    <img src="media/Scout_Logo_2.png" alt="Scout" onerror="this.style.display='none'">
-    <h2>Scout</h2>
-    <p>Enter the access password to continue.</p>
-    <input type="password" id="gate-pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkGatePassword()">
-    <button class="gate-btn" onclick="checkGatePassword()">Enter</button>
-    <div class="gate-error" id="gate-error">Incorrect password. Try again.</div>
-  </div>
+<div class="guide-bar" onclick="toggleGuide()">
+  <span class="guide-bar-icon"><i class="ti ti-bulb"></i></span>
+  <span class="guide-bar-text">How to use Scout</span>
+  <span class="guide-bar-hint">Click to open guide</span>
 </div>
 
 <!-- ══════════════════════════════════════
-     TOP NAVIGATION
+     GUIDE POPUP MODAL
      ══════════════════════════════════════ -->
-<nav class="topbar">
-  <a class="logo" href="#">
-    <img src="media/Scout Logo.png" alt="Scout"
-         onerror="this.style.display='none';document.getElementById('logo-text-fallback').style.display='block'" />
-    <span id="logo-text-fallback" class="logo-text" style="display:none">Scout</span>
-  </a>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('jobs', this)">Job Search</button>
-  </div>
-  <div class="nav-right">
-    <button class="theme-btn" onclick="toggleTheme()" title="Toggle dark mode" id="theme-btn">🌙</button>
-  </div>
-</nav>
-
-
-<!-- ══════════════════════════════════════
-     GUIDE BANNER + PANEL
-     ══════════════════════════════════════ -->
-<div class="guide-banner" onclick="toggleGuide()">
-  <span class="guide-banner-icon">💡</span>
-  <span class="guide-banner-text">How to use Scout, click to expand</span>
-  <span class="guide-banner-chevron" id="guide-chevron">▼</span>
-</div>
-
-<div class="guide-panel" id="guide-panel">
-  <div class="guide-inner">
-    <div class="guide-title">Getting started with Scout</div>
-    <div class="guide-subtitle">Follow these steps to analyze job postings, track applications, and stay organized.</div>
-
-    <div class="guide-steps">
-
-      <div class="guide-step">
-        <div class="guide-step-num">1</div>
-        <div class="guide-step-title">Set up your profile</div>
-        <div class="guide-step-body">
-          Click <b>Edit profile</b> to enter your background, target industry, salary expectation and currency, years of experience, certifications, and what kind of work you're looking for.<br><br>
-          Optionally <b>upload your resume</b> (PDF or Word) to auto-fill your profile.
-        </div>
+<div class="guide-modal-overlay" id="guide-overlay" onclick="closeGuideOnBackdrop(event)">
+  <div class="guide-modal-box">
+    <div class="guide-modal-header">
+      <span style="font-size:1.4rem;color:var(--sand);"><i class="ti ti-bulb"></i></span>
+      <div style="flex:1;">
+        <div class="guide-modal-title">Getting started with Scout</div>
+        <div class="guide-modal-sub">Follow these steps to analyze postings, track applications, and stay organized.</div>
       </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">2</div>
-        <div class="guide-step-title">Share your location (optional)</div>
-        <div class="guide-step-body">
-          Click <b>📍 Share my location</b> so Scout can calculate the approximate driving distance from you to each job's work address. This is entirely optional.
-        </div>
-      </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">3</div>
-        <div class="guide-step-title">Paste job descriptions</div>
-        <div class="guide-step-body">
-          Copy the full text of any job posting and paste it into the text area. Click <b>+ Add another job posting</b> to analyze several at once.
-        </div>
-      </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">4</div>
-        <div class="guide-step-title">Analyze and review results</div>
-        <div class="guide-step-body">
-          Click <b>Analyze</b> and watch the progress bar while Scout scores each posting out of 10, summarizes the role, checks benefits, reputation, and work location.<br><br>
-          Use the <b>filter bar</b> to focus on High, Partial, or Low matches.
-        </div>
-      </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">5</div>
-        <div class="guide-step-title">Highlight key postings</div>
-        <div class="guide-step-body">
-          Click the <b>☆ star</b> next to any job title to highlight it as a priority. Starred postings are saved automatically so the highlight has somewhere to live.
-        </div>
-      </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">6</div>
-        <div class="guide-step-title">Save and track applications</div>
-        <div class="guide-step-body">
-          Click <b>☆ Save</b> to bookmark a job. Click <b>✉ Mark Applied</b> to move it to your Applications tracker, where you can log the date applied, follow up status, notes, and a contact.
-        </div>
-      </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">7</div>
-        <div class="guide-step-title">Find a contact and follow up</div>
-        <div class="guide-step-body">
-          On any saved or applied posting, click <b>🔍 Find contact</b> to search for an HR or hiring manager email, or enter one manually if you come across it elsewhere.
-        </div>
-      </div>
-
-      <div class="guide-step">
-        <div class="guide-step-num">8</div>
-        <div class="guide-step-title">Grab resume keywords</div>
-        <div class="guide-step-body">
-          Each card includes Hard Skills, Soft Skills, and Industry Terms. Click any keyword to copy it, or <b>⎘ Copy all</b> for the full list.
-        </div>
-      </div>
-
+      <button class="guide-modal-close" onclick="toggleGuide()"><i class="ti ti-x"></i></button>
     </div>
-
-    <div class="guide-tips">
-      <span class="guide-tips-icon">💡</span>
-      <div class="guide-tips-body">
-        <b>Tips for best results:</b> Paste the <em>complete</em> job description, the more text Scout has, the more accurate the analysis.
-        Fill in your <b>years of experience</b> and <b>certifications</b>, since these have the biggest effect on match scoring accuracy.
-        Everything you enter stays stored locally in your browser and persists between sessions.
+    <div class="guide-modal-body">
+      <div class="guide-steps">
+        <div class="guide-step">
+          <div class="guide-step-num">1</div>
+          <div class="guide-step-title">Set up your profile</div>
+          <div class="guide-step-body">Click <b>Edit profile</b> in the sidebar to enter your background, target industry, salary, experience, and certifications. Or <b>Upload resume</b> to auto-fill everything.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">2</div>
+          <div class="guide-step-title">Share your location (optional)</div>
+          <div class="guide-step-body">Click <b>Share location</b> in the sidebar so Scout can calculate driving distance to each job's work address. Entirely optional.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">3</div>
+          <div class="guide-step-title">Paste job descriptions</div>
+          <div class="guide-step-body">Click <b>Analyze posting</b> in the middle column and paste any job description text. Use <b>Add another</b> to analyze several postings at once.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">4</div>
+          <div class="guide-step-title">Review results</div>
+          <div class="guide-step-body">Each posting gets a <b>1–10 score</b> with a written explanation. Click any card in the list to see the full detail on the right. Use the filter pills to focus on High, Partial, or Low matches.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">5</div>
+          <div class="guide-step-title">Star, save, and apply</div>
+          <div class="guide-step-body">Use the quick action buttons at the bottom of each card to <b>Star</b> priority postings, <b>Save</b> to bookmark, or <b>Apply</b> to move it to your application tracker.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">6</div>
+          <div class="guide-step-title">Track applications</div>
+          <div class="guide-step-body">In the <b>Applied</b> view, log date applied, follow up status, contact name, email, LinkedIn, posting URL, and notes for each application.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">7</div>
+          <div class="guide-step-title">Find a contact</div>
+          <div class="guide-step-body">Click <b>Find contact</b> on any saved or applied card to search for a publicly listed HR or hiring manager email. Or enter one manually.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">8</div>
+          <div class="guide-step-title">Copy resume keywords</div>
+          <div class="guide-step-body">Each card shows Hard Skills, Soft Skills, and Industry Terms extracted from the posting. Click any keyword to copy it, or use <b>Copy all</b> for the full list.</div>
+        </div>
       </div>
-    </div>
-
-    <div class="guide-close-row">
-      <button class="btn btn-ghost btn-sm" onclick="toggleGuide()">Close guide ▲</button>
+      <div class="guide-tip">
+        <span style="font-size:1.1rem;flex-shrink:0;color:var(--sand-lo);"><i class="ti ti-bulb"></i></span>
+        <div><b>Tips for best results:</b> Paste the complete job description — the more text Scout has, the more accurate the analysis. Fill in your years of experience and certifications in your profile, since these have the biggest effect on match scoring. All data is stored locally in your browser and persists between sessions.</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+        <button class="btn btn-ghost" onclick="toggleGuide()"><i class="ti ti-x"></i> Close guide</button>
+      </div>
     </div>
   </div>
 </div>
 
 
 <!-- ══════════════════════════════════════
-     TAB: JOB SEARCH
+     APP SHELL
      ══════════════════════════════════════ -->
-<div id="tab-jobs" class="tab-panel active">
-  <div class="page">
+<div class="app-shell">
 
-    <!-- Input Panel -->
-    <div class="input-panel">
-      <div class="input-panel-top">
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════════ -->
+  <nav class="sidebar" id="sidebar">
 
-        <div class="input-label">Paste job descriptions</div>
-
-        <div class="input-hint" style="margin-bottom:10px;">
-          📋 Copy any job posting text and paste it below. Add multiple postings using the button beneath.
-        </div>
-
-        <div class="job-slots" id="job-slots"></div>
-
-        <button class="add-slot-btn" onclick="addJobSlot()">
-          + Add another job posting
-        </button>
+    <!-- Header with logo and collapse button -->
+    <div class="sb-header">
+      <div class="sb-logo-mark">
+        <img src="media/Scout Logo.png" alt="Scout"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+        <span class="sb-logo-fallback" style="display:none;">Scout</span>
       </div>
-
-      <div class="input-actions">
-        <button class="btn btn-primary" onclick="analyzeJobs()">&#9656; Analyze</button>
-        <button class="btn btn-ghost"   onclick="clearAll()">Clear all</button>
-      </div>
-
-      <!-- Profile Pills -->
-      <div class="profile-bar" id="profile-pills-row">
-        <span class="profile-bar-label">Profile</span>
-        <button class="btn btn-ghost btn-sm" onclick="openProfileEditor()" style="margin-left:auto">
-          Edit profile
-        </button>
-      </div>
-
-      <!-- Location -->
-      <div class="resume-bar" style="border-top:1px solid var(--border-dim);">
-        <span class="resume-bar-label">Location <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);font-size:0.68rem;">(optional)</span></span>
-        <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)">
-          📍 Share my location
-        </button>
-        <span id="location-badge" style="font-size:0.75rem;font-family:var(--font-mono);color:var(--text-dim);">
-          📍 Not shared, distance won't be calculated
-        </span>
-      </div>
-
-      <!-- Resume Upload -->
-      <div class="resume-bar">
-        <span class="resume-bar-label">Resume <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);font-size:0.68rem;">(optional)</span></span>
-        <label style="cursor:pointer;">
-          <input
-            type="file"
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            style="display:none;"
-            onchange="handleResumeUpload(this)"
-          />
-          <span class="btn btn-ghost btn-sm"
-                onclick="this.parentElement.querySelector('input').click()">
-            ⬆ Upload PDF or Word
-          </span>
-        </label>
-        <span id="resume-upload-status" style="font-size:0.75rem;font-family:var(--font-mono);color:var(--text-dim);">
-          No resume uploaded yet
-        </span>
-      </div>
-    </div>
-
-    <!-- Sub-Tab Navigation -->
-    <div class="subtab-nav">
-      <button id="subtab-results-btn" class="subtab-btn active" onclick="switchSubtab('results')">
-        Results
-      </button>
-      <button id="subtab-saved-btn" class="subtab-btn" onclick="switchSubtab('saved')">
-        Saved <span class="subtab-count" id="saved-count">0</span>
-      </button>
-      <button id="subtab-applied-btn" class="subtab-btn" onclick="switchSubtab('applied')">
-        Applied <span class="subtab-count" id="applied-count">0</span>
+      <button class="sb-collapse-btn" id="collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar">
+        <i class="ti ti-layout-sidebar-left-collapse" id="collapse-icon"></i>
       </button>
     </div>
 
-    <!-- Results Panel -->
-    <div id="subtab-results" class="subtab-panel active">
-      <div id="status-bar" class="status-bar" style="display:none">
-        <div class="status-counts">
-          <div class="status-count"><span class="dot dot-green"></span><span id="count-high">0</span> High match (7–10)</div>
-          <div class="status-count"><span class="dot dot-amber"></span><span id="count-mid">0</span> Partial match (4–6)</div>
-          <div class="status-count"><span class="dot dot-red"></span><span id="count-low">0</span> Low match (1–3)</div>
-        </div>
-        <div class="filter-row">
-          <button class="filter-btn active" onclick="filterResults('all', this)">All</button>
-          <button class="filter-btn"        onclick="filterResults('high', this)">High</button>
-          <button class="filter-btn"        onclick="filterResults('mid', this)">Partial</button>
-          <button class="filter-btn"        onclick="filterResults('low', this)">Low</button>
+    <!-- Expand button — only shows when collapsed -->
+    <button class="sb-expand-btn" onclick="toggleSidebar()" title="Expand sidebar">
+      <i class="ti ti-layout-sidebar-left-expand"></i>
+    </button>
+
+    <!-- Menu section -->
+    <div class="sb-section-label">Menu</div>
+    <div class="sb-item active" data-view="results" data-label="Results" onclick="switchView('results')">
+      <i class="ti ti-briefcase sb-icon"></i>
+      <span class="sb-label">Results</span>
+    </div>
+    <div class="sb-item" data-view="saved" data-label="Saved" onclick="switchView('saved')">
+      <i class="ti ti-bookmark sb-icon"></i>
+      <span class="sb-label">Saved</span>
+      <span class="sb-badge" id="saved-count" style="display:none;">0</span>
+    </div>
+    <div class="sb-item" data-view="applied" data-label="Applied" onclick="switchView('applied')">
+      <i class="ti ti-send sb-icon"></i>
+      <span class="sb-label">Applied</span>
+      <span class="sb-badge" id="applied-count" style="display:none;">0</span>
+    </div>
+
+    <!-- Profile section -->
+    <div class="sb-section-label">Profile</div>
+    <div class="sb-item" data-view="profile" data-label="Edit profile" onclick="openProfileEditor()">
+      <i class="ti ti-user sb-icon"></i>
+      <span class="sb-label">Edit profile</span>
+    </div>
+
+    <!-- General section -->
+    <div class="sb-section-label">General</div>
+    <div class="sb-item" data-label="Guide" onclick="toggleGuide()">
+      <i class="ti ti-help sb-icon"></i>
+      <span class="sb-label">Guide</span>
+    </div>
+    <div class="sb-item" data-label="Toggle theme" onclick="toggleTheme()">
+      <i class="ti ti-moon sb-icon" id="theme-icon"></i>
+      <span class="sb-label">Toggle theme</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="sb-footer">
+      <div class="sb-avatar">G</div>
+      <div class="sb-user">
+        <div class="sb-username">Gavin</div>
+        <div class="sb-role location-badge-el">Not shared</div>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW: RESULTS
+       ══════════════════════════════════════ -->
+  <div class="view-panel" data-view="results" style="flex:1;display:flex;overflow:hidden;">
+
+    <!-- Middle column -->
+    <div class="mid-col">
+      <div class="mid-header">
+        <div class="mid-title">Job postings</div>
+        <div class="mid-sub">Paste a posting and click Analyze</div>
+      </div>
+
+      <div class="analyze-btn-wrap">
+        <button class="btn-analyze" onclick="openPasteModal()">
+          <i class="ti ti-plus"></i> Analyze posting
+        </button>
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-pill active" onclick="filterResults('all',this)">All</button>
+        <button class="filter-pill" onclick="filterResults('high',this)">High</button>
+        <button class="filter-pill" onclick="filterResults('mid',this)">Partial</button>
+        <button class="filter-pill" onclick="filterResults('low',this)">Low</button>
+      </div>
+
+      <div id="status-bar" style="display:none;padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
+        <div style="display:flex;gap:12px;font-size:10px;font-weight:600;color:var(--text-muted);flex-wrap:wrap;">
+          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;"></span><span id="count-high">0</span> High</span>
+          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:4px;"></span><span id="count-mid">0</span> Partial</span>
+          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px;"></span><span id="count-low">0</span> Low</span>
+          <button class="btn-ghost btn-sm" onclick="clearAll()" style="margin-left:auto;font-size:10px;padding:2px 8px;">Clear</button>
         </div>
       </div>
-      <div id="results-container">
+
+      <div class="job-list" id="job-list-inner">
         <div class="empty-state">
-          <div class="empty-icon">📋</div>
+          <div class="empty-icon"><i class="ti ti-file-text" style="font-size:2.2rem;opacity:0.3;"></i></div>
           <div class="empty-title">No results yet</div>
-          <div class="empty-sub">Paste a job description above and click Analyze.<br>
-            <a href="#" onclick="toggleGuide();return false;" style="color:var(--teal);font-weight:700;font-size:0.82rem;">Need help? Open the guide ↑</a>
+          <div class="empty-sub">
+            Click <strong>Analyze posting</strong> above,<br>paste a job description, and hit Analyze.<br><br>
+            <a href="#" onclick="toggleGuide();return false;" style="color:var(--teal);font-weight:700;font-size:11px;">Open guide ↑</a>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Saved Panel -->
-    <div id="subtab-saved" class="subtab-panel">
-      <div class="preview-section-label">Quick preview</div>
+    <!-- Detail panel -->
+    <div class="detail-panel" id="detail-content">
+      <div class="empty-state" style="margin:auto;">
+        <div class="empty-icon"><i class="ti ti-layout-sidebar-right" style="font-size:2.2rem;opacity:0.25;"></i></div>
+        <div class="empty-title">Select a posting</div>
+        <div class="empty-sub">Click any job in the list to see the full analysis here.</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW: SAVED
+       ══════════════════════════════════════ -->
+  <div class="view-panel" data-view="saved" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">Saved Jobs</div>
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Bookmarked postings you want to revisit</div>
+    </div>
+    <div class="preview-strip-section">
+      <div class="preview-strip-label">Quick scroll</div>
       <div class="preview-strip" id="saved-preview-strip"></div>
-      <div id="saved-container">
-        <div class="saved-empty">No saved jobs yet.<br>
-          Click <b>☆ Save</b> on any result card to bookmark it here.
-        </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;" id="saved-panel">
+      <div class="empty-state">
+        <div class="empty-icon"><i class="ti ti-bookmark" style="font-size:2rem;opacity:0.3;"></i></div>
+        <div class="empty-title">No saved jobs yet</div>
+        <div class="empty-sub">Click Save on any result card to bookmark it here.</div>
       </div>
     </div>
+  </div>
 
-    <!-- Applied Panel -->
-    <div id="subtab-applied" class="subtab-panel">
-      <div class="preview-section-label">Quick preview</div>
+
+  <!-- ══════════════════════════════════════
+       VIEW: APPLIED
+       ══════════════════════════════════════ -->
+  <div class="view-panel" data-view="applied" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">Applications</div>
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Track every application with dates, contacts, and follow ups</div>
+    </div>
+    <div class="preview-strip-section">
+      <div class="preview-strip-label">Quick scroll</div>
       <div class="preview-strip" id="applied-preview-strip"></div>
-      <div id="applied-container">
-        <div class="saved-empty">No applications tracked yet.<br>
-          Click <b>✉ Mark Applied</b> on any job card to move it here.
-        </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;" id="applied-panel">
+      <div class="empty-state">
+        <div class="empty-icon"><i class="ti ti-send" style="font-size:2rem;opacity:0.3;"></i></div>
+        <div class="empty-title">No applications tracked yet</div>
+        <div class="empty-sub">Click Mark Applied on any job card to move it here.</div>
       </div>
     </div>
-
   </div>
-</div>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW: PROFILE (full page, not modal)
+       ══════════════════════════════════════ -->
+  <div class="view-panel" data-view="profile" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div class="profile-page">
+
+      <div class="profile-page-header">
+        <div>
+          <div class="profile-page-title">Job Search Profile</div>
+          <div class="profile-page-sub">
+            The more detail you provide here, the more accurate Scout's match scores will be.
+            Years of experience and certifications have the biggest effect on scoring accuracy.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
+          <button class="btn btn-ghost" onclick="closeProfileEditor()"><i class="ti ti-arrow-left"></i> Back</button>
+        </div>
+      </div>
+
+      <div class="profile-page-body">
+
+        <!-- Resume & Location status -->
+        <div class="profile-card full-width">
+          <div class="profile-card-title"><i class="ti ti-info-circle"></i> Quick Setup</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+            <div class="profile-status-row">
+              <div class="profile-status-icon"><i class="ti ti-file-text"></i></div>
+              <div style="flex:1;min-width:0;">
+                <div class="profile-status-label">Resume upload</div>
+                <div class="profile-status-value resume-status-el">Not uploaded yet</div>
+              </div>
+              <label style="cursor:pointer;flex-shrink:0;">
+                <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
+                <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
+              </label>
+            </div>
+
+            <div class="profile-status-row">
+              <div class="profile-status-icon"><i class="ti ti-map-pin"></i></div>
+              <div style="flex:1;min-width:0;">
+                <div class="profile-status-label">Location sharing</div>
+                <div class="profile-status-value location-badge-el">Not shared</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)" style="flex-shrink:0;">
+                <i class="ti ti-map-pin"></i> Share
+              </button>
+            </div>
+
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);padding:8px 12px;background:var(--teal-light);border-radius:var(--radius-xs);border-left:3px solid var(--teal);line-height:1.6;">
+            <i class="ti ti-bulb" style="color:var(--teal);"></i>
+            Upload your resume to auto-fill all fields below. Share your location to see driving distances on job cards.
+          </div>
+        </div>
+
+        <!-- Background card -->
+        <div class="profile-card">
+          <div class="profile-card-title"><i class="ti ti-user"></i> Background</div>
+          <label class="field-label">Current role and background
+            <input id="p-role" class="field-input"
+                   placeholder="e.g. Mid-level tech employee with 4 years project coordination experience"/>
+          </label>
+          <label class="field-label">Years of experience
+            <input id="p-experience" class="field-input"
+                   placeholder="e.g. 4 years total, 1 year project coordination, no mining experience"/>
+          </label>
+          <label class="field-label">Certifications and qualifications
+            <input id="p-certs" class="field-input"
+                   placeholder="e.g. PMP, First Aid Level 1, WHMIS, Class 5 Driver's Licence"/>
+          </label>
+        </div>
+
+        <!-- Target & Salary card -->
+        <div class="profile-card">
+          <div class="profile-card-title"><i class="ti ti-target"></i> Target and Compensation</div>
+          <label class="field-label">Target industry
+            <input id="p-industry" class="field-input"
+                   placeholder="e.g. Mining industry preferred, open to oil and gas or construction"/>
+          </label>
+          <label class="field-label">Minimum salary
+            <input id="p-salary" class="field-input"
+                   placeholder="e.g. 70,000/yr or 35/hr minimum"/>
+          </label>
+          <label class="field-label">Currency
+            <select id="p-currency" class="field-input">
+              <option value="USD">USD — US Dollar ($)</option>
+              <option value="CAD">CAD — Canadian Dollar (CA$)</option>
+              <option value="GBP">GBP — British Pound (£)</option>
+              <option value="EUR">EUR — Euro (€)</option>
+              <option value="AUD">AUD — Australian Dollar (AU$)</option>
+              <option value="NZD">NZD — New Zealand Dollar (NZ$)</option>
+              <option value="JPY">JPY — Japanese Yen (¥)</option>
+              <option value="INR">INR — Indian Rupee (₹)</option>
+              <option value="MXN">MXN — Mexican Peso (MX$)</option>
+              <option value="CHF">CHF — Swiss Franc</option>
+              <option value="ZAR">ZAR — South African Rand (R)</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Preferences card -->
+        <div class="profile-card">
+          <div class="profile-card-title"><i class="ti ti-adjustments"></i> Work Preferences</div>
+          <label class="field-label">Travel willingness
+            <input id="p-travel" class="field-input"
+                   placeholder="e.g. Willing to travel up to 50%, open to rotational camp-based work"/>
+          </label>
+          <label class="field-label">Other preferences and notes
+            <textarea id="p-notes" class="field-input" style="resize:vertical;min-height:80px;"
+                      placeholder="e.g. Prefer project management roles, open to coordinator or scheduler titles, not interested in purely administrative roles"></textarea>
+          </label>
+        </div>
+
+        <!-- Job goal card -->
+        <div class="profile-card">
+          <div class="profile-card-title"><i class="ti ti-flag"></i> Career Goal</div>
+          <label class="field-label">What kind of work are you looking for?
+            <textarea id="p-jobgoal" class="field-input" style="resize:vertical;min-height:120px;"
+                      placeholder="e.g. Looking for a project management or coordination role in the mining or resources sector. Ideally site-based or hybrid with a clear path to senior leadership. Open to rotational schedules for the right opportunity."></textarea>
+          </label>
+          <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
+            Be specific here. Scout uses this directly when assessing how well a posting fits your goals.
+          </div>
+        </div>
+
+        <!-- Save bar -->
+        <div class="profile-save-bar">
+          <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
+          <button class="btn btn-ghost" onclick="closeProfileEditor()"><i class="ti ti-arrow-left"></i> Back to results</button>
+          <div style="margin-left:auto;font-size:11px;color:var(--text-dim);">
+            Changes are saved to your browser and used in all future analyses.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
 
 
 <!-- ══════════════════════════════════════
-     PROFILE MODAL
+     PASTE MODAL
      ══════════════════════════════════════ -->
-<div id="profile-modal" class="modal-overlay">
-  <div class="modal-box">
-    <div class="modal-title">Edit Job Search Profile</div>
-    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:18px;padding:10px 14px;background:var(--teal-light);border-radius:var(--radius-xs);border-left:3px solid var(--teal);">
-      💡 The more detail you provide here, the more accurate Scout's match scores will be. Years of experience and certifications matter most.
+<div id="paste-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width:720px;">
+    <div class="modal-title">Analyze job posting</div>
+    <div class="modal-hint">
+      <i class="ti ti-info-circle"></i>
+      Copy the full text of any job posting and paste it below.
+      More complete text means more accurate analysis.
+      Use <strong>Add another posting</strong> to analyze several at once.
     </div>
-    <div class="modal-fields-grid">
-      <label class="field-label">
-        Current role / background
-        <input id="p-role" class="field-input"
-               placeholder="e.g. Mid-level tech employee with 4 years experience in project coordination" />
-      </label>
-      <label class="field-label">
-        Target industry
-        <input id="p-industry" class="field-input"
-               placeholder="e.g. Mining industry preferred, open to oil and gas or construction" />
-      </label>
-      <label class="field-label">
-        Minimum salary
-        <input id="p-salary" class="field-input"
-               placeholder="e.g. 70,000/yr or 35/hr minimum" />
-      </label>
-      <label class="field-label">
-        Currency
-        <select id="p-currency" class="field-input">
-          <option value="USD">USD, US Dollar ($)</option>
-          <option value="CAD">CAD, Canadian Dollar (CA$)</option>
-          <option value="GBP">GBP, British Pound (£)</option>
-          <option value="EUR">EUR, Euro (€)</option>
-          <option value="AUD">AUD, Australian Dollar (AU$)</option>
-          <option value="NZD">NZD, New Zealand Dollar (NZ$)</option>
-          <option value="JPY">JPY, Japanese Yen (¥)</option>
-          <option value="INR">INR, Indian Rupee (₹)</option>
-          <option value="MXN">MXN, Mexican Peso (MX$)</option>
-          <option value="CHF">CHF, Swiss Franc</option>
-          <option value="ZAR">ZAR, South African Rand (R)</option>
-        </select>
-      </label>
-      <label class="field-label">
-        Years of experience
-        <input id="p-experience" class="field-input"
-               placeholder="e.g. 4 years total, 1 year in project coordination, no mining experience" />
-      </label>
-      <label class="field-label">
-        Travel willingness
-        <input id="p-travel" class="field-input"
-               placeholder="e.g. Willing to travel up to 50%, open to camp-based rotational work" />
-      </label>
-      <label class="field-label">
-        Certifications and qualifications
-        <input id="p-certs" class="field-input"
-               placeholder="e.g. PMP, First Aid Level 1, WHMIS, Class 5 Driver's Licence" />
-      </label>
-      <label class="field-label">
-        Other preferences / notes
-        <textarea id="p-notes" class="field-input" style="resize:vertical;min-height:68px;"
-                  placeholder="e.g. Prefer project management roles, open to coordinator or scheduler titles"></textarea>
-      </label>
-    </div>
-    <label class="field-label" style="margin-top:13px;">
-      What kind of work are you looking for?
-      <textarea id="p-jobgoal" class="field-input" style="resize:vertical;min-height:80px;"
-                placeholder="e.g. Looking for a project management role in mining or resources. Ideally site based or hybrid with a path to senior leadership."></textarea>
-    </label>
 
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
-      <button class="btn btn-ghost"   onclick="closeProfileEditor()">Cancel</button>
+    <div class="paste-label">Job descriptions</div>
+    <div class="job-slots" id="job-slots"></div>
+    <button class="add-slot-btn" onclick="addJobSlot()">
+      <i class="ti ti-plus"></i> Add another posting
+    </button>
+
+    <div style="display:flex;gap:7px;padding-top:14px;border-top:1px solid var(--border-dim);">
+      <button class="btn btn-primary" onclick="analyzeJobs()">
+        <i class="ti ti-search"></i> Analyze
+      </button>
+      <button class="btn btn-ghost" onclick="clearAllSlots()">Clear</button>
+      <button class="btn btn-ghost" style="margin-left:auto;" onclick="closePasteModal()">Cancel</button>
+    </div>
+
+    <!-- Profile and location quick access -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-dim);display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;">Resume</span>
+        <label style="cursor:pointer;">
+          <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
+          <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
+        </label>
+        <span class="resume-status-el" style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">No resume uploaded</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;">Location</span>
+        <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)">
+          <i class="ti ti-map-pin"></i> Share
+        </button>
+        <span class="location-badge-el" style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">Not shared</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closePasteModal();openProfileEditor();" style="margin-left:auto;">
+        <i class="ti ti-user"></i> Edit profile
+      </button>
     </div>
   </div>
 </div>
 
 
 <!-- ══════════════════════════════════════
-     WELCOME MODAL (first ever visit only)
+     WELCOME MODAL (first visit only)
      ══════════════════════════════════════ -->
 <div id="welcome-modal" class="modal-overlay">
   <div class="modal-box welcome-box">
     <div class="welcome-icon">👋</div>
     <div class="welcome-title">Welcome to Scout</div>
     <div class="welcome-body">
-      Before you analyze your first job posting, it helps to set up your profile so Scout knows your background, salary expectations, and experience. You can upload a resume to fill most of this in automatically, or skip ahead and add it later.<br><br>
-      This is entirely optional, you can run an analysis right away without a profile.
+      Before you analyze your first job posting, it helps to set up your profile so Scout knows
+      your background, salary expectations, and experience.<br><br>
+      You can upload a resume to fill most of this in automatically, or skip ahead and add it
+      later. This is entirely optional — you can run an analysis right away without a profile.
     </div>
     <div class="welcome-actions">
-      <button class="btn btn-primary" onclick="welcomeSetUpProfile()">Set up my profile</button>
+      <button class="btn btn-primary" onclick="welcomeGoToProfile()">
+        <i class="ti ti-user"></i> Set up my profile
+      </button>
       <button class="btn btn-ghost" onclick="dismissWelcome(true)">Skip for now</button>
     </div>
   </div>
@@ -407,6 +484,7 @@
 
 
 <div id="toast"></div>
+
 
 <!-- ══════════════════════════════════════
      SCRIPTS
@@ -417,61 +495,15 @@
 <script src="js/utils.js"></script>
 <script src="js/nav.js"></script>
 <script src="js/jobs.js"></script>
-
-
 <script>
-(function () {
-  var SAVED_KEY = 'scout-pw-ok';
-
-  // If already verified this session, skip the gate immediately
-  if (sessionStorage.getItem(SAVED_KEY) === 'yes') {
-    document.getElementById('scout-gate').style.display = 'none';
-    return;
-  }
-
-  // Block the rest of the page until password is entered
-  // (gate overlay covers everything with z-index: 9999)
-  window.__scoutPassword = '';
-
-  window.checkGatePassword = function () {
-    var pw = document.getElementById('gate-pw').value;
-    var errEl = document.getElementById('gate-error');
-
-    fetch('/api/scout-ai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-scout-password': pw
-      },
-      // Minimal valid Anthropic body just to test the password
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: '.' }] })
-    }).then(function (res) {
-      if (res.status === 401) {
-        errEl.style.display = 'block';
-        errEl.textContent = 'Incorrect password. Try again.';
-        document.getElementById('gate-pw').value = '';
-        document.getElementById('gate-pw').focus();
-      } else {
-        // Password is valid — store it for the session and hide the gate
-        window.__scoutPassword = pw;
-        sessionStorage.setItem(SAVED_KEY, 'yes');
-        sessionStorage.setItem('scout-pw', pw);
-        window.__scoutPassword = pw;
-        document.getElementById('scout-gate').style.display = 'none';
-      }
-    }).catch(function () {
-      errEl.style.display = 'block';
-      errEl.textContent = 'Could not verify. Check your connection and try again.';
-    });
-  };
-})();
-
-// Restore the password for API calls when coming back to a verified session
-(function () {
-  if (sessionStorage.getItem('scout-pw')) {
-    window.__scoutPassword = sessionStorage.getItem('scout-pw');
-  }
-})();
+// Paste modal helpers (need DOM, defined inline)
+function openPasteModal()  {
+  document.getElementById('paste-modal').classList.add('open');
+  // Sync location badges inside modal
+  updateLocationBadge();
+}
+function closePasteModal() { document.getElementById('paste-modal').classList.remove('open'); }
 </script>
+
 </body>
 </html>
