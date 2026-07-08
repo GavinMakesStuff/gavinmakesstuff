@@ -2,1305 +2,807 @@
    js/jobs.js — All job search logic
    ═══════════════════════════════════════ */
 
-// ── Module State ──────────────────────────
 let allResults    = [];
 let currentFilter = 'all';
 let slotCount     = 0;
-
+let selectedIdx   = null;
 
 // ══════════════════════════════════════════
-// JOB SLOTS  (multi-posting input)
+// JOB SLOTS
 // ══════════════════════════════════════════
-
 function addJobSlot() {
   slotCount++;
   const container = document.getElementById('job-slots');
+  const n = container.children.length + 1;
   const slot = document.createElement('div');
   slot.className = 'job-slot';
   slot.id = 'slot-' + slotCount;
   slot.innerHTML = `
-    <span class="slot-number">${container.children.length + 1}</span>
-    <textarea
-      class="paste-area"
-      id="job-text-${slotCount}"
-      placeholder="Paste job description ${container.children.length + 1} here…&#10;&#10;Job Title: Project Manager&#10;Company: Acme Mining Co.&#10;&#10;About the role: We are looking for…"></textarea>
-    <button class="slot-remove" onclick="removeJobSlot('slot-${slotCount}')" title="Remove this posting">✕</button>`;
+    <span class="slot-number">${n}</span>
+    <textarea class="paste-area" id="job-text-${slotCount}"
+      placeholder="Paste job description ${n} here…&#10;&#10;Job Title: Project Coordinator&#10;Company: Fortis Mining&#10;&#10;About the role: We are looking for…"></textarea>
+    <button class="slot-remove" onclick="removeJobSlot('slot-${slotCount}')" title="Remove">✕</button>`;
   container.appendChild(slot);
   renumberSlots();
 }
 
 function removeJobSlot(id) {
-  const slot = document.getElementById(id);
-  if (slot) slot.remove();
+  document.getElementById(id)?.remove();
   renumberSlots();
 }
 
 function renumberSlots() {
-  const slots = document.querySelectorAll('#job-slots .slot-number');
-  slots.forEach((el, i) => { el.textContent = i + 1; });
+  document.querySelectorAll('#job-slots .slot-number').forEach((el,i) => { el.textContent = i+1; });
 }
 
 function getAllJobText() {
-  const areas = document.querySelectorAll('#job-slots .paste-area');
   const texts = [];
-  areas.forEach(a => { if (a.value.trim()) texts.push(a.value.trim()); });
+  document.querySelectorAll('#job-slots .paste-area').forEach(a => { if (a.value.trim()) texts.push(a.value.trim()); });
   return texts;
 }
 
 function clearAllSlots() {
-  const container = document.getElementById('job-slots');
-  container.innerHTML = '';
+  const c = document.getElementById('job-slots');
+  c.innerHTML = '';
   slotCount = 0;
   addJobSlot();
 }
 
-
 // ══════════════════════════════════════════
 // ANALYZE
 // ══════════════════════════════════════════
-
 async function analyzeJobs() {
   const texts = getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
-  switchSubtab('results');
+  closePasteModal();
+  switchView('results');
+  selectedIdx = null;
 
-  const container = document.getElementById('results-container');
-  document.getElementById('status-bar').style.display = 'none';
-
-  container.innerHTML = `
+  const detail = document.getElementById('detail-content');
+  const list   = document.getElementById('job-list-inner');
+  const sb     = document.getElementById('status-bar');
+  if (sb) sb.style.display = 'none';
+  if (detail) detail.innerHTML = '';
+  if (list) list.innerHTML = `
     <div class="loading-state">
-      <div class="loading-text" style="margin-bottom:20px;">
-        Analyzing ${texts.length} job posting${texts.length > 1 ? 's' : ''}…
-      </div>
-      <div style="width:100%;max-width:420px;margin:0 auto 12px;">
-        <div style="width:100%;height:6px;background:var(--border);border-radius:10px;overflow:hidden;">
-          <div id="progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg, var(--teal), var(--sand));border-radius:10px;transition:width 0.4s ease;"></div>
-        </div>
-      </div>
+      <div class="spinner"></div>
+      <div class="loading-text">Analyzing ${texts.length} posting${texts.length>1?'s':''}…</div>
+      <div class="progress-bar-wrap"><div id="progress-bar"></div></div>
       <div id="progress-label" class="loading-sub">Starting…</div>
     </div>`;
 
   const steps = [
-    { pct: 8,  label: 'Reading job descriptions…' },
-    { pct: 20, label: 'Matching against your profile…' },
-    { pct: 35, label: 'Scoring viability…' },
-    { pct: 50, label: 'Researching companies…' },
-    { pct: 63, label: 'Checking employee reviews…' },
-    { pct: 75, label: 'Extracting keywords…' },
-    { pct: 85, label: 'Compiling benefits and compensation…' },
-    { pct: 93, label: 'Finalizing results…' },
+    {pct:8,  label:'Reading job descriptions…'},
+    {pct:20, label:'Matching against your profile…'},
+    {pct:35, label:'Scoring viability…'},
+    {pct:50, label:'Researching companies…'},
+    {pct:63, label:'Checking employee reviews…'},
+    {pct:75, label:'Extracting keywords…'},
+    {pct:85, label:'Compiling benefits…'},
+    {pct:93, label:'Finalizing results…'},
   ];
-  const delays = [600, 2500, 4000, 6000, 9000, 13000, 18000, 24000];
-  const timers = delays.map((delay, i) => setTimeout(() => {
-    const bar   = document.getElementById('progress-bar');
-    const label = document.getElementById('progress-label');
-    if (bar)   bar.style.width   = steps[i].pct + '%';
-    if (label) label.textContent = steps[i].label;
-  }, delay));
+  const delays = [600,2500,4000,6000,9000,13000,18000,24000];
+  const timers = delays.map((d,i) => setTimeout(() => {
+    const bar = document.getElementById('progress-bar');
+    const lbl = document.getElementById('progress-label');
+    if (bar) bar.style.width = steps[i].pct+'%';
+    if (lbl) lbl.textContent = steps[i].label;
+  }, d));
   window._progressTimers = timers;
 
   try {
-    const response = await fetch('/api/scout-ai', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        'x-scout-password': window.__scoutPassword || '',
+        'Content-Type':'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8000,
-        messages: [{ role: 'user', content: buildPrompt(texts) }]
+        model:'claude-sonnet-4-6',
+        max_tokens:8000,
+        messages:[{role:'user', content:buildPrompt(texts)}]
       })
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'API error ' + response.status);
-    }
-
+    if (!response.ok) { const e=await response.json(); throw new Error(e.error?.message||'API error '+response.status); }
     const data     = await response.json();
-    const fullText = data.content.map(c => c.type === 'text' ? c.text : '').join('\n');
+    const fullText = data.content.map(c=>c.type==='text'?c.text:'').join('\n');
 
-    (window._progressTimers || []).forEach(t => clearTimeout(t));
-    const bar   = document.getElementById('progress-bar');
-    const label = document.getElementById('progress-label');
-    if (bar)   { bar.style.width = '100%'; bar.style.background = 'var(--green)'; }
-    if (label) { label.textContent = 'Done!'; }
-    await new Promise(r => setTimeout(r, 400));
+    (window._progressTimers||[]).forEach(t=>clearTimeout(t));
+    const bar=document.getElementById('progress-bar');
+    const lbl=document.getElementById('progress-label');
+    if (bar){bar.style.width='100%';bar.style.background='var(--green)';}
+    if (lbl) lbl.textContent='Done!';
+    await new Promise(r=>setTimeout(r,380));
 
     const jobs = parseJobsFromResponse(fullText);
-
-    if (!jobs || jobs.length === 0) {
-      throw new Error('No job listings could be extracted. Make sure each posting includes a job title and company name.');
-    }
+    if (!jobs||jobs.length===0) throw new Error('No listings extracted. Make sure each posting has a title and company name.');
 
     allResults = jobs;
-    renderResults(jobs);
+    renderJobList(jobs);
     updateCounts(jobs);
-    document.getElementById('status-bar').style.display = 'flex';
-    showToast(`Analyzed ${jobs.length} job listing${jobs.length !== 1 ? 's' : ''}.`);
+    if (sb) sb.style.display = 'flex';
+    showToast(`Analyzed ${jobs.length} posting${jobs.length!==1?'s':''}.`);
+    if (jobs.length>0) selectJob(0);
 
-  } catch (err) {
-    (window._progressTimers || []).forEach(t => clearTimeout(t));
-    container.innerHTML = `
-      <div class="error-state">
-        <strong>Could not analyze</strong>
-        ${escHtml(err.message)}<br><br>
-        <span style="color:var(--text-muted);font-size:0.82rem;">
-          Make sure each posting includes a job title and company name.
-        </span>
-      </div>`;
+  } catch(err) {
+    (window._progressTimers||[]).forEach(t=>clearTimeout(t));
+    if (list) list.innerHTML = `<div class="error-state"><strong>Could not analyze</strong>${escHtml(err.message)}<br><br><span style="color:var(--text-muted);font-size:0.82rem;">Make sure each posting includes a job title and company name.</span></div>`;
     console.error(err);
   }
 }
 
-
 // ══════════════════════════════════════════
 // PROMPT
 // ══════════════════════════════════════════
-
 function buildPrompt(texts) {
-  const jobsBlock = texts.map((t, i) =>
-    `--- JOB POSTING ${i + 1} ---\n${t}`
-  ).join('\n\n');
+  const jobsBlock = texts.map((t,i)=>`--- JOB POSTING ${i+1} ---\n${t}`).join('\n\n');
 
   const locationNote = userLocation
-    ? `USER'S CURRENT LOCATION: Lat ${userLocation.lat.toFixed(4)}, Lng ${userLocation.lng.toFixed(4)}. For each job, identify the work address or worksite location stated in the posting, then calculate the approximate driving distance in km from the user's location to that address. Put this number in distanceKm. If no address can be determined, set distanceKm to null.`
-    : `USER LOCATION: Not provided. Set distanceKm to null for all jobs, but still identify the work location type (Remote/On-site/Hybrid) and address/city if stated.`;
+    ? `USER LOCATION: Lat ${userLocation.lat.toFixed(4)}, Lng ${userLocation.lng.toFixed(4)}. Calculate approximate driving distance in km to each job's work address. Set distanceKm to null if no address found.`
+    : `USER LOCATION: Not provided. Set distanceKm to null for all jobs.`;
 
-  const currencyNote = `USER'S CURRENCY: ${userProfile.currency || 'USD'} (symbol: ${currencySymbol()}). When the posting's salary is in a different currency, keep the original currency as stated in the posting rather than converting it, but note the posting's currency clearly in the salary field.`;
+  const currencyNote = `USER CURRENCY: ${userProfile.currency||'USD'} (${currencySymbol()}). Keep salary in the posting's original currency but note it clearly.`;
 
-  return `You are a job search assistant and resume coach. Analyze each job posting below against the user's profile and return structured data.
+  return `You are a job search assistant and resume coach. Analyze each job posting against the user's profile.
 
 ${locationNote}
 ${currencyNote}
 
 USER PROFILE:
-- Background: ${userProfile.role || 'Not specified'}
-- Target industry: ${userProfile.industry || 'Not specified'}
-- Minimum salary: ${userProfile.salary || 'Not specified'} ${userProfile.currency || 'USD'}
-- Years of experience: ${userProfile.experience || 'Not specified'}
-- Certifications: ${userProfile.certs || 'Not specified'}
-- Travel: ${userProfile.travel || 'Not specified'}
-- Notes: ${userProfile.notes || 'Not specified'}
-- Job goal: ${userProfile.jobGoal || 'Not specified'}
+- Background: ${userProfile.role||'Not specified'}
+- Target industry: ${userProfile.industry||'Not specified'}
+- Minimum salary: ${userProfile.salary||'Not specified'} ${userProfile.currency||'USD'}
+- Years of experience: ${userProfile.experience||'Not specified'}
+- Certifications: ${userProfile.certs||'Not specified'}
+- Travel: ${userProfile.travel||'Not specified'}
+- Notes: ${userProfile.notes||'Not specified'}
+- Job goal: ${userProfile.jobGoal||'Not specified'}
 
-SCORING INSTRUCTIONS — viabilityScore (1 to 10):
-Score each posting strictly and honestly. Do NOT round up out of optimism.
-Use this scale:
-  9 to 10: Near-perfect match. Industry, salary, level, and experience requirements all align with the user's profile.
-  7 to 8:  Strong match. Most requirements met. Minor gaps such as a slightly different industry but transferable skills.
-  5 to 6:  Partial match. Some meaningful gaps, the user is missing 1 to 2 key requirements or the industry is quite different.
-  3 to 4:  Weak match. Significant gaps, the user clearly lacks the required experience, industry background, or qualifications.
-  1 to 2:  Poor fit. Role requires experience, credentials, or background the user clearly does not have.
+SCORING (viabilityScore 1-10):
+9-10: Near-perfect match. 7-8: Strong, minor gaps. 5-6: Partial, missing 1-2 requirements. 3-4: Weak, significant gaps. 1-2: Poor fit.
+RULES: Cap at 4 if requires 5+ years in an industry user hasn't worked in. Cap at 5 if requires a designation user doesn't hold. Reduce by 2 if salary clearly below minimum. Be specific in viabilityReason.
 
-CRITICAL SCORING RULES:
-- If the posting requires 5+ years in a specific industry the user has NOT worked in, cap score at 4.
-- If the posting requires a professional designation the user does not have, cap score at 5.
-- If the salary is clearly below the user's minimum and is non-negotiable, reduce score by 2.
-- If the user's stated background and certifications are directly relevant, this can raise the score by 1 to 2.
-- Be specific in viabilityReason about what the gap is and why you gave that score.
-- If the user profile is mostly empty, score based only on what little is provided and note in viabilityReason that a fuller profile would improve scoring accuracy.
+Return ONLY a valid JSON array — no markdown, no backticks, no explanation.
 
-For EACH job return this JSON structure:
+For EACH job:
 {
-  "title": "Job title",
-  "company": "Company name",
-  "companyUrl": "Company homepage URL if known, else empty string",
-  "companyCareersUrl": "Careers page URL if known, else empty string",
-  "postingUrl": "Direct URL if present in text, else empty string",
-  "salary": "As stated, including currency, or 'Not listed'",
-  "level": "Entry / Mid-level / Senior / Manager / Director / Executive / Not specified",
-  "industry": "Industry of the role",
-  "summary": "2-3 sentences on day-to-day responsibilities",
-  "requirements": ["req 1", "req 2", "req 3", "req 4"],
-  "viabilityScore": 7,
-  "viabilityReason": "Specific explanation of the score: what matches, what gaps exist, what experience is missing",
-  "benefits": ["benefit 1", "benefit 2"],
-  "companyReputation": {
-    "rating": "X.X / 5 or 'Not available'",
-    "summary": "2-3 sentences on employee sentiment from public data. Be honest if limited.",
-    "pros": ["pro 1", "pro 2"],
-    "cons": ["con 1", "con 2"],
-    "source": "Glassdoor / Indeed Reviews / Limited public data / Unknown"
-  },
-  "workLocation": {
-    "type": "Remote | On-site | Hybrid | Not specified",
-    "address": "Full office or worksite address if stated, else empty string",
-    "city": "City and province/state if determinable, else empty string",
-    "distanceKm": null
-  },
-  "contact": {
-    "name": "Name of a hiring manager, recruiter, or HR contact if stated in the posting, else empty string",
-    "email": "A contact or HR email address if stated or reasonably inferable from the posting or company domain, else empty string"
-  },
-  "keywords": {
-    "hardSkills":    ["skill1", "skill2", "skill3"],
-    "softSkills":    ["skill1", "skill2"],
-    "industryTerms": ["term1", "term2"]
-  }
+  "title":"Job title","company":"Company name","companyUrl":"URL or empty","companyCareersUrl":"URL or empty","postingUrl":"URL or empty",
+  "salary":"As stated with currency or Not listed","level":"Entry/Mid-level/Senior/Manager/Director/Executive/Not specified",
+  "industry":"Industry","summary":"2-3 sentence summary","requirements":["req1","req2"],
+  "viabilityScore":7,"viabilityReason":"Specific explanation",
+  "benefits":["benefit1"],
+  "companyReputation":{"rating":"X.X / 5 or Not available","summary":"2-3 sentences","pros":["pro1"],"cons":["con1"],"source":"Glassdoor/Indeed Reviews/Limited public data/Unknown"},
+  "workLocation":{"type":"Remote|On-site|Hybrid|Not specified","address":"full address or empty","city":"city/province or empty","distanceKm":null},
+  "contact":{"name":"name or empty","email":"email or empty"},
+  "keywords":{"hardSkills":["skill1"],"softSkills":["skill1"],"industryTerms":["term1"]}
 }
-
-Return ONLY a valid JSON array. No markdown, no backticks, no explanation.
 
 ${jobsBlock}`;
 }
 
-
 // ══════════════════════════════════════════
-// PARSER
+// PARSER / SCORE HELPERS
 // ══════════════════════════════════════════
-
 function parseJobsFromResponse(text) {
-  const clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const clean = text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
   const start = clean.indexOf('[');
   const end   = clean.lastIndexOf(']');
-  if (start === -1 || end === -1) return null;
-  try {
-    return JSON.parse(clean.slice(start, end + 1));
-  } catch (e) {
-    console.error('JSON parse error:', e);
-    return null;
-  }
+  if (start===-1||end===-1) return null;
+  try { return JSON.parse(clean.slice(start,end+1)); }
+  catch(e) { console.error('Parse error:',e); return null; }
 }
 
-
-// ══════════════════════════════════════════
-// SCORE HELPERS
-// ══════════════════════════════════════════
-
-function scoreClass(score) {
-  if (score >= 7) return 'high';
-  if (score >= 4) return 'mid';
-  return 'low';
+function scoreTier(s) { return s>=7?'high':s>=4?'mid':'low'; }
+function scoreCardClass(s) { return s>=7?'viable':s>=4?'potential':'not-viable'; }
+function scoreCssClass(s)  { return s>=7?'score-high':s>=4?'score-mid':'score-low'; }
+function scoreLabel(s)     { return s>=7?'Strong':s>=4?'Partial':'Low'; }
+function initials(co) { return (co||'??').split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function iconStyle(s) {
+  if (s>=7) return 'background:var(--teal-light);color:var(--teal);';
+  if (s>=4) return 'background:var(--amber-bg);color:var(--amber);';
+  return 'background:var(--red-bg);color:var(--red);';
 }
-
-function scoreCssClass(score) {
-  if (score >= 7) return 'score-high';
-  if (score >= 4) return 'score-mid';
-  return 'score-low';
-}
-
-function scoreCardClass(score) {
-  if (score >= 7) return 'viable';
-  if (score >= 4) return 'potential';
-  return 'not-viable';
-}
-
+function jobKey(j) { return (j.title||'')+'||'+(j.company||''); }
 
 // ══════════════════════════════════════════
-// WORK LOCATION RENDERER
+// RENDER JOB LIST
 // ══════════════════════════════════════════
-
-function renderWorkLocation(loc) {
-  if (!loc) return '';
-
-  const typeColor = loc.type === 'Remote'  ? 'var(--green)'
-                  : loc.type === 'Hybrid'  ? 'var(--amber)'
-                  : loc.type === 'On-site' ? 'var(--teal)'
-                  : 'var(--text-dim)';
-
-  const typeIcon  = loc.type === 'Remote'  ? '🏠'
-                  : loc.type === 'Hybrid'  ? '🔄'
-                  : loc.type === 'On-site' ? '🏢'
-                  : '❓';
-
-  const mapsUrl = loc.address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}`
-    : loc.city
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city)}`
-    : null;
-
-  const distanceStr = loc.distanceKm != null
-    ? `<span style="font-size:0.75rem;font-family:var(--font-mono);color:var(--text-muted);background:var(--surface-3);padding:2px 8px;border-radius:20px;border:1px solid var(--border-dim);">~${Math.round(loc.distanceKm)} km away</span>`
-    : '';
-
-  const addressLine = loc.address || loc.city
-    ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        ${mapsUrl
-          ? `<a href="${mapsUrl}" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700;display:flex;align-items:center;gap:4px;">📌 ${escHtml(loc.address || loc.city)} ↗</a>`
-          : `<span>📌 ${escHtml(loc.address || loc.city)}</span>`}
-        ${distanceStr}
-      </div>`
-    : distanceStr
-    ? `<div style="margin-top:5px;">${distanceStr}</div>`
-    : '';
-
-  return `
-    <div class="card-body-section">
-      <div class="section-label">Work Location</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:0.78rem;font-weight:700;padding:3px 11px;border-radius:20px;border:1px solid ${typeColor}44;color:${typeColor};background:${typeColor}11;display:inline-flex;align-items:center;gap:5px;">
-          ${typeIcon} ${escHtml(loc.type || 'Not specified')}
-        </span>
-      </div>
-      ${addressLine}
-    </div>`;
-}
-
-
-// ══════════════════════════════════════════
-// RENDER — RESULTS LIST
-// ══════════════════════════════════════════
-
-function renderResults(jobs) {
-  const container = document.getElementById('results-container');
+function renderJobList(jobs) {
+  const inner = document.getElementById('job-list-inner');
+  if (!inner) return;
   let filtered = jobs;
-  if (currentFilter !== 'all') {
-    filtered = jobs.filter(j => scoreClass(j.viabilityScore) === currentFilter);
-  }
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📊</div>
-        <div class="empty-title">No results match this filter</div>
-        <div class="empty-sub">Try a different filter above</div>
-      </div>`;
+  if (currentFilter!=='all') filtered = jobs.filter(j=>scoreTier(j.viabilityScore)===currentFilter);
+  if (!filtered.length) {
+    inner.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No results match this filter</div></div>`;
     return;
   }
 
-  container.innerHTML = `<div class="jobs-grid">
-    ${filtered.map((job, i) => renderJobCard(job, i)).join('')}
-  </div>`;
+  inner.innerHTML = filtered.map((job,i) => {
+    const s         = job.viabilityScore||0;
+    const key       = jobKey(job);
+    const isSaved   = savedJobs.some(x=>jobKey(x)===key);
+    const isApplied = appliedJobs.some(x=>jobKey(x)===key);
+    const record    = savedJobs.find(x=>jobKey(x)===key) || appliedJobs.find(x=>jobKey(x)===key);
+    const isStarred = record?.starred||false;
+    const loc       = job.workLocation;
+    const locIcon   = loc?.type==='Remote'?'🏠':loc?.type==='Hybrid'?'🔄':loc?.type==='On-site'?'🏢':'';
+
+    return `
+    <div class="job-list-card ${scoreTier(s) === 'high' ? 'high' : scoreTier(s) === 'mid' ? 'mid' : 'low'}${isStarred?' starred':''}"
+         id="jlc-${i}" onclick="selectJob(${i})">
+      <div class="jlc-top">
+        <div class="jlc-icon" style="${iconStyle(s)}">${initials(job.company)}</div>
+        <div class="jlc-body">
+          <div class="jlc-title">${escHtml(job.title)}</div>
+          <div class="jlc-company">${escHtml(job.company)}</div>
+        </div>
+        <div class="jlc-score">
+          <div class="jlc-score-num ${scoreCssClass(s)}">${s}<span style="font-size:9px;opacity:0.5">/10</span></div>
+          <div class="jlc-score-lbl ${scoreCssClass(s)}">${scoreLabel(s)}</div>
+        </div>
+      </div>
+      <div class="jlc-meta">
+        ${job.salary?`<span class="tag tag-sal">${escHtml(job.salary)}</span>`:''}
+        ${locIcon?`<span class="tag tag-loc">${locIcon} ${escHtml(loc.type)}</span>`:''}
+        ${loc?.distanceKm!=null?`<span class="tag tag-dist">~${Math.round(loc.distanceKm)} km</span>`:''}
+      </div>
+      <div class="card-quick-actions" onclick="event.stopPropagation()">
+        <button class="cqa-btn${isStarred?' star-active':''}" onclick="toggleStarResult(${i})" id="cqa-star-${i}" title="Star">
+          <i class="ti ti-star${isStarred?'-filled':''}"></i> ${isStarred?'Starred':'Star'}
+        </button>
+        <button class="cqa-btn${isSaved?' save-active':''}" onclick="toggleSave(${i})" id="cqa-save-${i}" title="Save">
+          <i class="ti ti-bookmark${isSaved?'-filled':''}"></i> ${isSaved?'Saved':'Save'}
+        </button>
+        <button class="cqa-btn${isApplied?' apply-active':''}" onclick="markApplied(${i})" id="cqa-apply-${i}" title="Mark Applied">
+          <i class="ti ti-send"></i> ${isApplied?'Applied':'Apply'}
+        </button>
+        ${isSaved||isApplied?`<button class="cqa-btn remove-btn" onclick="removeResult(${i})" title="Remove"><i class="ti ti-trash"></i></button>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
-
 // ══════════════════════════════════════════
-// RENDER — SINGLE JOB CARD (Results tab)
+// SELECT JOB → DETAIL PANEL
 // ══════════════════════════════════════════
+function selectJob(idx) {
+  selectedIdx = idx;
+  document.querySelectorAll('.job-list-card').forEach((el,i) => el.classList.toggle('selected', i===idx));
 
-function renderJobCard(job, idx) {
-  const score       = job.viabilityScore || 0;
-  const cardClass   = scoreCardClass(score);
-  const scoreClass_ = scoreCssClass(score);
+  const job = allResults[idx];
+  if (!job) return;
+  const detail = document.getElementById('detail-content');
+  if (!detail) return;
 
-  const key          = jobKey(job);
-  const isBookmarked = savedJobs.some(s  => jobKey(s) === key);
-  const isApplied    = appliedJobs.some(a => jobKey(a) === key);
-  const isStarred    = (savedJobs.find(s => jobKey(s) === key) || {}).starred
-                     || (appliedJobs.find(a => jobKey(a) === key) || {}).starred
-                     || false;
+  const s         = job.viabilityScore||0;
+  const key       = jobKey(job);
+  const isSaved   = savedJobs.some(x=>jobKey(x)===key);
+  const isApplied = appliedJobs.some(x=>jobKey(x)===key);
+  const record    = savedJobs.find(x=>jobKey(x)===key)||appliedJobs.find(x=>jobKey(x)===key);
+  const isStarred = record?.starred||false;
+  const kw        = job.keywords||{};
+  const rep       = job.companyReputation;
+  const loc       = job.workLocation;
 
-  const reqs     = (job.requirements || []).map(r => `<li class="req-tag">${escHtml(r)}</li>`).join('');
-  const benefits = (job.benefits     || []).map(b => `<span class="benefit-tag">${escHtml(b)}</span>`).join(' ');
-  const kw       = job.keywords || {};
+  const kwHard = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwSoft = (kw.softSkills||[]).map(k=>`<span class="chip chip-soft" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwInd  = (kw.industryTerms||[]).map(k=>`<span class="chip chip-ind"  onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const reqs     = (job.requirements||[]).map(r=>`<span class="chip chip-req">${escHtml(r)}</span>`).join(' ');
+  const benefits = (job.benefits||[]).map(b=>`<span class="benefit-pill">${escHtml(b)}</span>`).join(' ');
 
-  const kwHard     = (kw.hardSkills    || []).map(k => `<span class="kw-pill kw-hard"     onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')" title="Click to copy">${escHtml(k)}</span>`).join(' ');
-  const kwSoft     = (kw.softSkills    || []).map(k => `<span class="kw-pill kw-soft"     onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')" title="Click to copy">${escHtml(k)}</span>`).join(' ');
-  const kwIndustry = (kw.industryTerms || []).map(k => `<span class="kw-pill kw-industry" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')" title="Click to copy">${escHtml(k)}</span>`).join(' ');
-
-  const rep = job.companyReputation;
-
-  return `
-  <div class="job-card ${cardClass}${isBookmarked ? ' bookmarked' : ''}${isStarred ? ' starred' : ''}" id="card-${idx}">
-
-    <div class="card-header">
-      <div class="card-title-block">
-        <button class="star-toggle-btn${isStarred ? ' starred' : ''}" id="star-btn-${idx}"
-                onclick="toggleStarResult(${idx})" title="${isStarred ? 'Remove highlight' : 'Highlight this posting'}">
-          ${isStarred ? '★' : '☆'}
-        </button>
-        <div>
-          <div class="job-title">${escHtml(job.title)}</div>
-          <div class="job-company">
-            ${job.companyUrl
-              ? `<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)}</a>`
-              : escHtml(job.company)}
-          </div>
-        </div>
+  let locHtml='';
+  if (loc) {
+    const lc = loc.type==='Remote'?'loc-remote':loc.type==='Hybrid'?'loc-hybrid':loc.type==='On-site'?'loc-onsite':'loc-unknown';
+    const li = loc.type==='Remote'?'🏠':loc.type==='Hybrid'?'🔄':loc.type==='On-site'?'🏢':'❓';
+    const mu = loc.address?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}`
+             : loc.city   ?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city)}`:'';
+    locHtml = `<div class="detail-section">
+      <div class="ds-label">Work Location</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="loc-badge ${lc}">${li} ${escHtml(loc.type||'Not specified')}</span>
+        ${(loc.address||loc.city)&&mu?`<a href="${escHtml(mu)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--teal);font-weight:700;">📌 ${escHtml(loc.address||loc.city)} ↗</a>`:''}
+        ${loc.distanceKm!=null?`<span class="tag tag-dist">~${Math.round(loc.distanceKm)} km from you</span>`:''}
       </div>
-      <div class="card-badges">
-        <div class="viability-score ${scoreClass_}">
-          <span class="score-number">${score}<span style="font-size:0.7rem;font-weight:500;opacity:0.8">/10</span></span>
-          <span class="score-label">${score >= 7 ? 'Strong' : score >= 4 ? 'Partial' : 'Low'} Match</span>
-        </div>
-        <button class="card-collapse-btn" id="collapse-btn-card-${idx}" onclick="toggleCardCollapse('card-${idx}')" title="Collapse/expand">
-          <span class="chevron">▼</span>
-        </button>
-      </div>
-    </div>
+    </div>`;
+  }
 
-    <div class="card-collapsible-body" id="collapse-body-card-${idx}">
-
-    <div class="card-meta">
-      <div class="meta-item">
-        <span class="meta-icon">💰</span>
-        <span class="meta-value salary">${escHtml(job.salary || 'Not listed')}</span>
-      </div>
-      <div class="meta-item">
-        <span class="meta-icon">📊</span>
-        <span class="meta-value">${escHtml(job.level || 'Not specified')}</span>
-      </div>
-      <div class="meta-item">
-        <span class="meta-icon">🏭</span>
-        <span class="meta-value">${escHtml(job.industry || '—')}</span>
-      </div>
-      ${job.postingUrl
-        ? `<div class="meta-item"><a href="${escHtml(job.postingUrl)}" target="_blank" rel="noopener" style="font-size:0.76rem;font-family:var(--font-mono);">View posting ↗</a></div>`
-        : ''}
-    </div>
-
-    <div class="card-body-section">
-      <div class="section-label">About this role</div>
-      <div class="card-summary" style="margin-bottom:10px;">${escHtml(job.summary)}</div>
-      <div class="viability-note">🤔 ${escHtml(job.viabilityReason || '')}</div>
-    </div>
-
-    ${reqs ? `<div class="card-body-section">
-      <div class="section-label">Requirements</div>
-      <ul class="req-list">${reqs}</ul>
-    </div>` : ''}
-
-    ${benefits ? `<div class="card-body-section">
-      <div class="section-label">Benefits and Compensation</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">${benefits}</div>
-    </div>` : ''}
-
-    ${(kwHard || kwSoft || kwIndustry) ? `<div class="card-body-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div class="section-label" style="margin-bottom:0;">Resume and Cover Letter Keywords</div>
-        <button class="btn-icon btn-sm" onclick="copyAllKeywords(${idx})">⎘ Copy all</button>
-      </div>
-      ${kwHard     ? `<div style="margin-bottom:8px;"><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;">Hard Skills</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${kwHard}</div></div>` : ''}
-      ${kwSoft     ? `<div style="margin-bottom:8px;"><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:5px;">Soft Skills</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${kwSoft}</div></div>` : ''}
-      ${kwIndustry ? `<div><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Industry Terms</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${kwIndustry}</div></div>` : ''}
-    </div>` : ''}
-
-    ${rep ? `<div class="card-body-section">
-      <div class="section-label">Employee Satisfaction</div>
+  let repHtml='';
+  if (rep) {
+    repHtml = `<div class="detail-section">
+      <div class="ds-label">Employee Satisfaction</div>
       <div class="rep-block">
-        <div class="rep-header">
-          <span class="rep-rating">${escHtml(rep.rating || 'N/A')}</span>
-          <span class="rep-source">via ${escHtml(rep.source || 'public data')}</span>
-        </div>
-        <p class="rep-summary">${escHtml(rep.summary || '')}</p>
+        <div class="rep-header"><span class="rep-rating">${escHtml(rep.rating||'N/A')}</span><span class="rep-source">via ${escHtml(rep.source||'public data')}</span></div>
+        <p class="rep-summary">${escHtml(rep.summary||'')}</p>
         <div class="rep-grid">
-          ${(rep.pros||[]).length ? `<div class="rep-pros"><div class="rep-col-label">Pros</div><ul class="rep-list">${(rep.pros||[]).map(p=>`<li>${escHtml(p)}</li>`).join('')}</ul></div>` : ''}
-          ${(rep.cons||[]).length ? `<div class="rep-cons"><div class="rep-col-label">Cons</div><ul class="rep-list">${(rep.cons||[]).map(c=>`<li>${escHtml(c)}</li>`).join('')}</ul></div>` : ''}
+          ${(rep.pros||[]).length?`<div class="rep-pros"><div class="rep-col-label">Pros</div><ul class="rep-list">${(rep.pros||[]).map(p=>`<li>${escHtml(p)}</li>`).join('')}</ul></div>`:''}
+          ${(rep.cons||[]).length?`<div class="rep-cons"><div class="rep-col-label">Cons</div><ul class="rep-list">${(rep.cons||[]).map(c=>`<li>${escHtml(c)}</li>`).join('')}</ul></div>`:''}
         </div>
       </div>
-    </div>` : ''}
+    </div>`;
+  }
 
-    ${renderWorkLocation(job.workLocation)}
-
-    <div class="card-body-section">
-      <div class="section-label">Company Links</div>
-      <div class="company-links">
-        ${job.companyUrl
-          ? `<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener" class="company-link">🌐 Website ↗</a>`
-          : `<span class="company-link-missing">🌐 Website not found</span>`}
-        ${job.companyCareersUrl
-          ? `<a href="${escHtml(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link">💼 Careers portal ↗</a>`
-          : `<span class="company-link-missing">💼 Careers portal not found</span>`}
+  detail.innerHTML = `
+    <div class="detail-header">
+      <div class="dh-row">
+        <div class="dh-icon">${initials(job.company)}</div>
+        <div class="dh-body">
+          <div class="dh-title">${escHtml(job.title)}</div>
+          <div class="dh-company">${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
+        </div>
+        <div class="dh-actions">
+          <button class="btn-icon${isStarred?' star-active':''}" onclick="toggleStarResult(${idx})" id="dp-star-${idx}" title="Star">
+            <i class="ti ti-star${isStarred?'-filled':''}"></i> ${isStarred?'Starred':'Star'}
+          </button>
+          <button class="btn-icon${isSaved?' save-active':''}" onclick="toggleSave(${idx})" id="dp-save-${idx}" title="Save">
+            <i class="ti ti-bookmark${isSaved?'-filled':''}"></i> ${isSaved?'Saved':'Save'}
+          </button>
+          <button class="btn-icon${isApplied?' apply-active':''}" onclick="markApplied(${idx})" id="dp-apply-${idx}" title="Mark Applied">
+            <i class="ti ti-send"></i> ${isApplied?'Applied':'Mark Applied'}
+          </button>
+          <button class="btn-icon" onclick="copyCard(${idx})" title="Copy"><i class="ti ti-copy"></i></button>
+        </div>
+        <div class="dh-score">
+          <div class="dh-score-num">${s}<span style="font-size:13px;opacity:0.5">/10</span></div>
+          <div class="dh-score-lbl">${scoreLabel(s)} match</div>
+        </div>
       </div>
     </div>
 
-    </div><!-- /card-collapsible-body -->
-
-    <div class="card-footer">
-      <button class="btn-icon${isBookmarked ? ' save-active' : ''}"
-              onclick="toggleSave(${idx})" id="save-btn-${idx}">
-        ${isBookmarked ? '★ Saved' : '☆ Save'}
-      </button>
-      <button class="btn-icon${isApplied ? ' apply-active' : ''}"
-              onclick="markApplied(${idx})" id="applied-btn-${idx}">
-        ${isApplied ? '✓ Applied' : '✉ Mark Applied'}
-      </button>
-      <button class="btn-icon" style="margin-left:auto" onclick="copyCard(${idx})">⎘ Copy</button>
+    <div class="meta-strip">
+      <div class="meta-item"><span class="meta-val salary">${escHtml(job.salary||'Not listed')}</span></div>
+      <div class="meta-item">Level: <span class="meta-val">${escHtml(job.level||'Not specified')}</span></div>
+      <div class="meta-item">Industry: <span class="meta-val">${escHtml(job.industry||'—')}</span></div>
+      ${job.postingUrl?`<div class="meta-item"><a href="${escHtml(job.postingUrl)}" target="_blank" rel="noopener" style="font-size:11px;font-family:var(--font-mono);">View posting ↗</a></div>`:''}
     </div>
 
-  </div>`;
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="ds-label">About this role</div>
+        <div class="ds-body">${escHtml(job.summary)}</div>
+        <div class="viability-note">🤔 ${escHtml(job.viabilityReason||'')}</div>
+      </div>
+      ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
+      ${benefits?`<div class="detail-section"><div class="ds-label">Benefits and Compensation</div><div class="chip-row">${benefits}</div></div>`:''}
+      ${(kwHard||kwSoft||kwInd)?`<div class="detail-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="ds-label" style="margin-bottom:0;">Resume and Cover Letter Keywords</div>
+          <button class="btn-icon btn-sm" onclick="copyAllKeywords(${idx})"><i class="ti ti-copy"></i> Copy all</button>
+        </div>
+        ${kwHard?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}
+        ${kwSoft?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:5px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}
+        ${kwInd?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}
+      </div>`:''}
+      ${repHtml}
+      ${locHtml}
+      <div class="detail-section">
+        <div class="ds-label">Company Links</div>
+        <div class="company-links">
+          ${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-world"></i> Website ↗</a>`:`<span class="company-link-missing"><i class="ti ti-world"></i> Not found</span>`}
+          ${job.companyCareersUrl?`<a href="${escHtml(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-briefcase"></i> Careers ↗</a>`:`<span class="company-link-missing"><i class="ti ti-briefcase"></i> Not found</span>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-footer">
+      <button class="btn-icon" onclick="copyCard(${idx})" style="margin-left:auto;"><i class="ti ti-copy"></i> Copy full details</button>
+    </div>`;
 }
 
-
 // ══════════════════════════════════════════
-// RENDER — SAVED / APPLIED CARD
+// RENDER SAVED / APPLIED CARD
 // ══════════════════════════════════════════
-
 function renderSavedCard(job, idx, isApplied) {
-  const score       = job.viabilityScore || 0;
-  const cardClass   = scoreCardClass(score);
-  const scoreClass_ = scoreCssClass(score);
-  const cardPrefix  = isApplied ? 'acard' : 'scard';
-  const isStarred   = job.starred || false;
+  const s         = job.viabilityScore||0;
+  const prefix    = isApplied?'ac':'sc';
+  const isStarred = job.starred||false;
+  const loc       = job.workLocation;
+  const kw        = job.keywords||{};
+  const rep       = job.companyReputation;
+  const dateStr   = isApplied?'Applied '+new Date(job.appliedAt).toLocaleDateString():'Saved '+new Date(job.savedAt).toLocaleDateString();
+  const reqs      = (job.requirements||[]).map(r=>`<span class="chip chip-req">${escHtml(r)}</span>`).join(' ');
+  const benefits  = (job.benefits||[]).map(b=>`<span class="benefit-pill">${escHtml(b)}</span>`).join(' ');
+  const kwHard    = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard">${escHtml(k)}</span>`).join(' ');
+  const kwSoft    = (kw.softSkills||[]).map(k=>`<span class="chip chip-soft">${escHtml(k)}</span>`).join(' ');
+  const kwInd     = (kw.industryTerms||[]).map(k=>`<span class="chip chip-ind">${escHtml(k)}</span>`).join(' ');
+  const contactName  = job.contactName||job.contact?.name||'';
+  const contactEmail = job.contactEmail||job.contact?.email||'';
+  const contactLinkedIn = job.contactLinkedIn||'';
+  const manualPostingUrl = job.manualPostingUrl||job.postingUrl||'';
 
-  const dateStr = isApplied
-    ? 'Applied ' + new Date(job.appliedAt).toLocaleDateString()
-    : 'Saved '   + new Date(job.savedAt).toLocaleDateString();
-
-  const reqs     = (job.requirements || []).map(r => `<li class="req-tag">${escHtml(r)}</li>`).join('');
-  const benefits = (job.benefits     || []).map(b => `<span class="benefit-tag">${escHtml(b)}</span>`).join(' ');
-  const kw       = job.keywords || {};
-  const kwHard     = (kw.hardSkills    || []).map(k => `<span class="kw-pill kw-hard">${escHtml(k)}</span>`).join(' ');
-  const kwSoft     = (kw.softSkills    || []).map(k => `<span class="kw-pill kw-soft">${escHtml(k)}</span>`).join(' ');
-  const kwIndustry = (kw.industryTerms || []).map(k => `<span class="kw-pill kw-industry">${escHtml(k)}</span>`).join(' ');
-  const rep = job.companyReputation;
-
-  const dateApplied  = job.dateApplied  || '';
-  const followUpSent = job.followUpSent || false;
-  const followUpDate = job.followUpDate || '';
-  const notes        = job.notes        || '';
-  const contactName  = job.contactName  || (job.contact && job.contact.name)  || '';
-  const contactEmail = job.contactEmail || (job.contact && job.contact.email) || '';
+  let locHtml='';
+  if (loc) {
+    const lc=loc.type==='Remote'?'loc-remote':loc.type==='Hybrid'?'loc-hybrid':loc.type==='On-site'?'loc-onsite':'loc-unknown';
+    const li=loc.type==='Remote'?'🏠':loc.type==='Hybrid'?'🔄':loc.type==='On-site'?'🏢':'❓';
+    const mu=loc.address?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}`:loc.city?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city)}`:'';
+    locHtml=`<div class="detail-section"><div class="ds-label">Work Location</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span class="loc-badge ${lc}">${li} ${escHtml(loc.type||'Not specified')}</span>${(loc.address||loc.city)&&mu?`<a href="${escHtml(mu)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--teal);font-weight:700;">📌 ${escHtml(loc.address||loc.city)} ↗</a>`:''} ${loc.distanceKm!=null?`<span class="tag tag-dist">~${Math.round(loc.distanceKm)} km</span>`:''}</div></div>`;
+  }
+  let repHtml='';
+  if (rep) {
+    repHtml=`<div class="detail-section"><div class="ds-label">Employee Satisfaction</div><div class="rep-block"><div class="rep-header"><span class="rep-rating">${escHtml(rep.rating||'N/A')}</span><span class="rep-source">via ${escHtml(rep.source||'public data')}</span></div><p class="rep-summary">${escHtml(rep.summary||'')}</p><div class="rep-grid">${(rep.pros||[]).length?`<div class="rep-pros"><div class="rep-col-label">Pros</div><ul class="rep-list">${(rep.pros||[]).map(p=>`<li>${escHtml(p)}</li>`).join('')}</ul></div>`:''}${(rep.cons||[]).length?`<div class="rep-cons"><div class="rep-col-label">Cons</div><ul class="rep-list">${(rep.cons||[]).map(c=>`<li>${escHtml(c)}</li>`).join('')}</ul></div>`:''}</div></div></div>`;
+  }
 
   return `
-  <div class="job-card ${cardClass}${isStarred ? ' starred' : ''}" id="${cardPrefix}-${idx}">
-
-    <div class="card-header">
-      <div class="card-title-block">
-        <button class="star-toggle-btn${isStarred ? ' starred' : ''}" id="star-btn-${cardPrefix}-${idx}"
-                onclick="toggleStarSaved(${idx}, ${isApplied})" title="${isStarred ? 'Remove highlight' : 'Highlight this posting'}">
-          ${isStarred ? '★' : '☆'}
+  <div class="detail-header">
+    <div class="dh-row">
+      <div class="dh-icon">${initials(job.company)}</div>
+      <div class="dh-body">
+        <div class="dh-title">${escHtml(job.title)}</div>
+        <div class="dh-company">${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;font-family:var(--font-mono);">${dateStr}</div>
+      </div>
+      <div class="dh-actions">
+        <button class="btn-icon${isStarred?' star-active':''}" onclick="toggleStarSaved(${idx},${isApplied})" title="Star">
+          <i class="ti ti-star${isStarred?'-filled':''}"></i> ${isStarred?'Starred':'Star'}
         </button>
-        <div>
-          <div class="job-title">${escHtml(job.title)}</div>
-          <div class="job-company">
-            ${job.companyUrl
-              ? `<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)}</a>`
-              : escHtml(job.company)}
-          </div>
-        </div>
-      </div>
-      <div class="card-badges">
-        <div class="viability-score ${scoreClass_}">
-          <span class="score-number">${score}<span style="font-size:0.7rem;font-weight:500;opacity:0.8">/10</span></span>
-          <span class="score-label">${score >= 7 ? 'Strong' : score >= 4 ? 'Partial' : 'Low'} Match</span>
-        </div>
-        <span style="font-size:0.68rem;color:var(--text-dim);font-family:var(--font-mono);">${dateStr}</span>
-        <button class="card-collapse-btn" id="collapse-btn-${cardPrefix}-${idx}" onclick="toggleCardCollapse('${cardPrefix}-${idx}')" title="Collapse/expand">
-          <span class="chevron">▼</span>
+        ${!isApplied
+          ? `<button class="btn-icon" onclick="markAppliedFromSaved(${idx})" title="Mark Applied"><i class="ti ti-send"></i> Mark Applied</button>`
+          : `<span class="btn-icon apply-active"><i class="ti ti-check"></i> Applied</span>`}
+        <button class="btn-icon btn-danger" onclick="${isApplied?'removeApplied':'removeSaved'}(${idx})" title="Remove">
+          <i class="ti ti-trash"></i> Remove
         </button>
+        <button class="btn-icon" onclick="copySavedJob(${idx},${isApplied})" title="Copy"><i class="ti ti-copy"></i></button>
       </div>
+      <div class="dh-score"><div class="dh-score-num">${s}<span style="font-size:13px;opacity:0.5">/10</span></div><div class="dh-score-lbl">${scoreLabel(s)} match</div></div>
     </div>
-
-    <div class="card-collapsible-body" id="collapse-body-${cardPrefix}-${idx}">
-
-    <div class="card-meta">
-      <div class="meta-item"><span class="meta-icon">💰</span><span class="meta-value salary">${escHtml(job.salary || 'Not listed')}</span></div>
-      <div class="meta-item"><span class="meta-icon">📊</span><span class="meta-value">${escHtml(job.level || 'Not specified')}</span></div>
-      <div class="meta-item"><span class="meta-icon">🏭</span><span class="meta-value">${escHtml(job.industry || '—')}</span></div>
-      ${job.postingUrl ? `<div class="meta-item"><a href="${escHtml(job.postingUrl)}" target="_blank" rel="noopener" style="font-size:0.76rem;font-family:var(--font-mono);">View posting ↗</a></div>` : ''}
-    </div>
-
-    <div class="card-body-section">
-      <div class="section-label">About this role</div>
-      <div class="card-summary" style="margin-bottom:10px;">${escHtml(job.summary)}</div>
-      <div class="viability-note">🤔 ${escHtml(job.viabilityReason || '')}</div>
-    </div>
-
-    ${reqs     ? `<div class="card-body-section"><div class="section-label">Requirements</div><ul class="req-list">${reqs}</ul></div>` : ''}
-    ${benefits ? `<div class="card-body-section"><div class="section-label">Benefits and Compensation</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${benefits}</div></div>` : ''}
-
-    ${(kwHard||kwSoft||kwIndustry) ? `<div class="card-body-section">
-      <div class="section-label" style="margin-bottom:8px;">Keywords</div>
-      ${kwHard     ? `<div style="margin-bottom:7px;"><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${kwHard}</div></div>` : ''}
-      ${kwSoft     ? `<div style="margin-bottom:7px;"><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${kwSoft}</div></div>` : ''}
-      ${kwIndustry ? `<div><div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Industry Terms</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${kwIndustry}</div></div>` : ''}
-    </div>` : ''}
-
-    ${rep ? `<div class="card-body-section">
-      <div class="section-label">Employee Satisfaction</div>
-      <div class="rep-block">
-        <div class="rep-header">
-          <span class="rep-rating">${escHtml(rep.rating || 'N/A')}</span>
-          <span class="rep-source">via ${escHtml(rep.source || 'public data')}</span>
-        </div>
-        <p class="rep-summary">${escHtml(rep.summary || '')}</p>
-        <div class="rep-grid">
-          ${(rep.pros||[]).length ? `<div class="rep-pros"><div class="rep-col-label">Pros</div><ul class="rep-list">${(rep.pros||[]).map(p=>`<li>${escHtml(p)}</li>`).join('')}</ul></div>` : ''}
-          ${(rep.cons||[]).length ? `<div class="rep-cons"><div class="rep-col-label">Cons</div><ul class="rep-list">${(rep.cons||[]).map(c=>`<li>${escHtml(c)}</li>`).join('')}</ul></div>` : ''}
-        </div>
-      </div>
-    </div>` : ''}
-
-    ${renderWorkLocation(job.workLocation)}
-
-    <div class="card-body-section">
-      <div class="section-label">Company Links</div>
-      <div class="company-links">
-        ${job.companyUrl         ? `<a href="${escHtml(job.companyUrl)}"         target="_blank" rel="noopener" class="company-link">🌐 Website ↗</a>`        : `<span class="company-link-missing">🌐 Website not found</span>`}
-        ${job.companyCareersUrl  ? `<a href="${escHtml(job.companyCareersUrl)}"  target="_blank" rel="noopener" class="company-link">💼 Careers portal ↗</a>` : `<span class="company-link-missing">💼 Careers portal not found</span>`}
-      </div>
-    </div>
-
-    <!-- Application Tracking -->
-    <div class="card-body-section">
-      <div class="section-label">Application Tracking</div>
+  </div>
+  <div class="meta-strip">
+    <div class="meta-item"><span class="meta-val salary">${escHtml(job.salary||'Not listed')}</span></div>
+    <div class="meta-item">Level: <span class="meta-val">${escHtml(job.level||'Not specified')}</span></div>
+    <div class="meta-item">Industry: <span class="meta-val">${escHtml(job.industry||'—')}</span></div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-section"><div class="ds-label">About this role</div><div class="ds-body">${escHtml(job.summary)}</div><div class="viability-note">🤔 ${escHtml(job.viabilityReason||'')}</div></div>
+    ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
+    ${benefits?`<div class="detail-section"><div class="ds-label">Benefits</div><div class="chip-row">${benefits}</div></div>`:''}
+    ${(kwHard||kwSoft||kwInd)?`<div class="detail-section"><div class="ds-label" style="margin-bottom:10px;">Keywords</div>${kwHard?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}${kwSoft?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}${kwInd?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}</div>`:''}
+    ${repHtml}
+    ${locHtml}
+    <div class="detail-section">
+      <div class="ds-label">Application Tracking</div>
       <div class="tracking-block">
-
         <div class="tracking-row">
           <span class="tracking-label">Date applied</span>
-          <input type="date" class="tracking-input" value="${escHtml(dateApplied)}"
-                 onchange="updateTrackingField(${idx}, ${isApplied}, 'dateApplied', this.value)" />
+          <input type="date" class="tracking-input" value="${escHtml(job.dateApplied||'')}" onchange="updateTracking(${idx},${isApplied},'dateApplied',this.value)"/>
         </div>
-
         <div class="tracking-row">
           <div class="checkbox-row">
-            <input type="checkbox" id="followup-${cardPrefix}-${idx}" ${followUpSent ? 'checked' : ''}
-                   onchange="updateTrackingField(${idx}, ${isApplied}, 'followUpSent', this.checked)" />
-            <label for="followup-${cardPrefix}-${idx}">Follow up sent</label>
+            <input type="checkbox" id="fu-${prefix}-${idx}" ${job.followUpSent?'checked':''} onchange="updateTracking(${idx},${isApplied},'followUpSent',this.checked)"/>
+            <label for="fu-${prefix}-${idx}">Follow up sent</label>
           </div>
-          <input type="date" class="tracking-input" value="${escHtml(followUpDate)}"
-                 onchange="updateTrackingField(${idx}, ${isApplied}, 'followUpDate', this.value)" />
+          <input type="date" class="tracking-input" value="${escHtml(job.followUpDate||'')}" onchange="updateTracking(${idx},${isApplied},'followUpDate',this.value)"/>
         </div>
-
         <div class="tracking-row" style="flex-direction:column;align-items:stretch;">
-          <span class="tracking-label" style="margin-bottom:4px;">Contact</span>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-            <input type="text" class="tracking-input text-input" placeholder="Contact name"
-                   value="${escHtml(contactName)}"
-                   onchange="updateTrackingField(${idx}, ${isApplied}, 'contactName', this.value)" />
-            <input type="email" class="tracking-input text-input" placeholder="Contact email"
-                   value="${escHtml(contactEmail)}"
-                   onchange="updateTrackingField(${idx}, ${isApplied}, 'contactEmail', this.value)" />
-            <input type="url" class="tracking-input text-input" placeholder="LinkedIn profile URL"
-                   value="${escHtml(job.contactLinkedIn || '')}"
-                   onchange="updateTrackingField(${idx}, ${isApplied}, 'contactLinkedIn', this.value)" />
-            <button class="btn-icon contact-find-btn" onclick="findContactEmail(${idx}, ${isApplied})">🔍 Find contact</button>
+          <span class="tracking-label" style="margin-bottom:5px;">Contact</span>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
+            <input type="text"  class="tracking-input text" placeholder="Contact name"  value="${escHtml(contactName)}"  onchange="updateTracking(${idx},${isApplied},'contactName',this.value)"/>
+            <input type="email" class="tracking-input text" placeholder="Contact email" value="${escHtml(contactEmail)}" onchange="updateTracking(${idx},${isApplied},'contactEmail',this.value)"/>
           </div>
-          <div class="contact-result" id="contact-result-${cardPrefix}-${idx}"></div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
+            <input type="url"  class="tracking-input text" placeholder="LinkedIn profile URL" value="${escHtml(contactLinkedIn)}" onchange="updateTracking(${idx},${isApplied},'contactLinkedIn',this.value)"/>
+            <button class="btn-icon btn-sm" onclick="findContact(${idx},${isApplied})"><i class="ti ti-search"></i> Find contact</button>
+          </div>
+          <div class="contact-result" id="cr-${prefix}-${idx}"></div>
         </div>
-
         <div class="tracking-row">
           <span class="tracking-label">Posting URL</span>
-          <input type="url" class="tracking-input text-input" placeholder="https://…"
-                 value="${escHtml(job.manualPostingUrl || job.postingUrl || '')}"
-                 onchange="updateTrackingField(${idx}, ${isApplied}, 'manualPostingUrl', this.value)" />
-          ${(job.manualPostingUrl || job.postingUrl)
-            ? `<a href="${escHtml(job.manualPostingUrl || job.postingUrl)}" target="_blank" rel="noopener" class="btn-icon" style="text-decoration:none;">↗ Open</a>`
-            : ''}
+          <input type="url" class="tracking-input text" placeholder="https://…" value="${escHtml(manualPostingUrl)}" onchange="updateTracking(${idx},${isApplied},'manualPostingUrl',this.value)"/>
+          ${manualPostingUrl?`<a href="${escHtml(manualPostingUrl)}" target="_blank" rel="noopener" class="btn-icon btn-sm"><i class="ti ti-external-link"></i></a>`:''}
         </div>
-
         <div class="tracking-row" style="flex-direction:column;align-items:stretch;">
-          <span class="tracking-label" style="margin-bottom:4px;">Notes</span>
-          <textarea class="notes-textarea" placeholder="Add any notes about this application, interview details, follow up content, etc."
-                    onchange="updateTrackingField(${idx}, ${isApplied}, 'notes', this.value)">${escHtml(notes)}</textarea>
+          <span class="tracking-label" style="margin-bottom:5px;">Notes</span>
+          <textarea class="notes-area" placeholder="Add notes about this application…" onchange="updateTracking(${idx},${isApplied},'notes',this.value)">${escHtml(job.notes||'')}</textarea>
         </div>
-
       </div>
     </div>
-
-    </div><!-- /card-collapsible-body -->
-
-    <div class="card-footer">
-      ${!isApplied
-        ? `<button class="btn-icon" onclick="markAppliedFromSaved(${idx})">✉ Mark Applied</button>`
-        : `<span style="font-size:0.78rem;color:var(--sand-lo);font-weight:700;">✓ Application tracked</span>`}
-      <button class="btn-icon" onclick="${isApplied ? 'removeApplied' : 'removeSaved'}(${idx})"
-              style="color:var(--red);border-color:rgba(164,41,27,0.35);">✕ Remove</button>
-      <button class="btn-icon" style="margin-left:auto" onclick="copySavedCard(${idx}, ${isApplied})">⎘ Copy</button>
-    </div>
-
-  </div>`;
-}
-
-
-// ══════════════════════════════════════════
-// MINI PREVIEW STRIPS
-// ══════════════════════════════════════════
-
-function renderPreviewCard(job, listName, idx) {
-  const cardClass = scoreCardClass(job.viabilityScore || 0);
-  return `
-    <div class="preview-card ${cardClass}" onclick="switchSubtab('${listName}')" title="${escHtml(job.title)} at ${escHtml(job.company)}">
-      <div class="preview-card-title">${escHtml(job.title)}</div>
-      <div class="preview-card-company">${escHtml(job.company)}</div>
-      <div class="preview-card-meta">
-        <span>${job.viabilityScore || 0}/10</span>
-        <span>${job.starred ? '★' : ''}</span>
-      </div>
+    <div class="detail-section"><div class="ds-label">Company Links</div><div class="company-links">
+      ${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-world"></i> Website ↗</a>`:`<span class="company-link-missing"><i class="ti ti-world"></i> Not found</span>`}
+      ${job.companyCareersUrl?`<a href="${escHtml(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-briefcase"></i> Careers ↗</a>`:`<span class="company-link-missing"><i class="ti ti-briefcase"></i> Not found</span>`}
+    </div></div>
+  </div>
+    <div class="detail-footer">
+      <button class="btn-icon" onclick="copySavedJob(${idx},${isApplied})" style="margin-left:auto;"><i class="ti ti-copy"></i> Copy full details</button>
     </div>`;
 }
 
-function renderPreviewStrips() {
-  const savedStrip   = document.getElementById('saved-preview-strip');
-  const appliedStrip = document.getElementById('applied-preview-strip');
-  if (savedStrip) {
-    savedStrip.innerHTML = savedJobs.slice(0, 10).map(j => renderPreviewCard(j, 'saved')).join('');
-  }
-  if (appliedStrip) {
-    appliedStrip.innerHTML = appliedJobs.slice(0, 10).map(j => renderPreviewCard(j, 'applied')).join('');
-  }
+function renderSaved() {
+  const panel = document.getElementById('saved-panel');
+  if (!panel) return;
+  if (!savedJobs.length) { panel.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-bookmark" style="font-size:2rem;opacity:0.3;"></i></div><div class="empty-title">No saved jobs yet</div><div class="empty-sub">Click Save on any result to bookmark it here.</div></div>`; return; }
+  panel.innerHTML = savedJobs.map((j,i)=>`<div style="border-bottom:1px solid var(--border-dim);">${renderSavedCard(j,i,false)}</div>`).join('');
 }
 
-
-// ══════════════════════════════════════════
-// CARD COLLAPSE
-// ══════════════════════════════════════════
-
-function toggleCardCollapse(cardId) {
-  const body = document.getElementById('collapse-body-' + cardId);
-  const btn  = document.getElementById('collapse-btn-' + cardId);
-  if (!body || !btn) return;
-  const isCollapsed = body.classList.toggle('collapsed');
-  btn.classList.toggle('collapsed', isCollapsed);
+function renderApplied() {
+  const panel = document.getElementById('applied-panel');
+  if (!panel) return;
+  if (!appliedJobs.length) { panel.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-send" style="font-size:2rem;opacity:0.3;"></i></div><div class="empty-title">No applications tracked yet</div><div class="empty-sub">Click Mark Applied on any job to move it here.</div></div>`; return; }
+  panel.innerHTML = appliedJobs.map((j,i)=>`<div style="border-bottom:1px solid var(--border-dim);">${renderSavedCard(j,i,true)}</div>`).join('');
 }
 
-
 // ══════════════════════════════════════════
-// FILTER / CLEAR
+// FILTER / CLEAR / COUNTS
 // ══════════════════════════════════════════
-
 function filterResults(filter, btn) {
   currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderResults(allResults);
-}
-
-function clearResults() {
-  allResults    = [];
-  currentFilter = 'all';
-  document.getElementById('results-container').innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">No results yet</div>
-      <div class="empty-sub">Paste a job description above and click Analyze</div>
-    </div>`;
-  document.getElementById('status-bar').style.display = 'none';
-  document.querySelectorAll('.filter-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  renderJobList(allResults);
+  if (selectedIdx!==null&&allResults[selectedIdx]) selectJob(selectedIdx);
 }
 
 function clearAll() {
-  clearResults();
+  allResults=[]; currentFilter='all'; selectedIdx=null;
   clearAllSlots();
+  const inner=document.getElementById('job-list-inner');
+  if (inner) inner.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No results yet</div><div class="empty-sub">Click Analyze posting above, paste a job description, and hit Analyze.</div></div>`;
+  const detail=document.getElementById('detail-content');
+  if (detail) detail.innerHTML='';
+  const sb=document.getElementById('status-bar');
+  if (sb) sb.style.display='none';
+  document.querySelectorAll('.filter-pill').forEach((b,i)=>b.classList.toggle('active',i===0));
 }
 
-
-// ══════════════════════════════════════════
-// COUNTS / BADGES
-// ══════════════════════════════════════════
-
 function updateCounts(jobs) {
-  document.getElementById('count-high').textContent = jobs.filter(j => scoreClass(j.viabilityScore) === 'high').length;
-  document.getElementById('count-mid').textContent  = jobs.filter(j => scoreClass(j.viabilityScore) === 'mid').length;
-  document.getElementById('count-low').textContent  = jobs.filter(j => scoreClass(j.viabilityScore) === 'low').length;
+  const h=document.getElementById('count-high'),m=document.getElementById('count-mid'),l=document.getElementById('count-low');
+  if(h) h.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='high').length;
+  if(m) m.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='mid').length;
+  if(l) l.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='low').length;
 }
 
 function updateBadges() {
-  document.getElementById('saved-count').textContent   = savedJobs.length;
-  document.getElementById('applied-count').textContent = appliedJobs.length;
+  const sc=document.getElementById('saved-count'),ac=document.getElementById('applied-count');
+  if(sc){ sc.textContent=savedJobs.length; sc.style.display=savedJobs.length>0?'':'none'; }
+  if(ac){ ac.textContent=appliedJobs.length; ac.style.display=appliedJobs.length>0?'':'none'; }
   renderPreviewStrips();
 }
 
+function renderPreviewStrips() {
+  const render=(jobs,view)=>jobs.slice(0,8).map(j=>{
+    const cls=scoreCardClass(j.viabilityScore||0);
+    return `<div class="preview-card ${cls}" onclick="switchView('${view}')" title="${escHtml(j.title)}"><div class="pc-title">${escHtml(j.title)}</div><div class="pc-company">${escHtml(j.company)}</div><div class="pc-meta"><span>${j.viabilityScore||0}/10</span><span>${j.starred?'★':''}</span></div></div>`;
+  }).join('');
+  const ss=document.getElementById('saved-preview-strip'),as=document.getElementById('applied-preview-strip');
+  if(ss) ss.innerHTML=render(savedJobs,'saved');
+  if(as) as.innerHTML=render(appliedJobs,'applied');
+}
 
 // ══════════════════════════════════════════
-// SAVE / APPLY / STAR
+// SAVE / APPLY / STAR / REMOVE
 // ══════════════════════════════════════════
-
-function jobKey(j) { return j.title + '||' + j.company; }
-
 function toggleSave(idx) {
-  const job = allResults[idx];
-  const ei  = savedJobs.findIndex(s => jobKey(s) === jobKey(job));
-  if (ei >= 0) { savedJobs.splice(ei, 1); showToast('Removed from saved jobs.'); }
-  else         { savedJobs.push({ ...job, savedAt: new Date().toISOString() }); showToast('Job saved!'); }
-  localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
-  updateBadges();
-  const isSaved = savedJobs.some(s => jobKey(s) === jobKey(job));
-  const btn  = document.getElementById('save-btn-' + idx);
-  const card = document.getElementById('card-' + idx);
-  if (btn)  { btn.textContent = isSaved ? '★ Saved' : '☆ Save'; btn.classList.toggle('save-active', isSaved); }
-  if (card) { card.classList.toggle('bookmarked', isSaved); }
+  const job=allResults[idx]; const key=jobKey(job);
+  const ei=savedJobs.findIndex(s=>jobKey(s)===key);
+  if(ei>=0){savedJobs.splice(ei,1);showToast('Removed from saved.');}
+  else{savedJobs.push({...job,savedAt:new Date().toISOString()});showToast('Job saved!');}
+  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
+  updateBadges(); renderJobList(allResults);
+  if(selectedIdx===idx) selectJob(idx);
 }
 
 function markApplied(idx) {
-  const job = allResults[idx];
-  if (appliedJobs.some(a => jobKey(a) === jobKey(job))) { showToast('Already marked as applied.'); return; }
-  const today = new Date().toISOString().slice(0, 10);
-  appliedJobs.push({ ...job, appliedAt: new Date().toISOString(), dateApplied: today });
-  if (!savedJobs.some(s => jobKey(s) === jobKey(job))) {
-    savedJobs.push({ ...job, savedAt: new Date().toISOString() });
-    localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
-  }
-  localStorage.setItem('scout-applied', JSON.stringify(appliedJobs));
-  updateBadges();
-  const btn = document.getElementById('applied-btn-' + idx);
-  if (btn) { btn.textContent = '✓ Applied'; btn.classList.add('apply-active'); }
+  const job=allResults[idx]; const key=jobKey(job);
+  if(appliedJobs.some(a=>jobKey(a)===key)){showToast('Already marked as applied.');return;}
+  const today=new Date().toISOString().slice(0,10);
+  appliedJobs.push({...job,appliedAt:new Date().toISOString(),dateApplied:today});
+  if(!savedJobs.some(s=>jobKey(s)===key)){savedJobs.push({...job,savedAt:new Date().toISOString()});localStorage.setItem('scout-saved',JSON.stringify(savedJobs));}
+  localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  updateBadges(); renderJobList(allResults);
+  if(selectedIdx===idx) selectJob(idx);
   showToast('Marked as applied!');
 }
 
 function markAppliedFromSaved(idx) {
-  const job = savedJobs[idx];
-  if (appliedJobs.some(a => jobKey(a) === jobKey(job))) { showToast('Already applied.'); return; }
-  const today = new Date().toISOString().slice(0, 10);
-  appliedJobs.push({ ...job, appliedAt: new Date().toISOString(), dateApplied: job.dateApplied || today });
-  localStorage.setItem('scout-applied', JSON.stringify(appliedJobs));
-  updateBadges();
-  showToast('Marked as applied!');
-  renderSaved();
+  const job=savedJobs[idx]; const key=jobKey(job);
+  if(appliedJobs.some(a=>jobKey(a)===key)){showToast('Already applied.');return;}
+  appliedJobs.push({...job,appliedAt:new Date().toISOString(),dateApplied:job.dateApplied||new Date().toISOString().slice(0,10)});
+  localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  updateBadges(); showToast('Marked as applied!'); renderSaved();
 }
 
 function removeSaved(idx) {
-  savedJobs.splice(idx, 1);
-  localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
-  updateBadges(); renderSaved();
-  showToast('Removed from saved jobs.');
+  savedJobs.splice(idx,1); localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
+  updateBadges(); renderSaved(); showToast('Removed from saved.');
 }
 
 function removeApplied(idx) {
-  appliedJobs.splice(idx, 1);
-  localStorage.setItem('scout-applied', JSON.stringify(appliedJobs));
-  updateBadges(); renderApplied();
-  showToast('Removed from applied jobs.');
+  appliedJobs.splice(idx,1); localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  updateBadges(); renderApplied(); showToast('Removed from applied.');
 }
 
-// Star toggle from the live Results tab (before saving)
+function removeResult(idx) {
+  const job=allResults[idx]; const key=jobKey(job);
+  const si=savedJobs.findIndex(s=>jobKey(s)===key);
+  const ai=appliedJobs.findIndex(a=>jobKey(a)===key);
+  if(si>=0){savedJobs.splice(si,1);localStorage.setItem('scout-saved',JSON.stringify(savedJobs));}
+  if(ai>=0){appliedJobs.splice(ai,1);localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));}
+  updateBadges(); renderJobList(allResults);
+  if(selectedIdx===idx){selectedIdx=null;const d=document.getElementById('detail-content');if(d)d.innerHTML='';}
+  showToast('Removed.');
+}
+
 function toggleStarResult(idx) {
-  const job = allResults[idx];
-  const key = jobKey(job);
-
-  // If already saved or applied, toggle the star on that stored record
-  let touched = false;
-  const si = savedJobs.findIndex(s => jobKey(s) === key);
-  if (si >= 0) { savedJobs[si].starred = !savedJobs[si].starred; touched = true; }
-  const ai = appliedJobs.findIndex(a => jobKey(a) === key);
-  if (ai >= 0) { appliedJobs[ai].starred = !appliedJobs[ai].starred; touched = true; }
-
-  if (touched) {
-    localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
-    localStorage.setItem('scout-applied', JSON.stringify(appliedJobs));
-  } else {
-    // Not saved yet: star it and save it, so the highlight has somewhere to live
-    job.starred = true;
-    savedJobs.push({ ...job, savedAt: new Date().toISOString() });
-    localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
-    const saveBtn = document.getElementById('save-btn-' + idx);
-    if (saveBtn) { saveBtn.textContent = '★ Saved'; saveBtn.classList.add('save-active'); }
-    document.getElementById('card-' + idx)?.classList.add('bookmarked');
-  }
-
-  const isStarredNow = !!(savedJobs.find(s => jobKey(s) === key)?.starred || appliedJobs.find(a => jobKey(a) === key)?.starred);
-  const starBtn = document.getElementById('star-btn-' + idx);
-  if (starBtn) { starBtn.textContent = isStarredNow ? '★' : '☆'; starBtn.classList.toggle('starred', isStarredNow); }
-  document.getElementById('card-' + idx)?.classList.toggle('starred', isStarredNow);
-  updateBadges();
-  showToast(isStarredNow ? 'Posting highlighted.' : 'Highlight removed.');
+  const job=allResults[idx]; const key=jobKey(job);
+  let touched=false;
+  [savedJobs,appliedJobs].forEach(list=>{const i=list.findIndex(x=>jobKey(x)===key);if(i>=0){list[i].starred=!list[i].starred;touched=true;}});
+  if(!touched){job.starred=true;savedJobs.push({...job,savedAt:new Date().toISOString()});localStorage.setItem('scout-saved',JSON.stringify(savedJobs));showToast('Starred and saved!');}
+  else{localStorage.setItem('scout-saved',JSON.stringify(savedJobs));localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));}
+  updateBadges(); renderJobList(allResults);
+  if(selectedIdx===idx) selectJob(idx);
 }
 
-function toggleStarSaved(idx, isApplied) {
-  const list = isApplied ? appliedJobs : savedJobs;
-  list[idx].starred = !list[idx].starred;
-  localStorage.setItem(isApplied ? 'scout-applied' : 'scout-saved', JSON.stringify(list));
+function toggleStarSaved(idx,isApplied) {
+  const list=isApplied?appliedJobs:savedJobs;
+  list[idx].starred=!list[idx].starred;
+  localStorage.setItem(isApplied?'scout-applied':'scout-saved',JSON.stringify(list));
   updateBadges();
-  if (isApplied) renderApplied(); else renderSaved();
+  if(isApplied) renderApplied(); else renderSaved();
 }
-
 
 // ══════════════════════════════════════════
-// APPLICATION TRACKING FIELD UPDATES
+// TRACKING
 // ══════════════════════════════════════════
-
-function updateTrackingField(idx, isApplied, field, value) {
-  const list = isApplied ? appliedJobs : savedJobs;
-  if (!list[idx]) return;
-  list[idx][field] = value;
-  localStorage.setItem(isApplied ? 'scout-applied' : 'scout-saved', JSON.stringify(list));
-  // Light toast only for meaningful toggles, not every keystroke field
-  if (field === 'followUpSent') {
-    showToast(value ? 'Follow up marked as sent.' : 'Follow up unmarked.');
-  } else if (field === 'dateApplied' || field === 'followUpDate') {
-    showToast('Date saved.');
-  }
+function updateTracking(idx,isApplied,field,value) {
+  const list=isApplied?appliedJobs:savedJobs;
+  if(!list[idx]) return;
+  list[idx][field]=value;
+  localStorage.setItem(isApplied?'scout-applied':'scout-saved',JSON.stringify(list));
+  if(field==='followUpSent') showToast(value?'Follow up marked as sent.':'Follow up unmarked.');
+  else if(field==='dateApplied'||field==='followUpDate') showToast('Date saved.');
 }
-
 
 // ══════════════════════════════════════════
 // CONTACT FINDER
 // ══════════════════════════════════════════
-
-async function findContactEmail(idx, isApplied) {
-  const list   = isApplied ? appliedJobs : savedJobs;
-  const job    = list[idx];
-  const prefix = isApplied ? 'acard' : 'scard';
-  const resultEl = document.getElementById(`contact-result-${prefix}-${idx}`);
-  if (!job) return;
-
-  if (resultEl) { resultEl.textContent = '⏳ Searching for a contact…'; resultEl.className = 'contact-result'; }
-
+async function findContact(idx,isApplied) {
+  const list=isApplied?appliedJobs:savedJobs; const job=list[idx];
+  const prefix=isApplied?'ac':'sc';
+  const resultEl=document.getElementById(`cr-${prefix}-${idx}`);
+  if(!job||!resultEl) return;
+  resultEl.textContent='⏳ Searching…'; resultEl.className='contact-result';
   try {
-    const response = await fetch('/api/scout-ai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        'x-scout-password': window.__scoutPassword || '',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 600,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: `Search for a likely HR, recruiting, or hiring manager contact for a job application follow up.
-
-Company: ${job.company}
-Job title: ${job.title}
-Company website: ${job.companyUrl || 'unknown'}
-Careers page: ${job.companyCareersUrl || 'unknown'}
-
-Look for a publicly listed HR or recruiting contact email, or a general careers/HR email for this company (such as careers@company.com or hr@company.com). Also look for the name of an HR manager or recruiter if publicly listed.
-
-Return ONLY a JSON object, no markdown, no explanation:
-{
-  "name": "Contact name if found, else empty string",
-  "email": "Email address if found, else empty string",
-  "confidence": "high | medium | low",
-  "note": "One short sentence on where this was found or why none was found"
-}`
-        }]
-      })
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:`Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.\nCompany: ${job.company}\nJob title: ${job.title}\nWebsite: ${job.companyUrl||'unknown'}\nReturn ONLY a JSON object, no markdown:\n{"name":"name or empty","email":"email or empty","note":"one short sentence"}`}]})
     });
-
-    if (!response.ok) throw new Error('Search failed');
-
-    const data  = await response.json();
-    const raw   = data.content.map(c => c.type === 'text' ? c.text : '').join('');
-    const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    const start = clean.indexOf('{');
-    const end   = clean.lastIndexOf('}');
-    const found = JSON.parse(clean.slice(start, end + 1));
-
-    if (found.email) {
-      list[idx].contactEmail = found.email;
-      if (found.name) list[idx].contactName = found.name;
-      localStorage.setItem(isApplied ? 'scout-applied' : 'scout-saved', JSON.stringify(list));
-      if (isApplied) renderApplied(); else renderSaved();
-      showToast('Contact found and filled in.');
+    const data=await response.json();
+    const raw=data.content.map(c=>c.type==='text'?c.text:'').join('');
+    const clean=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    const found=JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1));
+    if(found.email){
+      list[idx].contactEmail=found.email;
+      if(found.name) list[idx].contactName=found.name;
+      localStorage.setItem(isApplied?'scout-applied':'scout-saved',JSON.stringify(list));
+      if(isApplied) renderApplied(); else renderSaved();
+      showToast('Contact found and saved.');
     } else {
-      if (resultEl) {
-        resultEl.textContent = `No public contact found. ${found.note || 'Try entering one manually if you find it elsewhere.'}`;
-        resultEl.className = 'contact-result not-found';
-      }
+      resultEl.textContent=found.note||'No public contact found. Enter one manually.';
+      resultEl.className='contact-result not-found';
     }
-
-  } catch (err) {
-    if (resultEl) {
-      resultEl.textContent = 'Could not search for a contact. You can enter one manually.';
-      resultEl.className = 'contact-result not-found';
-    }
+  } catch(err) {
+    resultEl.textContent='Search failed. Enter a contact manually.';
+    resultEl.className='contact-result not-found';
     console.error(err);
   }
 }
-
-
-// ══════════════════════════════════════════
-// RENDER SAVED / APPLIED PANELS
-// ══════════════════════════════════════════
-
-function renderSaved() {
-  const c = document.getElementById('saved-container');
-  if (!savedJobs.length) { c.innerHTML = '<div class="saved-empty">No saved jobs yet.</div>'; return; }
-  c.innerHTML = `<div class="jobs-grid">${savedJobs.map((j,i) => renderSavedCard(j,i,false)).join('')}</div>`;
-}
-
-function renderApplied() {
-  const c = document.getElementById('applied-container');
-  if (!appliedJobs.length) { c.innerHTML = '<div class="saved-empty">No applications tracked yet.</div>'; return; }
-  c.innerHTML = `<div class="jobs-grid">${appliedJobs.map((j,i) => renderSavedCard(j,i,true)).join('')}</div>`;
-}
-
 
 // ══════════════════════════════════════════
 // COPY
 // ══════════════════════════════════════════
-
 function copyCard(idx) { copyJobData(allResults[idx]); }
-function copySavedCard(idx, isApplied) { copyJobData((isApplied ? appliedJobs : savedJobs)[idx]); }
-
-function copyKw(word) {
-  navigator.clipboard.writeText(word)
-    .then(() => showToast('Copied: ' + word))
-    .catch(() => showToast('Copy failed.'));
-}
-
+function copySavedJob(idx,isApplied) { copyJobData((isApplied?appliedJobs:savedJobs)[idx]); }
+function copyKw(word) { navigator.clipboard.writeText(word).then(()=>showToast('Copied: '+word)).catch(()=>showToast('Copy failed.')); }
 function copyAllKeywords(idx) {
-  const kw = allResults[idx]?.keywords;
-  if (!kw) return;
-  const text = [
-    'HARD SKILLS:\n'    + (kw.hardSkills    || []).join(', '),
-    'SOFT SKILLS:\n'    + (kw.softSkills    || []).join(', '),
-    'INDUSTRY TERMS:\n' + (kw.industryTerms || []).join(', ')
-  ].join('\n\n');
-  navigator.clipboard.writeText(text)
-    .then(()  => showToast('All keywords copied!'))
-    .catch(() => showToast('Copy failed.'));
+  const kw=allResults[idx]?.keywords; if(!kw) return;
+  const text=['HARD SKILLS:\n'+(kw.hardSkills||[]).join(', '),'SOFT SKILLS:\n'+(kw.softSkills||[]).join(', '),'INDUSTRY TERMS:\n'+(kw.industryTerms||[]).join(', ')].join('\n\n');
+  navigator.clipboard.writeText(text).then(()=>showToast('Keywords copied!')).catch(()=>showToast('Copy failed.'));
 }
-
 function copyJobData(job) {
-  if (!job) return;
-  if (typeof job === 'string') {
-    try { job = JSON.parse(job); } catch(e) { showToast('Copy failed.'); return; }
-  }
-  const kw   = job.keywords || {};
-  const rep  = job.companyReputation;
-  const loc  = job.workLocation;
-  const contactName  = job.contactName  || (job.contact && job.contact.name)  || '';
-  const contactEmail = job.contactEmail || (job.contact && job.contact.email) || '';
-
-  const text = [
-    `JOB TITLE:      ${job.title}`,
-    `COMPANY:        ${job.company}`,
-    `WEBSITE:        ${job.companyUrl        || 'Not found'}`,
-    `CAREERS PAGE:   ${job.companyCareersUrl || 'Not found'}`,
-    `POSTING URL:    ${job.postingUrl        || 'N/A'}`,
-    `SALARY:         ${job.salary            || 'Not listed'}`,
-    `LEVEL:          ${job.level             || 'Not specified'}`,
-    `INDUSTRY:       ${job.industry          || '—'}`,
-    ``,
-    `WORK LOCATION:  ${loc?.type || 'Not specified'}`,
-    `ADDRESS:        ${loc?.address || loc?.city || 'Not listed'}`,
-    `DISTANCE:       ${loc?.distanceKm != null ? '~' + Math.round(loc.distanceKm) + ' km' : 'N/A'}`,
-    ``,
-    `MATCH SCORE:    ${job.viabilityScore || 'N/A'}/10`,
-    `ASSESSMENT:     ${job.viabilityReason || ''}`,
-    ``,
-    `SUMMARY:`,        job.summary,
-    ``,
-    `REQUIREMENTS:   ${(job.requirements||[]).join(', ')}`,
-    ``,
-    `BENEFITS:       ${(job.benefits||[]).join(', ') || 'None listed'}`,
-    ``,
-    `KEYWORDS:`,
-    `  Hard Skills:    ${(kw.hardSkills    ||[]).join(', ')}`,
-    `  Soft Skills:    ${(kw.softSkills    ||[]).join(', ')}`,
-    `  Industry Terms: ${(kw.industryTerms ||[]).join(', ')}`,
-    ``,
-    `EMPLOYEE SATISFACTION:`,
-    `  Rating:  ${rep?.rating  || 'N/A'}`,
-    `  Summary: ${rep?.summary || 'N/A'}`,
-    `  Pros:    ${(rep?.pros||[]).join(', ') || 'N/A'}`,
-    `  Cons:    ${(rep?.cons||[]).join(', ') || 'N/A'}`,
-    `  Source:  ${rep?.source  || 'N/A'}`,
-    ``,
-    `APPLICATION TRACKING:`,
-    `  Date applied:    ${job.dateApplied  || 'Not set'}`,
-    `  Follow up sent:  ${job.followUpSent ? 'Yes' : 'No'}`,
-    `  Follow up date:  ${job.followUpDate || 'Not set'}`,
-    `  Contact name:    ${contactName  || 'Not set'}`,
-    `  Contact email:   ${contactEmail || 'Not set'}`,
-    `  Contact LinkedIn: ${job.contactLinkedIn || 'Not set'}`,
-    `  Posting URL:     ${job.manualPostingUrl || job.postingUrl || 'Not set'}`,
-    `  Notes:           ${job.notes || 'None'}`,
+  if(!job) return;
+  const kw=job.keywords||{},rep=job.companyReputation,loc=job.workLocation;
+  const text=[
+    `JOB TITLE:      ${job.title}`,`COMPANY:        ${job.company}`,`WEBSITE:        ${job.companyUrl||'Not found'}`,
+    `CAREERS PAGE:   ${job.companyCareersUrl||'Not found'}`,`POSTING URL:    ${job.manualPostingUrl||job.postingUrl||'N/A'}`,
+    `SALARY:         ${job.salary||'Not listed'}`,`LEVEL:          ${job.level||'Not specified'}`,`INDUSTRY:       ${job.industry||'—'}`,``,
+    `WORK LOCATION:  ${loc?.type||'Not specified'}`,`ADDRESS:        ${loc?.address||loc?.city||'Not listed'}`,
+    `DISTANCE:       ${loc?.distanceKm!=null?'~'+Math.round(loc.distanceKm)+' km':'N/A'}`,``,
+    `MATCH SCORE:    ${job.viabilityScore||'N/A'}/10`,`ASSESSMENT:     ${job.viabilityReason||''}`,``,`SUMMARY:`,job.summary,``,
+    `REQUIREMENTS:   ${(job.requirements||[]).join(', ')}`,``,`BENEFITS:       ${(job.benefits||[]).join(', ')||'None listed'}`,``,
+    `KEYWORDS:`,`  Hard Skills:    ${(kw.hardSkills||[]).join(', ')}`,`  Soft Skills:    ${(kw.softSkills||[]).join(', ')}`,`  Industry Terms: ${(kw.industryTerms||[]).join(', ')}`,``,
+    `REPUTATION:     ${rep?.rating||'N/A'} — ${rep?.summary||'N/A'}`,``,
+    `TRACKING:`,`  Date applied:     ${job.dateApplied||'Not set'}`,`  Follow up sent:   ${job.followUpSent?'Yes':'No'}`,
+    `  Follow up date:   ${job.followUpDate||'Not set'}`,`  Contact name:     ${job.contactName||job.contact?.name||'Not set'}`,
+    `  Contact email:    ${job.contactEmail||job.contact?.email||'Not set'}`,`  Contact LinkedIn: ${job.contactLinkedIn||'Not set'}`,`  Notes:            ${job.notes||'None'}`,
   ].join('\n');
-  navigator.clipboard.writeText(text)
-    .then(()  => showToast('Copied to clipboard!'))
-    .catch(() => showToast('Copy failed.'));
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard!')).catch(()=>showToast('Copy failed.'));
 }
-
 
 // ══════════════════════════════════════════
 // RESUME PARSER
 // ══════════════════════════════════════════
-
 async function handleResumeUpload(input) {
-  const file   = input.files[0];
-  if (!file) return;
-  const status = document.getElementById('resume-upload-status');
-  status.textContent = '⏳ Reading resume…';
-  status.style.color = 'var(--text-muted)';
-
+  const file=input.files[0]; if(!file) return;
+  document.querySelectorAll('.resume-status-el').forEach(el=>{el.textContent='⏳ Reading…';el.style.color='var(--text-muted)';});
   try {
-    let text = '';
-    if (file.type === 'application/pdf') {
-      text = await extractTextFromPdf(file);
-    } else if (file.type.includes('wordprocessingml') || file.name.endsWith('.docx')) {
-      text = await extractTextFromDocx(file);
-    } else {
-      throw new Error('Unsupported file type. Please upload a PDF or .docx file.');
-    }
-    if (!text || text.trim().length < 50) {
-      throw new Error('Could not read enough text. Make sure the file is not a scanned image.');
-    }
-    status.textContent = '⏳ Analyzing with AI…';
+    let text='';
+    if(file.type==='application/pdf') text=await extractTextFromPdf(file);
+    else if(file.type.includes('wordprocessingml')||file.name.endsWith('.docx')) text=await extractTextFromDocx(file);
+    else throw new Error('Unsupported file type. Upload a PDF or .docx.');
+    if(!text||text.trim().length<50) throw new Error('Could not read enough text.');
+    document.querySelectorAll('.resume-status-el').forEach(el=>el.textContent='⏳ Analyzing…');
     await analyzeResumeText(text);
-  } catch (err) {
-    status.textContent = '✕ ' + err.message;
-    status.style.color = 'var(--red)';
+  } catch(err) {
+    document.querySelectorAll('.resume-status-el').forEach(el=>{el.textContent='✕ '+err.message;el.style.color='var(--red)';});
     console.error(err);
   }
-  input.value = '';
+  input.value='';
 }
 
 async function extractTextFromPdf(file) {
-  const ab  = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-  let text  = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page    = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(' ') + '\n';
-  }
+  const ab=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  let text='';
+  for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();text+=c.items.map(x=>x.str).join(' ')+'\n';}
   return text;
 }
 
 async function extractTextFromDocx(file) {
-  const ab     = await file.arrayBuffer();
-  const result = await mammoth.extractRawText({ arrayBuffer: ab });
-  return result.value;
+  const ab=await file.arrayBuffer(); return (await mammoth.extractRawText({arrayBuffer:ab})).value;
 }
 
 async function analyzeResumeText(text) {
-  const status = document.getElementById('resume-upload-status');
-  const response = await fetch('/api/scout-ai', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-        'x-scout-password': window.__scoutPassword || '',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      messages: [{
-        role: 'user',
-        content: `You are a resume analyst. Extract career profile information from this resume.
-
-Return ONLY a JSON object — no markdown, no backticks:
-{
-  "role": "Current or most recent job title and one-sentence background summary",
-  "industry": "Primary industry or industries worked in",
-  "salary": "Inferred salary expectation based on seniority, or 'Not specified'",
-  "currency": "Three letter currency code most likely relevant based on resume location/context, e.g. USD, CAD, GBP, EUR. Default to USD if unclear.",
-  "experience": "Total years of experience and key domains",
-  "travel": "Travel willingness if mentioned, or 'Not specified'",
-  "certs": "Certifications and qualifications found on resume",
-  "notes": "2-3 sentences on key skills and notable experience",
-  "jobGoal": "Inferred career goal based on resume trajectory, or empty string",
-  "name": "Full name if found, else empty string",
-  "topSkills": ["skill1", "skill2", "skill3", "skill4", "skill5"]
-}
-
-RESUME TEXT:
-${text.slice(0, 6000)}`
-      }]
-    })
+  const response=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":""}\nRESUME: ${text.slice(0,6000)}`}]})
   });
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || 'API error ' + response.status);
-  }
-
-  const data   = await response.json();
-  const raw    = data.content.map(c => c.type === 'text' ? c.text : '').join('');
-  const clean  = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  const parsed = JSON.parse(clean.slice(clean.indexOf('{'), clean.lastIndexOf('}') + 1));
-
-  if (parsed.role)       userProfile.role       = parsed.role;
-  if (parsed.industry)   userProfile.industry   = parsed.industry;
-  if (parsed.salary)     userProfile.salary     = parsed.salary;
-  if (parsed.currency)   userProfile.currency   = parsed.currency;
-  if (parsed.experience) userProfile.experience = parsed.experience;
-  if (parsed.travel)     userProfile.travel     = parsed.travel;
-  if (parsed.certs)      userProfile.certs      = parsed.certs;
-  if (parsed.notes)      userProfile.notes      = parsed.notes;
-  if (parsed.jobGoal)    userProfile.jobGoal    = parsed.jobGoal;
-
-  localStorage.setItem('scout-profile', JSON.stringify(userProfile));
-  updateProfilePills(parsed);
-
-  status.textContent = `✓ Profile updated${parsed.name ? ' for ' + parsed.name : ''}`;
-  status.style.color = 'var(--green)';
-  showToast('Profile updated from resume. Review with Edit Profile.');
+  if(!response.ok){const e=await response.json();throw new Error(e.error?.message||'API error');}
+  const data=await response.json();
+  const raw=data.content.map(c=>c.type==='text'?c.text:'').join('');
+  const clean=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const parsed=JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1));
+  if(parsed.role)       userProfile.role=parsed.role;
+  if(parsed.industry)   userProfile.industry=parsed.industry;
+  if(parsed.salary)     userProfile.salary=parsed.salary;
+  if(parsed.currency)   userProfile.currency=parsed.currency;
+  if(parsed.experience) userProfile.experience=parsed.experience;
+  if(parsed.travel)     userProfile.travel=parsed.travel;
+  if(parsed.certs)      userProfile.certs=parsed.certs;
+  if(parsed.notes)      userProfile.notes=parsed.notes;
+  if(parsed.jobGoal)    userProfile.jobGoal=parsed.jobGoal;
+  localStorage.setItem('scout-profile',JSON.stringify(userProfile));
+  document.querySelectorAll('.resume-status-el').forEach(el=>{el.textContent=`✓ Profile updated${parsed.name?' for '+parsed.name:''}`;el.style.color='var(--green)';});
+  showToast('Profile updated from resume.');
+  if(currentView==='profile') refreshProfileStatus();
 }
-
-function updateProfilePills(parsed) {
-  const row = document.getElementById('profile-pills-row');
-  if (!row) return;
-  row.querySelectorAll('.pill-accent').forEach(p => p.remove());
-  const pills = [
-    userProfile.role?.split('.')[0]?.slice(0, 40),
-    userProfile.industry?.slice(0, 30),
-    userProfile.salary ? `${currencySymbol()}${userProfile.salary}`.replace(/[$]{2,}/, currencySymbol()) : null,
-    userProfile.certs || null,
-    userProfile.travel && userProfile.travel !== 'Not specified' ? userProfile.travel : null,
-  ].filter(Boolean);
-  const editBtn = row.querySelector('.btn-ghost');
-  if (!pills.length) {
-    const span = document.createElement('span');
-    span.className   = 'pill';
-    span.textContent = 'No profile set yet';
-    row.insertBefore(span, editBtn);
-    return;
-  }
-  pills.forEach(text => {
-    const span = document.createElement('span');
-    span.className   = 'pill pill-accent';
-    span.textContent = text;
-    row.insertBefore(span, editBtn);
-  });
-}
-
 
 // ══════════════════════════════════════════
-// PROFILE EDITOR
+// PROFILE SAVE
 // ══════════════════════════════════════════
-
-function openProfileEditor() {
-  document.getElementById('p-role').value       = userProfile.role       || '';
-  document.getElementById('p-industry').value   = userProfile.industry   || '';
-  document.getElementById('p-salary').value     = userProfile.salary     || '';
-  document.getElementById('p-currency').value   = userProfile.currency   || 'USD';
-  document.getElementById('p-experience').value = userProfile.experience || '';
-  document.getElementById('p-travel').value     = userProfile.travel     || '';
-  document.getElementById('p-certs').value      = userProfile.certs      || '';
-  document.getElementById('p-notes').value      = userProfile.notes      || '';
-  document.getElementById('p-jobgoal').value    = userProfile.jobGoal    || '';
-  document.getElementById('profile-modal').classList.add('open');
-}
-
 function saveProfile() {
-  userProfile = {
-    role:       document.getElementById('p-role').value.trim(),
-    industry:   document.getElementById('p-industry').value.trim(),
-    salary:     document.getElementById('p-salary').value.trim(),
-    currency:   document.getElementById('p-currency').value,
-    experience: document.getElementById('p-experience').value.trim(),
-    travel:     document.getElementById('p-travel').value.trim(),
-    certs:      document.getElementById('p-certs').value.trim(),
-    notes:      document.getElementById('p-notes').value.trim(),
-    jobGoal:    document.getElementById('p-jobgoal').value.trim(),
+  const g=id=>document.getElementById(id)?.value.trim()||'';
+  userProfile={
+    role:g('p-role'), industry:g('p-industry'), salary:g('p-salary'),
+    currency:document.getElementById('p-currency')?.value||'USD',
+    experience:g('p-experience'), travel:g('p-travel'),
+    certs:g('p-certs'), notes:g('p-notes'), jobGoal:g('p-jobgoal'),
   };
-  localStorage.setItem('scout-profile', JSON.stringify(userProfile));
-  updateProfilePills({});
-  closeProfileEditor();
+  localStorage.setItem('scout-profile',JSON.stringify(userProfile));
   showToast('Profile saved.');
+  refreshProfileStatus();
 }
-
-function closeProfileEditor() {
-  document.getElementById('profile-modal').classList.remove('open');
-}
-
 
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-
-(function () {
-  const theme = localStorage.getItem('scout-theme') || 'light';
-  const btn   = document.getElementById('theme-btn');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+(function init() {
+  const theme=document.documentElement.getAttribute('data-theme')||'light';
+  const icon=document.getElementById('theme-icon');
+  if(icon) icon.className=theme==='dark'?'ti ti-sun':'ti ti-moon';
+  updateLocationBadge();
+  addJobSlot();
+  updateBadges();
 })();
-
-(function () { updateLocationBadge(); })();
-
-(function () {
-  const status = document.getElementById('resume-upload-status');
-  if (!status) return;
-  const hasCustomProfile = !!(userProfile.role || userProfile.industry || userProfile.salary || userProfile.notes);
-  if (hasCustomProfile) {
-    status.textContent = '✓ Profile loaded';
-    status.style.color = 'var(--green)';
-  } else {
-    status.textContent = 'No resume uploaded yet, upload to auto-fill your profile';
-    status.style.color = 'var(--text-dim)';
-  }
-})();
-
-addJobSlot();
-updateBadges();
-updateProfilePills({});
