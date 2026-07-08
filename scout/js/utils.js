@@ -1,105 +1,81 @@
 /* ═══════════════════════════════════════
-   js/utils.js
-   Shared state, helpers, theme toggle, location.
-   Loaded first — all other JS depends on this.
+   js/utils.js — Shared state and helpers
    ═══════════════════════════════════════ */
+
+// ── API Key ───────────────────────────────
+const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
 
 // ── Shared State ──────────────────────────
 let savedJobs   = JSON.parse(localStorage.getItem('scout-saved')   || '[]');
 let appliedJobs = JSON.parse(localStorage.getItem('scout-applied') || '[]');
 
 let userProfile = JSON.parse(localStorage.getItem('scout-profile') || 'null') || {
-  role:       '',
-  industry:   '',
-  salary:     '',
-  currency:   'USD',
-  experience: '',
-  travel:     '',
-  certs:      '',
-  notes:      '',
-  jobGoal:    ''
+  role:'', industry:'', salary:'', currency:'USD',
+  experience:'', travel:'', certs:'', notes:'', jobGoal:''
 };
 
-
-// ── Currency ───────────────────────────────
+// ── Currency ──────────────────────────────
 const CURRENCY_SYMBOLS = {
-  USD: '$', CAD: 'CA$', EUR: '€', GBP: '£', AUD: 'AU$',
-  NZD: 'NZ$', JPY: '¥', INR: '₹', MXN: 'MX$', CHF: 'CHF', ZAR: 'R'
+  USD:'$', CAD:'CA$', EUR:'€', GBP:'£', AUD:'AU$',
+  NZD:'NZ$', JPY:'¥', INR:'₹', MXN:'MX$', CHF:'CHF', ZAR:'R'
 };
-
-function currencySymbol() {
-  return CURRENCY_SYMBOLS[userProfile.currency] || '$';
-}
-
+function currencySymbol() { return CURRENCY_SYMBOLS[userProfile.currency] || '$'; }
 
 // ── HTML Escaping ─────────────────────────
 function escHtml(str) {
   if (!str) return '';
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-
 // ── Toast ─────────────────────────────────
-let toastTimer;
+let _toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-
-// ── Dark / Light Mode ─────────────────────
+// ── Theme ─────────────────────────────────
 function toggleTheme() {
-  const html = document.documentElement;
+  const html   = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
   localStorage.setItem('scout-theme', isDark ? 'light' : 'dark');
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.className = isDark ? 'ti ti-moon' : 'ti ti-sun';
 }
 
-// Apply saved theme on load
-(function () {
+(function applyTheme() {
   const saved = localStorage.getItem('scout-theme');
-  if (saved) {
-    document.documentElement.setAttribute('data-theme', saved);
-    // btn not yet in DOM — jobs.js init will fix the icon
-  }
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
 })();
 
-
-// ── User Location ─────────────────────────
+// ── Location ──────────────────────────────
 let userLocation = JSON.parse(localStorage.getItem('scout-location') || 'null');
 
 async function requestUserLocation() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      pos => {
         userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         localStorage.setItem('scout-location', JSON.stringify(userLocation));
         updateLocationBadge();
         resolve(userLocation);
       },
-      () => { resolve(null); }
+      () => resolve(null)
     );
   });
 }
 
 function updateLocationBadge() {
-  const badge = document.getElementById('location-badge');
-  if (!badge) return;
-  if (userLocation) {
-    badge.textContent = '✓ Location saved, distances will be calculated';
-    badge.style.color = 'var(--green)';
-  } else {
-    badge.textContent = "📍 Not shared, distance won't be calculated";
-    badge.style.color = 'var(--text-dim)';
-  }
+  document.querySelectorAll('.location-badge-el').forEach(el => {
+    el.textContent = userLocation ? 'Location saved' : 'Not shared';
+    el.style.color = userLocation ? 'var(--green)' : 'var(--text-dim)';
+  });
 }
