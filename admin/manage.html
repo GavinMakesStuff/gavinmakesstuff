@@ -560,6 +560,16 @@ function renderForm(){
         '<div class="field"><label>Card summary</label><input type="text" id="f-summary" value="'+esc(item.summary)+'"></div>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
         '<div class="field"><label>Post content</label>'+toolbar('f-body')+'<textarea id="f-body" rows="16">'+esc(item.body)+'</textarea></div>'+
+      '<details style="margin-top:12px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
+        '<div class="section-body">'+
+          '<div class="field"><label>SEO title <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 60 chars)</span></label>'+
+            '<input type="text" id="f-seo-title" value="'+esc((item.seo&&item.seo.title)||item.title||'')+'" placeholder="e.g. How I built a moisture sensor for $15"></div>'+
+          '<div class="field"><label>Meta description <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 155 chars)</span></label>'+
+            '<input type="text" id="f-meta-desc" value="'+esc((item.seo&&item.seo.metaDescription)||'')+'" placeholder="One sentence describing what this post is about"></div>'+
+          '<div class="field"><label>Keywords <span style="text-transform:none;letter-spacing:0;font-weight:400;">(comma separated)</span></label>'+
+            '<input type="text" id="f-keywords" value="'+esc(((item.seo&&item.seo.keywords)||[]).join(', '))+'" placeholder="e.g. arduino, moisture sensor, DIY"></div>'+
+        '</div>'+
+      '</details>'+
       '</div>'+
       '<div class="btn-row">'+
         '<button class="btn btn-primary" onclick="saveItem(false)">Publish</button>'+
@@ -600,7 +610,12 @@ async function saveItem(asDraft){
       portfolio:{title:document.getElementById('f-port-title').value,summary:document.getElementById('f-port-summary').value,tags:tags,description:document.getElementById('f-port-desc').value,gallery:window.__uploads['port-gallery']||[],downloads:window.__downloads['port-downloads']||[]},
     };
   }else{
-    item={id:id,draft:asDraft,title:document.getElementById('f-title').value,date:document.getElementById('f-date').value,summary:document.getElementById('f-summary').value,thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',body:document.getElementById('f-body').value};
+    item={id:id,draft:asDraft,title:document.getElementById('f-title').value,date:document.getElementById('f-date').value,summary:document.getElementById('f-summary').value,thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',body:document.getElementById('f-body').value,
+      seo:{
+        title:document.getElementById('f-seo-title')?document.getElementById('f-seo-title').value:'',
+        metaDescription:document.getElementById('f-meta-desc')?document.getElementById('f-meta-desc').value:'',
+        keywords:document.getElementById('f-keywords')?document.getElementById('f-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean):[],
+      }};
   }
   showStatus(asDraft?'Saving draft…':'Publishing…');
   try{
@@ -639,6 +654,9 @@ function renderSettingsForm(){
       '</div>'+
       '<div class="field"><label>Headshot image</label>'+uploadWidget('headshot',bio.headshot?[bio.headshot]:[],false)+'</div>'+
       '<div class="field"><label>Portfolio bio (professional)</label><textarea id="s-port-bio" rows="4">'+esc(bio.portfolioSummary||'')+'</textarea></div>'+
+      '<div class="field"><label>Studio bio <span style="text-transform:none;letter-spacing:0;font-weight:400;">(optional — shown on The Studio homepage)</span></label>'+
+        '<textarea id="s-studio-bio" rows="3">'+esc(bio.studioSummary||'')+'</textarea>'+
+        '<p class="hint">Leave blank to hide this on the Studio homepage.</p></div>'+
     '</div>'+
 
     '<div class="card">'+
@@ -672,6 +690,41 @@ function renderSettingsForm(){
       '<h2 style="font-size:1.1rem;margin-bottom:6px;">Google Analytics</h2>'+
       '<p class=\"hint\" style=\"margin-bottom:12px;\">Enter your GA4 Measurement ID (e.g. G-XXXXXXXXXX) after setting up Google Analytics. See the Analytics page for setup instructions.</p>'+
       '<div class="field"><label>GA4 Measurement ID</label><input type="text" id="s-ga4" value="'+esc((s.analytics&&s.analytics.ga4MeasurementId)||'')+'" placeholder="G-XXXXXXXXXX"></div>'+
+    '</div>'+
+
+    '<div class="card">'+
+      '<h2 style="font-size:1.1rem;margin-bottom:6px;">Site identity</h2>'+
+      '<div class="field"><label>Site name</label>'+
+        '<input type="text" id="s-site-name" value="'+esc((s.site&&s.site.name)||'Gavin makes stuff')+'" placeholder="Gavin makes stuff"></div>'+
+      '<div class="settings-grid">'+
+        '<div class="field"><label>Footer — public pages</label><input type="text" id="s-footer-public" value="'+esc((s.site&&s.site.footerPublic)||'')+'" placeholder="&copy; 2026 Gavin makes stuff"></div>'+
+        '<div class="field"><label>Footer — portfolio pages</label><input type="text" id="s-footer-portfolio" value="'+esc((s.site&&s.site.footerPortfolio)||'')+'" placeholder="&copy; 2026 Gavin Krohman"></div>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="card">'+
+      '<h2 style="font-size:1.1rem;margin-bottom:6px;">Page SEO</h2>'+
+      '<p class="hint" style="margin-bottom:16px;">Meta titles and descriptions for each section. These appear in search results and browser tabs.</p>'+
+      (function(){
+        var pageDefs=[
+          {key:'home',label:'Homepage'},
+          {key:'studio',label:'The Studio homepage'},
+          {key:'studioProjects',label:'Projects page'},
+          {key:'studioBlog',label:'Blog page'},
+          {key:'portfolio',label:'Portfolio homepage'},
+          {key:'contact',label:'Contact page'},
+        ];
+        var pg=s.pages||{};
+        return pageDefs.map(function(p,i){
+          return '<div style="'+(i>0?'border-top:1px solid var(--border);padding-top:14px;margin-top:14px;':'')+'">'+
+            '<p style="font-size:.82rem;font-weight:600;margin-bottom:10px;">'+p.label+'</p>'+
+            '<div class="settings-grid">'+
+              '<div class="field"><label>Meta title</label><input type="text" id="s-mt-'+p.key+'" value="'+(pg[p.key]&&pg[p.key].metaTitle||'')+'" placeholder="Page title — under 60 chars"></div>'+
+              '<div class="field"><label>Meta description</label><input type="text" id="s-md-'+p.key+'" value="'+(pg[p.key]&&pg[p.key].metaDescription||'')+'" placeholder="Description — under 155 chars"></div>'+
+            '</div>'+
+          '</div>';
+        }).join('');
+      })()+
     '</div>'+
 
     '<div class="btn-row">'+
@@ -761,12 +814,29 @@ async function saveSettings(){
     };
   });
 
+  var pageKeys=['home','studio','studioProjects','studioBlog','portfolio','contact'];
+  var pages={};
+  pageKeys.forEach(function(k){
+    var mt=document.getElementById('s-mt-'+k);
+    var md=document.getElementById('s-md-'+k);
+    pages[k]={metaTitle:mt?mt.value:'',metaDescription:md?md.value:''};
+  });
+  var siteNameEl=document.getElementById('s-site-name');
+  var footerPubEl=document.getElementById('s-footer-public');
+  var footerPortEl=document.getElementById('s-footer-portfolio');
+  var studioBioEl=document.getElementById('s-studio-bio');
   var newSettings={
+    site:{
+      name:siteNameEl?siteNameEl.value:'Gavin makes stuff',
+      footerPublic:footerPubEl?footerPubEl.value:'© 2026 Gavin makes stuff',
+      footerPortfolio:footerPortEl?footerPortEl.value:'© 2026 Gavin Krohman',
+    },
     home:{eyebrow:document.getElementById('s-eyebrow').value,tagline:document.getElementById('s-tagline').value,description:document.getElementById('s-desc').value,location:document.getElementById('s-home-location').value},
-    bio:{headshot:(window.__uploads['headshot']&&window.__uploads['headshot'][0])||state.settings.bio?.headshot||'',name:document.getElementById('s-name').value,location:document.getElementById('s-location').value,portfolioSummary:document.getElementById('s-port-bio').value,studioSummary:''},
+    bio:{headshot:(window.__uploads['headshot']&&window.__uploads['headshot'][0])||state.settings.bio?.headshot||'',name:document.getElementById('s-name').value,location:document.getElementById('s-location').value,portfolioSummary:document.getElementById('s-port-bio').value,studioSummary:studioBioEl?studioBioEl.value:''},
     contact:{email:document.getElementById('s-email').value,linkedin:document.getElementById('s-linkedin').value,dribbble:document.getElementById('s-dribbble').value},
     favicon:state.settings.favicon||(document.getElementById('s-favicon-path')?.value||''),
     analytics:{ga4MeasurementId:document.getElementById('s-ga4').value},
+    pages:pages,
     creations:savedCreations,
   };
 
