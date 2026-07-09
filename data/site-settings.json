@@ -1,7 +1,7 @@
 {
   "site": {
-    "name": "Gavin makes stuff",
-    "footerPublic": "© 2026 Gavin makes stuff",
+    "name": "Gavin Makes Stuff",
+    "footerPublic": "© 2026 Gavin Makes Stuff",
     "footerPortfolio": "© 2026 Gavin Krohman"
   },
   "home": {
@@ -60,7 +60,7 @@
       "url": "/scout/",
       "status": "private",
       "statusLabel": "",
-      "thumbnail": "",
+      "thumbnail": "/images/projects/site/1783609612608-scoutfaviconsquare.webp",
       "showOnHome": true
     }
   ]
