@@ -3,43 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blog — Gavin makes stuff</title>
-  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <title>Blog — The Studio</title>
+  <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <nav class="site-nav">
-    <div class="container">
-      <a class="logo" href="/studio/index.html">Gavin makes stuff</a>
-      <ul class="nav-links">
-        <li><a href="/studio/index.html">Home</a></li>
-        <li><a href="/studio/projects.html">Projects</a></li>
-        <li><a href="/studio/blog.html" class="active">Blog</a></li>
-        <li><a href="https://www.paypal.com/" class="btn btn-donate" target="_blank" rel="noopener">Buy me a coffee</a></li>
-      </ul>
-    </div>
-  </nav>
+  <div id="site-nav-placeholder"></div>
 
   <div class="container detail-header" style="max-width:760px;">
-    <a class="back-link" href="/studio/blog.html">← Back to all posts</a>
+    <a class="back-link" href="/studio/blog.html">← All posts</a>
     <div id="blog-detail-root"><div class="empty-state">Loading…</div></div>
   </div>
 
   <footer class="site-footer">
-    <div class="container">
-      <span>© 2026 Gavin makes stuff</span>
-      <span>Built with plain HTML, CSS, and JS</span>
-    </div>
+    <div class="container"><span id="footer-text">© 2026 Gavin makes stuff</span></div>
   </footer>
 
   <script src="/js/shared.js"></script>
   <script>
+    injectNav('blog', true);
     (async function () {
       try {
-        const res = await fetch('/data/blog.json');
-        initBlog(await res.json());
-      } catch (e) { console.error('Data load failed', e); }
+        var [bRes, sRes] = await Promise.all([fetch('/data/blog.json'), fetch('/data/site-settings.json')]);
+        initBlog(await bRes.json());
+        applySettings(await sRes.json(), null);
+      } catch (e) { console.error(e); }
       renderBlogDetail();
     })();
   </script>
