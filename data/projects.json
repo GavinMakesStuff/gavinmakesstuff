@@ -7,12 +7,18 @@
       "thumbnail": "/images/projects/jorgen-and-his-times/1783109537237-JorgenHisTimesCover.webp",
       "showOnPublic": true,
       "showOnPortfolio": false,
+      "showInCreations": false,
+      "status": "open",
+      "statusLabel": "",
+      "creationsThumbnail": "",
       "public": {
         "title": "Jorgen and His Times - Passing down the family story",
         "summary": "I turned my great-great-grandfather's typewritten immigration story into a printed book as a Christmas gift for my dad—and it became so meaningful, we ended up making 11 copies for the whole family.",
         "tags": [],
         "description": "A year or two ago, my dad handed me a stack of papers clipped together. His grandma (my great-grandma) had written a story about her father immigrating to Canada from Denmark. I'd never known it existed.\n\nHe mentioned he should probably read it again as he hadn't read it in decades, and that this was the only copy he knew about. That's when I got the idea: I wanted to turn it into a real book for him.\n\nFast forward to Christmas 2025. I finally decided to make it happen.\n\n## The Plan\n\nI needed to:\n1. Get the pages scanned\n2. Reformat the typewritten text into a digital version\n3. Figure out how to get it printed and bound\n\nSince I wasn't living with my parents anymore, I asked my mom to find the stack of papers and scan them. She works at a school and was able to handle the scanning of all 100-plus pages of it.\n\n## The Big Challenge: OCR Hell\n\nOnce I had the PDF, I ran it through an OCR tool to convert the scanned images into editable text. That's where things got messy.\n\nThe pages had been typed on a typewriter and had picked up dirt and wear from being photocopied. When OCR processed them, it introduced tons of errors: missing characters, extra characters, punctuation mistakes, formatting issues everywhere.\n\nThere was no shortcut. I had to read through the entire book line by line, correcting every single error. It took me two to three weeks, but once I was done, I finally had a clean, digital manuscript.\n\nI also made sure to include some handwritten notes my grandma had left for my dad, my uncle, and other family members.\n\n## Finding a Printer\n\nThere was a custom bookbinder near my parents' house. I stopped in and asked about pricing. A single professionally bound copy would cost around $250.\n\nThat was expensive, and I wanted to make more than one copy. So I started looking for alternatives.\n\nI found Lulu, an online printing service specializing in custom books. The process was straightforward: design a cover, upload the PDF, pay, and order. I pulled my graphic design background to create a nice little cover for the book too, adding my personal touch to the family heirloom.\n\nIt was also affordable enough that I could order multiple copies.\n\n## The Payoff\n\nThe books arrived just in time for Christmas. I gave copies to my dad and my uncle at Christmas dinner.\n\nThey absolutely loved it.\n\nIn fact, they loved it so much that we ended up ordering another nine copies to share with the rest of the family.\n\nIt was incredibly rewarding to put in that time and effort for something so meaningful. Something that can be reprinted and shared as our family grows. Reading Jorgen's story gave me a deeper appreciation for the hardships my great-great-grandfather and his family endured when immigrating to Canada. It's not a happy story, but it's an inspiring one.\n\nLearning about my family's history was humbling in the best way possible.\n\nI've included a link below to the PDF version of Jorgen and His Times if you'd like to read it for yourself.",
-        "gallery": [],
+        "gallery": [
+          "/images/projects/jorgen-and-his-times/1783617184501-JorgenHisTimesCover.webp"
+        ],
         "downloads": []
       },
       "portfolio": {
