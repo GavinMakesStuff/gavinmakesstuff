@@ -250,8 +250,6 @@ a:hover { text-decoration: underline; }
   max-width: 148px;
   object-fit: contain;
   object-position: left center;
-  /* Blends white bg into teal so only the meerkat+wordmark show */
-  mix-blend-mode: multiply;
   transition: all 0.22s ease;
 }
 
