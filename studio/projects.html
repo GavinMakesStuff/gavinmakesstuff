@@ -3,28 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Projects — Gavin makes stuff</title>
-  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <title>Projects — The Studio</title>
+  <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <nav class="site-nav">
-    <div class="container">
-      <a class="logo" href="/studio/index.html">Gavin makes stuff</a>
-      <ul class="nav-links">
-        <li><a href="/studio/index.html">Home</a></li>
-        <li><a href="/studio/projects.html" class="active">Projects</a></li>
-        <li><a href="/studio/blog.html">Blog</a></li>
-        <li><a href="https://www.paypal.com/" class="btn btn-donate" target="_blank" rel="noopener">Buy me a coffee</a></li>
-      </ul>
-    </div>
-  </nav>
+  <div id="site-nav-placeholder"></div>
 
-  <header class="hero" style="padding-bottom:24px;">
+  <header class="hero">
     <div class="container">
+      <p class="hero-eyebrow">The Studio</p>
       <h1>Projects</h1>
-      <p class="lede">Everything I've built and shared so far. Click any card for the full write-up, photos, and downloadable files.</p>
+      <p class="lede">Everything built and shared so far. Click any card for the full write-up, photos, and files.</p>
     </div>
   </header>
 
@@ -35,19 +25,18 @@
   </section>
 
   <footer class="site-footer">
-    <div class="container">
-      <span>© 2026 Gavin makes stuff</span>
-      <span>Built with plain HTML, CSS, and JS</span>
-    </div>
+    <div class="container"><span id="footer-text">© 2026 Gavin makes stuff</span></div>
   </footer>
 
   <script src="/js/shared.js"></script>
   <script>
+    injectNav('studio', true);
     (async function () {
       try {
-        const res = await fetch('/data/projects.json');
-        initProjects(await res.json());
-      } catch (e) { console.error('Data load failed', e); }
+        var [pRes, sRes] = await Promise.all([fetch('/data/projects.json'), fetch('/data/site-settings.json')]);
+        initProjects(await pRes.json());
+        applySettings(await sRes.json(), 'studioProjects');
+      } catch (e) { console.error(e); }
       renderProjectCards('all-projects-grid', 'studio', '/studio/project.html');
     })();
   </script>
