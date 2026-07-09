@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project — Gavin Krohman Portfolio</title>
-  <link rel="icon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body>
+<body class="portfolio">
   <div id="site-nav-placeholder"></div>
 
   <div class="container detail-header">
@@ -17,8 +17,8 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>© 2026 Gavin Krohman</span>
-      <a href="mailto:REPLACE_WITH_EMAIL" style="color:var(--color-muted);">REPLACE_WITH_EMAIL</a>
+      <span id="footer-text">© 2026 Gavin Krohman</span>
+      <span id="footer-email"></span>
     </div>
   </footer>
 
@@ -31,7 +31,16 @@
   <script>
     injectNav('portfolio', false);
     (async function () {
-      try { var r = await fetch('/data/projects.json'); initProjects(await r.json()); } catch(e) { console.error(e); }
+      try {
+        var [pRes, sRes] = await Promise.all([fetch('/data/projects.json'), fetch('/data/site-settings.json')]);
+        initProjects(await pRes.json());
+        var s = await sRes.json();
+        applySettings(s, null);
+        if (s.contact && s.contact.email) {
+          var el = document.getElementById('footer-email');
+          if (el) el.innerHTML = '<a href="mailto:' + s.contact.email + '" style="color:var(--color-muted);">' + s.contact.email + '</a>';
+        }
+      } catch (e) { console.error(e); }
       renderProjectDetail('portfolio');
     })();
   </script>
