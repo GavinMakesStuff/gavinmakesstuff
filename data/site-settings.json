@@ -1,7 +1,12 @@
 {
+  "site": {
+    "name": "Gavin makes stuff",
+    "footerPublic": "© 2026 Gavin makes stuff",
+    "footerPortfolio": "© 2026 Gavin Krohman"
+  },
   "home": {
     "eyebrow": "Designer & Maker",
-    "tagline": "Gavin\nMakes\nStuff.",
+    "tagline": "Gavin\nmakes\nstuff.",
     "description": "UI/UX design, hardware builds, and the occasional thing that catches fire a little.",
     "location": "Vancouver, BC"
   },
@@ -19,17 +24,43 @@
   },
   "favicon": "/images/site/favicon.svg",
   "analytics": {
-    "ga4MeasurementId": "G-6HEQ8Q296E"
+    "ga4MeasurementId": ""
+  },
+  "pages": {
+    "home": {
+      "metaTitle": "Gavin makes stuff",
+      "metaDescription": "UI/UX design, hardware builds, and maker projects by Gavin Krohman. Based in Vancouver, BC."
+    },
+    "studio": {
+      "metaTitle": "The Studio — Gavin makes stuff",
+      "metaDescription": "Projects, builds, and a blog about making things. Grab the files, follow along, and build your own."
+    },
+    "studioProjects": {
+      "metaTitle": "Projects — The Studio",
+      "metaDescription": "All projects built and shared by Gavin Krohman — with files to download and steps to follow."
+    },
+    "studioBlog": {
+      "metaTitle": "Blog — The Studio",
+      "metaDescription": "Stories behind the builds, lessons learned, and whatever else is on Gavin's mind."
+    },
+    "portfolio": {
+      "metaTitle": "Gavin Krohman — Portfolio",
+      "metaDescription": "Professional portfolio of UI/UX design and maker projects by Gavin Krohman, based in Vancouver, BC."
+    },
+    "contact": {
+      "metaTitle": "Contact — Gavin makes stuff",
+      "metaDescription": "Get in touch with Gavin Krohman — designer, maker, and builder based in Vancouver, BC."
+    }
   },
   "creations": [
     {
       "id": "scout",
-      "name": "scout",
+      "name": "Scout",
       "description": "AI-powered job analysis",
       "url": "/scout/",
       "status": "private",
       "statusLabel": "",
-      "thumbnail": "/images/projects/site/1783257836022-scoutfavicon.webp",
+      "thumbnail": "",
       "showOnHome": true
     }
   ]
