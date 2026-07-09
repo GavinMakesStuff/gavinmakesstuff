@@ -7,9 +7,9 @@
   <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <!-- GA4 placeholder — replace G-XXXXXXXXXX with your real measurement ID once set up -->
+  <!-- GA4 — uncomment and replace G-XXXXXXXXXX with your real ID once set up in Admin → Analytics -->
   <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script> -->
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());if(!localStorage.getItem('gms-self-exclude')){gtag('config','G-XXXXXXXXXX');}</script> -->
   <style>
     :root{--bg:#0C0D0E;--surface:#131416;--surface-2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--white:#F2EFE9;--muted:#6B7075;--radius:14px;--gap:10px;}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -46,7 +46,7 @@
     .creations-label{display:flex;align-items:center;gap:12px;font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
     .creations-label::after{content:'';flex:1;height:1px;background:var(--border);}
     .creations-row{display:flex;gap:var(--gap);flex-wrap:wrap;}
-    .cell-tool{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .18s,transform .18s;min-width:200px;flex:0 0 auto;}
+    .cell-tool{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .18s,transform .18s;min-width:200px;flex:0 0 auto;text-decoration:none;color:inherit;}
     .cell-tool:hover{border-color:var(--red);transform:translateY(-2px);}
     .cell-tool:hover .cell-icon-wrap{background:var(--red);}
     .cell-tool .cell-icon-wrap{width:36px;height:36px;border-radius:8px;background:var(--border-h);display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0;overflow:hidden;}
@@ -57,13 +57,14 @@
     .tool-badge.private{background:rgba(217,48,37,.08);color:var(--red);border:1px solid rgba(217,48,37,.25);}
     .tool-badge.wip{background:rgba(234,179,8,.08);color:#ca8a04;border:1px solid rgba(234,179,8,.25);}
     .tool-badge.open{background:rgba(34,197,94,.08);color:#16a34a;border:1px solid rgba(34,197,94,.25);}
+    .site-footer{border-top:1px solid var(--border);padding:20px 28px;color:var(--muted);font-size:.75rem;letter-spacing:.03em;}
     @media(max-width:960px){.bento-main{grid-template-columns:1fr 1fr;grid-template-rows:auto;min-height:unset;}.cell-hero{grid-column:1/3;grid-row:1;min-height:240px;}}
     @media(max-width:580px){.bento-main{grid-template-columns:1fr;}.cell-hero{grid-column:1;}.page-body{padding:12px;}.top-nav{padding:16px;}.nav-links{gap:14px;}.cell-tool{min-width:unset;flex:1 1 calc(50% - var(--gap));}}
   </style>
 </head>
 <body>
   <nav class="top-nav">
-    <span class="nav-logo" id="home-logo">Gavin makes stuff</span>
+    <span class="nav-logo" id="home-nav-logo">Gavin makes stuff</span>
     <ul class="nav-links">
       <li><a href="/studio/index.html">The Studio</a></li>
       <li><a href="/portfolio/index.html">Portfolio</a></li>
@@ -87,61 +88,35 @@ stuff.</h1>
       </div>
 
       <a class="cell" href="/studio/index.html">
-        <div class="cell-top">
-          <div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
-          <span class="cell-arrow">↗</span>
-        </div>
-        <div class="cell-body">
-          <p class="cell-label">Workshop</p>
-          <p class="cell-name">The Studio</p>
-          <p class="cell-desc">Projects, builds, files to download, and steps to follow.</p>
-        </div>
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Workshop</p><p class="cell-name">The Studio</p><p class="cell-desc">Projects, builds, files to download, and steps to follow.</p></div>
       </a>
 
       <a class="cell" href="/portfolio/index.html">
-        <div class="cell-top">
-          <div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
-          <span class="cell-arrow">↗</span>
-        </div>
-        <div class="cell-body">
-          <p class="cell-label">Professional</p>
-          <p class="cell-name">Portfolio</p>
-          <p class="cell-desc">Selected work, problems solved, skills behind them.</p>
-        </div>
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Professional</p><p class="cell-name">Portfolio</p><p class="cell-desc">Selected work, problems solved, skills behind them.</p></div>
       </a>
 
       <a class="cell" href="/studio/blog.html">
-        <div class="cell-top">
-          <div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-          <span class="cell-arrow">↗</span>
-        </div>
-        <div class="cell-body">
-          <p class="cell-label">Writing</p>
-          <p class="cell-name">Blog</p>
-          <p class="cell-desc">Stories behind the builds, lessons learned, and what's next.</p>
-        </div>
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Writing</p><p class="cell-name">Blog</p><p class="cell-desc">Stories behind the builds, lessons learned, and what's next.</p></div>
       </a>
 
       <a class="cell" href="/contact.html">
-        <div class="cell-top">
-          <div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-          <span class="cell-arrow">↗</span>
-        </div>
-        <div class="cell-body">
-          <p class="cell-label">Get in touch</p>
-          <p class="cell-name">Contact</p>
-          <p class="cell-desc">LinkedIn, Dribbble, email — find me where it makes sense.</p>
-        </div>
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Get in touch</p><p class="cell-name">Contact</p><p class="cell-desc">LinkedIn, Dribbble, email — find me where it makes sense.</p></div>
       </a>
     </div>
 
     <div class="creations-section">
       <p class="creations-label">Creations</p>
-      <div class="creations-row" id="creations-row">
-        <!-- populated from site-settings.json -->
-      </div>
+      <div class="creations-row" id="creations-row"></div>
     </div>
   </div>
+
+  <footer class="site-footer">
+    <span id="footer-text">© 2026 Gavin makes stuff</span>
+  </footer>
 
   <script src="/js/shared.js"></script>
   <script>
@@ -150,13 +125,11 @@ stuff.</h1>
         var res = await fetch('/data/site-settings.json');
         var settings = await res.json();
         initSettings(settings);
-
-        // Update favicon
-        if (settings.favicon) {
-          var fav = document.getElementById('site-favicon');
-          if (fav) fav.href = settings.favicon;
-        }
-        // Update hero text
+        applySettings(settings, 'home');
+        // Home page has its own nav logo element (not injected by buildNav)
+        var logo = document.getElementById('home-nav-logo');
+        if (logo && settings.site && settings.site.name) logo.textContent = settings.site.name;
+        // Hero text
         var h = settings.home;
         if (h) {
           if (h.eyebrow)     document.getElementById('hero-eyebrow').textContent = h.eyebrow;
