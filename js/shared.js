@@ -5,35 +5,77 @@
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
-function initProjects(data)  { window.PROJECTS   = data.projects || []; }
-function initBlog(data)      { window.BLOG_POSTS  = data.posts    || []; }
-function initSettings(data)  { window.SITE_SETTINGS = data; }
+function initProjects(data)  { window.PROJECTS      = data.projects || []; }
+function initBlog(data)      { window.BLOG_POSTS     = data.posts    || []; }
+function initSettings(data)  { window.SITE_SETTINGS  = data; }
+
+/* ---- Apply site-wide settings to current page ---- */
+// pageKey matches keys in site-settings.json → pages
+// e.g. 'home', 'studio', 'studioProjects', 'studioBlog', 'portfolio', 'contact'
+function applySettings(settings, pageKey) {
+  if (!settings) return;
+  window.SITE_SETTINGS = settings;
+
+  // ── Nav logo text ──────────────────────────────────────────────────
+  if (settings.site && settings.site.name) {
+    var logo = document.querySelector('.logo');
+    if (logo) logo.textContent = settings.site.name;
+  }
+
+  // ── Footer text ────────────────────────────────────────────────────
+  var footerEl = document.getElementById('footer-text');
+  if (footerEl && settings.site) {
+    var isPortfolio = document.body.classList.contains('portfolio');
+    footerEl.textContent = isPortfolio
+      ? (settings.site.footerPortfolio || '© 2026 Gavin Krohman')
+      : (settings.site.footerPublic    || '© 2026 Gavin makes stuff');
+  }
+
+  // ── Favicon ────────────────────────────────────────────────────────
+  if (settings.favicon) {
+    var fav = document.getElementById('site-favicon');
+    if (fav) fav.href = settings.favicon;
+  }
+
+  // ── Page meta title + description ─────────────────────────────────
+  if (pageKey && settings.pages && settings.pages[pageKey]) {
+    var pg = settings.pages[pageKey];
+    if (pg.metaTitle) document.title = pg.metaTitle;
+    var metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    if (pg.metaDescription) metaDesc.setAttribute('content', pg.metaDescription);
+  }
+
+  // ── Studio bio (optional element on studio homepage) ───────────────
+  var studioBioEl = document.getElementById('studio-bio');
+  if (studioBioEl && settings.bio && settings.bio.studioSummary) {
+    studioBioEl.textContent = settings.bio.studioSummary;
+    studioBioEl.style.display = 'block';
+  }
+}
 
 /* ---- Markdown renderer ---- */
 function renderMarkdown(text) {
   if (!text) return '';
-
   function inlineFormat(str) {
     return str
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
-
   var lines = String(text).split('\n');
   var html = '', inUl = false, inOl = false, buf = [];
-
   function flush() {
-    if (buf.length) {
-      html += '<p>' + inlineFormat(buf.join(' ')) + '</p>';
-      buf = [];
-    }
+    if (buf.length) { html += '<p>' + inlineFormat(buf.join(' ')) + '</p>'; buf = []; }
   }
   function closeList() {
     if (inUl) { html += '</ul>'; inUl = false; }
     if (inOl) { html += '</ol>'; inOl = false; }
   }
-
   lines.forEach(function (line) {
     var t = line.trim();
     if (!t) { flush(); return; }
@@ -41,31 +83,13 @@ function renderMarkdown(text) {
     var h3 = t.match(/^###\s+(.*)/);
     var ul = t.match(/^[-*]\s+(.*)/);
     var ol = t.match(/^\d+\.\s+(.*)/);
-
-    if (h2) {
-      flush(); closeList();
-      html += '<h2>' + inlineFormat(h2[1]) + '</h2>';
-    } else if (h3) {
-      flush(); closeList();
-      html += '<h3>' + inlineFormat(h3[1]) + '</h3>';
-    } else if (ul) {
-      flush();
-      if (inOl) { html += '</ol>'; inOl = false; }
-      if (!inUl) { html += '<ul>'; inUl = true; }
-      html += '<li>' + inlineFormat(ul[1]) + '</li>';
-    } else if (ol) {
-      flush();
-      if (inUl) { html += '</ul>'; inUl = false; }
-      if (!inOl) { html += '<ol>'; inOl = true; }
-      html += '<li>' + inlineFormat(ol[1]) + '</li>';
-    } else {
-      closeList();
-      buf.push(t);
-    }
+    if (h2)      { flush(); closeList(); html += '<h2>' + inlineFormat(h2[1]) + '</h2>'; }
+    else if (h3) { flush(); closeList(); html += '<h3>' + inlineFormat(h3[1]) + '</h3>'; }
+    else if (ul) { flush(); if (inOl) { html += '</ol>'; inOl = false; } if (!inUl) { html += '<ul>'; inUl = true; } html += '<li>' + inlineFormat(ul[1]) + '</li>'; }
+    else if (ol) { flush(); if (inUl) { html += '</ul>'; inUl = false; } if (!inOl) { html += '<ol>'; inOl = true; } html += '<li>' + inlineFormat(ol[1]) + '</li>'; }
+    else         { closeList(); buf.push(t); }
   });
-
-  flush();
-  closeList();
+  flush(); closeList();
   return html;
 }
 
@@ -95,7 +119,6 @@ function buildNav(section, showDonate) {
     '</nav>'
   );
 }
-
 function toggleMobileNav() {
   var el = document.getElementById('main-nav-links');
   if (el) el.classList.toggle('open');
@@ -115,10 +138,7 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
     return section === 'studio' ? p.showOnPublic : p.showOnPortfolio;
   });
   if (limit) visible = visible.slice(0, limit);
-  if (!visible.length) {
-    container.innerHTML = '<div class="empty-state">No projects posted yet — check back soon.</div>';
-    return;
-  }
+  if (!visible.length) { container.innerHTML = '<div class="empty-state">No projects posted yet — check back soon.</div>'; return; }
   container.innerHTML = visible.map(function (project) {
     var content = project[dataKey];
     var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
@@ -144,35 +164,22 @@ function renderProjectDetail(section) {
   var project = (window.PROJECTS || []).find(function (p) { return p.id === id; });
   var root = document.getElementById('project-detail-root');
   if (!root) return;
-  if (!project) {
-    root.innerHTML = '<div class="empty-state">Couldn\'t find that project.</div>';
-    return;
-  }
+  if (!project) { root.innerHTML = '<div class="empty-state">Could not find that project.</div>'; return; }
   var content = project[dataKey];
   var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
-
   var appLinkHtml = project.appUrl
     ? '<div class="app-link-row"><a class="btn btn-primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a></div>'
     : '';
-
   var galleryHtml = (content.gallery && content.gallery.length)
-    ? '<div class="gallery-grid">' +
-        content.gallery.map(function (src) {
-          return '<img src="' + src + '" alt="' + content.title + '" onclick="openLightbox(\'' + src + '\')" tabindex="0">';
-        }).join('') +
-      '</div>'
-    : '';
-
+    ? '<div class="gallery-grid">' + content.gallery.map(function (src) {
+        return '<img src="' + src + '" alt="' + content.title + '" onclick="openLightbox(\'' + src + '\')" tabindex="0">';
+      }).join('') + '</div>' : '';
   var downloadsHtml = (content.downloads && content.downloads.length)
-    ? '<div class="downloads-box"><h3>Downloads</h3>' +
-        content.downloads.map(function (d) {
-          var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
-          return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
-            '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>Download</a></div>';
-        }).join('') +
-      '</div>'
-    : '';
-
+    ? '<div class="downloads-box"><h3>Downloads</h3>' + content.downloads.map(function (d) {
+        var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
+        return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
+          '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>Download</a></div>';
+      }).join('') + '</div>' : '';
   document.title = content.title;
   root.innerHTML = (
     '<div class="card-tags" style="margin-bottom:16px;">' + tags + '</div>' +
@@ -180,8 +187,7 @@ function renderProjectDetail(section) {
     '<img class="detail-thumb" src="' + project.thumbnail + '" alt="' + content.title + '">' +
     appLinkHtml +
     '<div class="detail-body">' + renderMarkdown(content.description) + '</div>' +
-    galleryHtml +
-    downloadsHtml
+    galleryHtml + downloadsHtml
   );
 }
 
@@ -191,10 +197,7 @@ function renderBlogCards(containerId, detailPageUrl, limit) {
   if (!container) return;
   var posts = (window.BLOG_POSTS || []).filter(function (p) { return !p.draft; });
   if (limit) posts = posts.slice(0, limit);
-  if (!posts.length) {
-    container.innerHTML = '<div class="empty-state">No posts yet — check back soon.</div>';
-    return;
-  }
+  if (!posts.length) { container.innerHTML = '<div class="empty-state">No posts yet — check back soon.</div>'; return; }
   container.innerHTML = posts.map(function (post) {
     return (
       '<div class="blog-list-item">' +
@@ -213,8 +216,14 @@ function renderBlogDetail() {
   var post = (window.BLOG_POSTS || []).find(function (p) { return p.id === id; });
   var root = document.getElementById('blog-detail-root');
   if (!root) return;
-  if (!post) { root.innerHTML = '<div class="empty-state">Couldn\'t find that post.</div>'; return; }
-  document.title = post.title;
+  if (!post) { root.innerHTML = '<div class="empty-state">Could not find that post.</div>'; return; }
+  document.title = (post.seo && post.seo.title) ? post.seo.title : post.title;
+  // Inject meta description if SEO data available
+  if (post.seo && post.seo.metaDescription) {
+    var metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.setAttribute('name', 'description'); document.head.appendChild(metaDesc); }
+    metaDesc.setAttribute('content', post.seo.metaDescription);
+  }
   root.innerHTML = (
     '<div class="post-date" style="margin-bottom:12px;">' + formatDate(post.date) + '</div>' +
     '<h1>' + post.title + '</h1>' +
@@ -223,20 +232,14 @@ function renderBlogDetail() {
   );
 }
 
-/* ---- Creations section (homepage) ---- */
+/* ---- Creations section ---- */
 function renderCreations(containerId) {
   var container = document.getElementById(containerId);
   if (!container) return;
   var settings = window.SITE_SETTINGS;
   var creations = (settings && settings.creations) ? settings.creations.filter(function (c) { return c.showOnHome; }) : [];
-
-  if (!creations.length) {
-    container.innerHTML = '';
-    return;
-  }
-
+  if (!creations.length) { container.innerHTML = ''; return; }
   var statusLabels = { open: 'Open to All', private: 'Private', wip: 'Work In Progress' };
-
   container.innerHTML = creations.map(function (c) {
     var label = c.status === 'custom' ? (c.statusLabel || '') : (statusLabels[c.status] || c.status);
     var badgeClass = c.status === 'private' ? 'tool-badge private' : c.status === 'wip' ? 'tool-badge wip' : 'tool-badge open';
