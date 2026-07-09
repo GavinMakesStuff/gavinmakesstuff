@@ -7,7 +7,7 @@
   <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body>
+<body class="portfolio">
   <div id="site-nav-placeholder"></div>
 
   <div class="container">
@@ -30,7 +30,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>© 2026 Gavin Krohman</span>
+      <span id="footer-text">© 2026 Gavin Krohman</span>
       <span id="footer-email"></span>
     </div>
   </footer>
@@ -43,16 +43,15 @@
         var [pRes, sRes] = await Promise.all([fetch('/data/projects.json'), fetch('/data/site-settings.json')]);
         initProjects(await pRes.json());
         var s = await sRes.json();
-        initSettings(s);
-        if (s.favicon) document.getElementById('site-favicon').href = s.favicon;
+        applySettings(s, 'portfolio');
         if (s.bio) {
           if (s.bio.headshot) document.getElementById('bio-headshot').src = s.bio.headshot;
-          if (s.bio.name)     document.getElementById('bio-name').textContent = s.bio.name;
+          if (s.bio.name) document.getElementById('bio-name').textContent = s.bio.name;
           if (s.bio.portfolioSummary) document.getElementById('bio-summary').textContent = s.bio.portfolioSummary;
         }
         if (s.contact && s.contact.email) {
           var el = document.getElementById('footer-email');
-          el.innerHTML = '<a href="mailto:' + s.contact.email + '" style="color:var(--color-muted);">' + s.contact.email + '</a>';
+          if (el) el.innerHTML = '<a href="mailto:' + s.contact.email + '" style="color:var(--color-muted);">' + s.contact.email + '</a>';
         }
       } catch (e) { console.error(e); }
       renderProjectCards('portfolio-grid', 'portfolio', '/portfolio/project.html');
