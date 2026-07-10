@@ -15,6 +15,9 @@
           "meta": ""
         }
       ],
+      "downloadsEnabled": true,
+      "downloadsShowHeading": false,
+      "downloadsHeading": "Downloads",
       "seo": {
         "title": "How I Turned My Great-Great-Grandfather's Immigration Story Into a Real Book",
         "metaDescription": "",
