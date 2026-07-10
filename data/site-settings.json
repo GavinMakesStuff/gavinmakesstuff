@@ -28,11 +28,11 @@
   },
   "pages": {
     "home": {
-      "metaTitle": "Gavin makes stuff",
+      "metaTitle": "Gavin Makes Stuff",
       "metaDescription": "UI/UX design, hardware builds, and maker projects by Gavin Krohman. Based in Vancouver, BC."
     },
     "studio": {
-      "metaTitle": "The Studio — Gavin makes stuff",
+      "metaTitle": "The Studio — Gavin Makes Stuff",
       "metaDescription": "Projects, builds, and a blog about making things. Grab the files, follow along, and build your own."
     },
     "studioProjects": {
@@ -48,7 +48,7 @@
       "metaDescription": "Professional portfolio of UI/UX design and maker projects by Gavin Krohman, based in Vancouver, BC."
     },
     "contact": {
-      "metaTitle": "Contact — Gavin makes stuff",
+      "metaTitle": "Contact — Gavin Makes Stuff",
       "metaDescription": "Get in touch with Gavin Krohman — designer, maker, and builder based in Vancouver, BC."
     }
   },
