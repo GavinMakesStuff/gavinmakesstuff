@@ -7,17 +7,9 @@
   <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-6HEQ8Q296E"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    // Skip tracking if this is Gavin's own visit
-    if (!localStorage.getItem('gms-self-exclude')) {
-      gtag('config', 'G-6HEQ8Q296E');
-    }
-  </script>
+  <!-- Google Analytics is injected dynamically by shared.js (applySettings → injectAnalytics),
+       based on the GA4 Measurement ID set in Admin → Site Settings → Google Analytics.
+       No per-page snippet needed. -->
   <style>
     :root{--bg:#0C0D0E;--surface:#131416;--surface-2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--white:#F2EFE9;--muted:#6B7075;--radius:14px;--gap:10px;}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
