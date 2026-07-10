@@ -96,6 +96,12 @@
     .upload-item .path{flex:1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .upload-item button{background:none;border:none;color:#e05555;cursor:pointer;font-size:.9rem;padding:0 4px;}
 
+    /* downloads section widget */
+    .downloads-section-box{background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:6px;}
+    .download-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+    @media(max-width:600px){.download-add-grid{grid-template-columns:1fr;}}
+    .download-add-grid .field{margin-bottom:0;}
+
     /* status bar */
     .status-bar{padding:12px 16px;border-radius:8px;margin-bottom:18px;background:rgba(217,48,37,.06);border:1px solid rgba(217,48,37,.15);font-size:.85rem;display:none;align-items:center;gap:10px;}
     .status-bar.visible{display:flex;}
@@ -119,6 +125,7 @@
     @media(max-width:600px){.creation-row{grid-template-columns:1fr;}}
     .creation-pw-hint{background:rgba(217,48,37,.06);border:1px solid rgba(217,48,37,.15);border-radius:6px;padding:8px 12px;font-size:.75rem;color:var(--muted);margin:-4px 0 12px;}
     .creation-pw-hint code{color:var(--paper);background:var(--ink-r2);padding:1px 5px;border-radius:3px;}
+    .creation-section-label{font-size:.78rem;font-weight:600;color:var(--paper);margin-bottom:10px;letter-spacing:.02em;}
   </style>
 </head>
 <body>
@@ -402,18 +409,29 @@ async function handleImageUpload(fieldKey,inputEl,multiple){
   inputEl.value='';
 }
 
-function downloadWidget(fieldKey,existing){
+/* ── Download file widget (single files list, used inside downloadsSectionWidget and Creations) ──
+   includeButtonText: whether to show a per-file "Button text" override.
+   Projects/blog pass true (multiple files can each say something different).
+   Creations passes false, since the single Download button's text is
+   controlled at the section level (cr-downloadlabel-N) instead. */
+function downloadWidget(fieldKey,existing,includeButtonText){
+  if(includeButtonText===undefined)includeButtonText=true;
   window.__downloads[fieldKey]=JSON.parse(JSON.stringify(existing||[]));
   return '<div class="upload-list" id="download-list-'+fieldKey+'">'+renderDownloadItems(fieldKey)+'</div>'+
-    '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">'+
-      '<div style="flex:1;min-width:160px;"><label>Button label</label><input type="text" id="dl-label-'+fieldKey+'" placeholder="e.g. Project files (.zip) or Resume (.pdf)"></div>'+
-      '<div style="flex:1;min-width:160px;"><label>File</label><input type="file" id="dl-file-'+fieldKey+'"></div>'+
+    '<div class="download-add-grid">'+
+      '<div class="field"><label>Text beside button</label><input type="text" id="dl-label-'+fieldKey+'" placeholder="e.g. Project files (.zip)"></div>'+
+      (includeButtonText?'<div class="field"><label>Button text <span style="text-transform:none;letter-spacing:0;font-weight:400;">(optional — defaults to "Download")</span></label><input type="text" id="dl-btntext-'+fieldKey+'" placeholder="Download"></div>':'')+
+      '<div class="field"><label>Note <span style="text-transform:none;letter-spacing:0;font-weight:400;">(optional, e.g. file size)</span></label><input type="text" id="dl-meta-'+fieldKey+'" placeholder="e.g. 2.4 MB"></div>'+
+      '<div class="field"><label>File</label><input type="file" id="dl-file-'+fieldKey+'"></div>'+
     '</div>'+
-    '<button type="button" class="btn btn-sm btn-ghost" style="margin-top:8px;" onclick="handleFileUpload(\''+fieldKey+'\')">Add file</button>';
+    '<button type="button" class="btn btn-sm btn-ghost" onclick="handleFileUpload(\''+fieldKey+'\')">Add file</button>';
 }
 function renderDownloadItems(fieldKey){
   return (window.__downloads[fieldKey]||[]).map(function(d,i){
-    return '<div class="upload-item"><span class="path">'+esc(d.label)+' — '+d.file+'</span>'+
+    var bits=[esc(d.label||'(no label)')];
+    if(d.buttonText)bits.push('button: "'+esc(d.buttonText)+'"');
+    if(d.meta)bits.push(esc(d.meta));
+    return '<div class="upload-item"><span class="path">'+bits.join(' · ')+' — '+d.file+'</span>'+
       '<button type="button" onclick="removeDownload(\''+fieldKey+'\','+i+')">&times;</button></div>';
   }).join('');
 }
@@ -425,20 +443,54 @@ async function handleFileUpload(fieldKey){
   var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'site';
   if(!id){alert('Set a URL slug first.');return;}
   var labelInput=document.getElementById('dl-label-'+fieldKey);
+  var btnTextInput=document.getElementById('dl-btntext-'+fieldKey);
+  var metaInput=document.getElementById('dl-meta-'+fieldKey);
   var fileInput=document.getElementById('dl-file-'+fieldKey);
   var label=labelInput.value.trim();
+  var buttonText=btnTextInput?btnTextInput.value.trim():'';
+  var meta=metaInput?metaInput.value.trim():'';
   var file=fileInput.files[0];
-  if(!label||!file){alert('Add both a label and a file.');return;}
+  if(!label||!file){alert('Add both text and a file.');return;}
   showStatus('Uploading file…');
   try{
     var base64=await fileToBase64(file);
     var path='files/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
     var result=await callApi({action:'upload',path:path,contentBase64:base64});
-    window.__downloads[fieldKey].push({label:label,file:result.path,meta:''});
+    window.__downloads[fieldKey].push({label:label,file:result.path,meta:meta,buttonText:buttonText});
     document.getElementById('download-list-'+fieldKey).innerHTML=renderDownloadItems(fieldKey);
-    labelInput.value='';fileInput.value='';
+    labelInput.value='';
+    if(btnTextInput)btnTextInput.value='';
+    if(metaInput)metaInput.value='';
+    fileInput.value='';
     hideStatus();
   }catch(e){showStatus('Upload failed: '+e.message,true);}
+}
+
+/* ── Downloads SECTION widget (heading + enable toggle + file list) —
+   used for project public/portfolio and blog post downloads. ── */
+function downloadsSectionWidget(prefix,data){
+  data=data||{};
+  var enabled=data.downloadsEnabled!==false;
+  var showHeading=data.downloadsShowHeading!==false;
+  var heading=data.downloadsHeading||'Downloads';
+  return '<div class="downloads-section-box">'+
+    '<div class="checkbox-row" style="margin-bottom:'+(enabled?'14px':'0')+';">'+
+      '<label class="check-label"><input type="checkbox" id="'+prefix+'-dl-enabled" '+(enabled?'checked':'')+' onchange="toggleDownloadsSection(\''+prefix+'\')">Show downloads section</label>'+
+    '</div>'+
+    '<div id="'+prefix+'-dl-inner" style="'+(enabled?'':'display:none;')+'">'+
+      '<div class="download-add-grid" style="margin-bottom:14px;">'+
+        '<div class="field"><label>Section heading</label><input type="text" id="'+prefix+'-dl-heading" value="'+esc(heading)+'"></div>'+
+        '<div class="field" style="display:flex;align-items:center;gap:8px;padding-top:22px;">'+
+          '<label class="check-label"><input type="checkbox" id="'+prefix+'-dl-show-heading" '+(showHeading?'checked':'')+'>Show heading</label>'+
+        '</div>'+
+      '</div>'+
+      downloadWidget(prefix+'-downloads',data.downloads||[],true)+
+    '</div>'+
+  '</div>';
+}
+function toggleDownloadsSection(prefix){
+  var checked=document.getElementById(prefix+'-dl-enabled').checked;
+  document.getElementById(prefix+'-dl-inner').style.display=checked?'block':'none';
 }
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -448,11 +500,11 @@ function formPrefix(type){ return type==='project' ? 'projects' : 'blog'; }
 
 function blankProject(){
   return{id:'',draft:true,appUrl:'',appUrlPasswordProtected:false,thumbnail:'',showOnPublic:true,showOnPortfolio:true,
-    public:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]},
-    portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]}};
+    public:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'},
+    portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'}};
 }
 function blankPost(){
-  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',downloads:[]};
+  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'};
 }
 function newItem(type){
   state.editingType=type;
@@ -514,7 +566,17 @@ function renderForm(){
           '<div class="field"><label>Card summary</label><input type="text" id="f-pub-summary" value="'+esc(item.public.summary)+'"></div>'+
           '<div class="field"><label>Full description</label>'+toolbar('f-pub-desc')+'<textarea id="f-pub-desc" rows="12">'+esc(item.public.description)+'</textarea></div>'+
           '<div class="field"><label>Gallery images</label>'+uploadWidget('pub-gallery',item.public.gallery||[],true)+'</div>'+
-          '<div class="field"><label>Downloadable files</label>'+downloadWidget('pub-downloads',item.public.downloads||[])+'</div>'+
+          '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('pub',item.public)+'</div>'+
+          '<details style="margin-top:8px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
+            '<div class="section-body">'+
+              '<div class="field"><label>SEO title <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 60 chars)</span></label>'+
+                '<input type="text" id="f-pub-seo-title" value="'+esc((item.public.seo&&item.public.seo.title)||item.public.title||'')+'" placeholder="e.g. DIY desk plant moisture monitor build guide"></div>'+
+              '<div class="field"><label>Meta description <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 155 chars)</span></label>'+
+                '<input type="text" id="f-pub-meta-desc" value="'+esc((item.public.seo&&item.public.seo.metaDescription)||'')+'" placeholder="One sentence describing this project"></div>'+
+              '<div class="field"><label>Keywords <span style="text-transform:none;letter-spacing:0;font-weight:400;">(comma separated)</span></label>'+
+                '<input type="text" id="f-pub-keywords" value="'+esc(((item.public.seo&&item.public.seo.keywords)||[]).join(', '))+'" placeholder="e.g. arduino, diy, moisture sensor"></div>'+
+            '</div>'+
+          '</details>'+
         '</div>'+
       '</details>'+
 
@@ -526,7 +588,17 @@ function renderForm(){
           '<div class="field"><label>Card summary</label><input type="text" id="f-port-summary" value="'+esc(item.portfolio.summary)+'"></div>'+
           '<div class="field"><label>Full description</label>'+toolbar('f-port-desc')+'<textarea id="f-port-desc" rows="12">'+esc(item.portfolio.description)+'</textarea></div>'+
           '<div class="field"><label>Gallery images</label>'+uploadWidget('port-gallery',item.portfolio.gallery||[],true)+'</div>'+
-          '<div class="field"><label>Downloadable files</label>'+downloadWidget('port-downloads',item.portfolio.downloads||[])+'</div>'+
+          '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('port',item.portfolio)+'</div>'+
+          '<details style="margin-top:8px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
+            '<div class="section-body">'+
+              '<div class="field"><label>SEO title <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 60 chars)</span></label>'+
+                '<input type="text" id="f-port-seo-title" value="'+esc((item.portfolio.seo&&item.portfolio.seo.title)||item.portfolio.title||'')+'" placeholder="e.g. IoT plant moisture monitoring system"></div>'+
+              '<div class="field"><label>Meta description <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 155 chars)</span></label>'+
+                '<input type="text" id="f-port-meta-desc" value="'+esc((item.portfolio.seo&&item.portfolio.seo.metaDescription)||'')+'" placeholder="One sentence describing this project"></div>'+
+              '<div class="field"><label>Keywords <span style="text-transform:none;letter-spacing:0;font-weight:400;">(comma separated)</span></label>'+
+                '<input type="text" id="f-port-keywords" value="'+esc(((item.portfolio.seo&&item.portfolio.seo.keywords)||[]).join(', '))+'" placeholder="e.g. embedded systems, iot, sensor calibration"></div>'+
+            '</div>'+
+          '</details>'+
         '</div>'+
       '</details>'+
 
@@ -547,7 +619,7 @@ function renderForm(){
         '<div class="field"><label>Card summary</label><input type="text" id="f-summary" value="'+esc(item.summary)+'"></div>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
         '<div class="field"><label>Post content</label>'+toolbar('f-body')+'<textarea id="f-body" rows="16">'+esc(item.body)+'</textarea></div>'+
-        '<div class="field"><label>Downloadable files</label>'+downloadWidget('blog-downloads',item.downloads||[])+'</div>'+
+        '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('blog',item)+'</div>'+
       '<details style="margin-top:12px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
         '<div class="section-body">'+
           '<div class="field"><label>SEO title <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 60 chars)</span></label>'+
@@ -582,12 +654,39 @@ async function saveItem(asDraft){
       thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',
       showOnPublic:document.getElementById('f-public').checked,
       showOnPortfolio:document.getElementById('f-portfolio').checked,
-      public:{title:document.getElementById('f-pub-title').value,summary:document.getElementById('f-pub-summary').value,tags:tags,description:document.getElementById('f-pub-desc').value,gallery:window.__uploads['pub-gallery']||[],downloads:window.__downloads['pub-downloads']||[]},
-      portfolio:{title:document.getElementById('f-port-title').value,summary:document.getElementById('f-port-summary').value,tags:tags,description:document.getElementById('f-port-desc').value,gallery:window.__uploads['port-gallery']||[],downloads:window.__downloads['port-downloads']||[]},
+      public:{
+        title:document.getElementById('f-pub-title').value,summary:document.getElementById('f-pub-summary').value,tags:tags,description:document.getElementById('f-pub-desc').value,
+        gallery:window.__uploads['pub-gallery']||[],
+        downloads:window.__downloads['pub-downloads']||[],
+        downloadsEnabled:document.getElementById('pub-dl-enabled').checked,
+        downloadsShowHeading:document.getElementById('pub-dl-show-heading').checked,
+        downloadsHeading:document.getElementById('pub-dl-heading').value,
+        seo:{
+          title:document.getElementById('f-pub-seo-title').value,
+          metaDescription:document.getElementById('f-pub-meta-desc').value,
+          keywords:document.getElementById('f-pub-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean),
+        },
+      },
+      portfolio:{
+        title:document.getElementById('f-port-title').value,summary:document.getElementById('f-port-summary').value,tags:tags,description:document.getElementById('f-port-desc').value,
+        gallery:window.__uploads['port-gallery']||[],
+        downloads:window.__downloads['port-downloads']||[],
+        downloadsEnabled:document.getElementById('port-dl-enabled').checked,
+        downloadsShowHeading:document.getElementById('port-dl-show-heading').checked,
+        downloadsHeading:document.getElementById('port-dl-heading').value,
+        seo:{
+          title:document.getElementById('f-port-seo-title').value,
+          metaDescription:document.getElementById('f-port-meta-desc').value,
+          keywords:document.getElementById('f-port-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean),
+        },
+      },
     };
   }else{
     item={id:id,draft:asDraft,title:document.getElementById('f-title').value,date:document.getElementById('f-date').value,summary:document.getElementById('f-summary').value,thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',body:document.getElementById('f-body').value,
       downloads:window.__downloads['blog-downloads']||[],
+      downloadsEnabled:document.getElementById('blog-dl-enabled').checked,
+      downloadsShowHeading:document.getElementById('blog-dl-show-heading').checked,
+      downloadsHeading:document.getElementById('blog-dl-heading').value,
       seo:{
         title:document.getElementById('f-seo-title')?document.getElementById('f-seo-title').value:'',
         metaDescription:document.getElementById('f-meta-desc')?document.getElementById('f-meta-desc').value:'',
@@ -713,6 +812,7 @@ function renderCreationsBuilder(creations){
   if(!creations||!creations.length)return '<p class="hint">No creations added yet.</p>';
   return creations.map(function(c,i){
     var envKey='TOOL_PASSWORD_'+(c.id||'id').toUpperCase().replace(/[^A-Z0-9]/g,'_');
+    var downloadEnabled=c.downloadEnabled!==false;
     return '<div class="creation-item" id="creation-'+i+'">'+
       '<div class="creation-item-head">'+
         '<strong style="font-size:.9rem;">'+(c.name||'Unnamed')+'</strong>'+
@@ -740,18 +840,27 @@ function renderCreationsBuilder(creations){
           '<label class="check-label"><input type="checkbox" id="cr-show-'+i+'" '+(c.showOnHome?'checked':'')+'>Show on homepage</label>'+
         '</div>'+
       '</div>'+
-      '<div class="creation-row">'+
-        '<div class="field"><label>"Use It" button label</label><input type="text" id="cr-uselabel-'+i+'" value="'+esc(c.useLabel||'Use It')+'"></div>'+
-        '<div class="field" style="display:flex;align-items:center;gap:8px;padding-top:22px;">'+
+
+      '<div class="creation-section-label">Use It button</div>'+
+      '<div class="creation-row" style="margin-bottom:14px;">'+
+        '<div class="field" style="margin-bottom:0;"><label>Button text</label><input type="text" id="cr-uselabel-'+i+'" value="'+esc(c.useLabel||'Use It')+'"></div>'+
+        '<div class="field" style="display:flex;align-items:center;gap:8px;padding-top:22px;margin-bottom:0;">'+
           '<label class="check-label"><input type="checkbox" id="cr-pw-'+i+'" onchange="toggleCreationPwHint('+i+')" '+(c.passwordProtected?'checked':'')+'>Password protected</label>'+
         '</div>'+
       '</div>'+
       '<div class="creation-pw-hint" id="cr-pw-hint-'+i+'" style="'+(c.passwordProtected?'':'display:none;')+'">'+
         'Set the real password in Vercel → Environment Variables as <code>'+envKey+'</code>. It never lives in this JSON file, since visitors can fetch it directly.'+
       '</div>'+
-      '<div class="creation-row">'+
-        '<div class="field"><label>"Download" button label</label><input type="text" id="cr-downloadlabel-'+i+'" value="'+esc(c.downloadLabel||'Download')+'"></div>'+
-        '<div class="field"><label>Download file (optional)</label>'+downloadWidget('cr-download-'+i,c.downloadFile?[c.downloadFile]:[])+'</div>'+
+
+      '<div class="creation-section-label">Download button</div>'+
+      '<div class="downloads-section-box">'+
+        '<div class="checkbox-row" style="margin-bottom:'+(downloadEnabled?'14px':'0')+';">'+
+          '<label class="check-label"><input type="checkbox" id="cr-download-enabled-'+i+'" '+(downloadEnabled?'checked':'')+' onchange="toggleCreationDownload('+i+')">Show Download button</label>'+
+        '</div>'+
+        '<div id="cr-download-inner-'+i+'" style="'+(downloadEnabled?'':'display:none;')+'">'+
+          '<div class="field"><label>Button text</label><input type="text" id="cr-downloadlabel-'+i+'" value="'+esc(c.downloadLabel||'Download')+'"></div>'+
+          downloadWidget('cr-download-'+i,c.downloadFile?[c.downloadFile]:[],false)+
+        '</div>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -765,10 +874,14 @@ function toggleCreationPwHint(i){
   var checked=document.getElementById('cr-pw-'+i).checked;
   document.getElementById('cr-pw-hint-'+i).style.display=checked?'block':'none';
 }
+function toggleCreationDownload(i){
+  var checked=document.getElementById('cr-download-enabled-'+i).checked;
+  document.getElementById('cr-download-inner-'+i).style.display=checked?'block':'none';
+}
 
 function addCreation(){
   state.settings.creations=state.settings.creations||[];
-  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadLabel:'Download',downloadFile:null});
+  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadEnabled:true,downloadLabel:'Download',downloadFile:null});
   renderSettingsForm();
 }
 function removeCreation(i){
@@ -808,6 +921,7 @@ async function saveSettings(){
       showOnHome:document.getElementById('cr-show-'+i)?document.getElementById('cr-show-'+i).checked:true,
       useLabel:document.getElementById('cr-uselabel-'+i)?.value||'Use It',
       passwordProtected:document.getElementById('cr-pw-'+i)?document.getElementById('cr-pw-'+i).checked:false,
+      downloadEnabled:document.getElementById('cr-download-enabled-'+i)?document.getElementById('cr-download-enabled-'+i).checked:true,
       downloadLabel:document.getElementById('cr-downloadlabel-'+i)?.value||'Download',
       downloadFile:(window.__downloads['cr-download-'+i]&&window.__downloads['cr-download-'+i][0])||c.downloadFile||null,
     };
