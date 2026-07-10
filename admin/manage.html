@@ -452,7 +452,7 @@ function blankProject(){
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]}};
 }
 function blankPost(){
-  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:''};
+  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',downloads:[]};
 }
 function newItem(type){
   state.editingType=type;
@@ -547,6 +547,7 @@ function renderForm(){
         '<div class="field"><label>Card summary</label><input type="text" id="f-summary" value="'+esc(item.summary)+'"></div>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
         '<div class="field"><label>Post content</label>'+toolbar('f-body')+'<textarea id="f-body" rows="16">'+esc(item.body)+'</textarea></div>'+
+        '<div class="field"><label>Downloadable files</label>'+downloadWidget('blog-downloads',item.downloads||[])+'</div>'+
       '<details style="margin-top:12px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
         '<div class="section-body">'+
           '<div class="field"><label>SEO title <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 60 chars)</span></label>'+
@@ -586,6 +587,7 @@ async function saveItem(asDraft){
     };
   }else{
     item={id:id,draft:asDraft,title:document.getElementById('f-title').value,date:document.getElementById('f-date').value,summary:document.getElementById('f-summary').value,thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',body:document.getElementById('f-body').value,
+      downloads:window.__downloads['blog-downloads']||[],
       seo:{
         title:document.getElementById('f-seo-title')?document.getElementById('f-seo-title').value:'',
         metaDescription:document.getElementById('f-meta-desc')?document.getElementById('f-meta-desc').value:'',
