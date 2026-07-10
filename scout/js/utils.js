@@ -3,7 +3,7 @@
    ═══════════════════════════════════════ */
 
 // ── API Key ───────────────────────────────
-const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+const ANTHROPIC_API_KEY = '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';
 
 // ── Shared State ──────────────────────────
 let savedJobs   = JSON.parse(localStorage.getItem('scout-saved')   || '[]');
