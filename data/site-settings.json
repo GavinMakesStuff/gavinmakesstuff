@@ -64,6 +64,7 @@
       "showOnHome": true,
       "useLabel": "Use It",
       "passwordProtected": true,
+      "downloadEnabled": false,
       "downloadLabel": "Download",
       "downloadFile": null
     }
