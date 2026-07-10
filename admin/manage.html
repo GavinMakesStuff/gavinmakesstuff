@@ -444,8 +444,10 @@ async function handleFileUpload(fieldKey){
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 /* ── New / Edit item ── */
+function formPrefix(type){ return type==='project' ? 'projects' : 'blog'; }
+
 function blankProject(){
-  return{id:'',draft:true,appUrl:'',thumbnail:'',showOnPublic:true,showOnPortfolio:true,
+  return{id:'',draft:true,appUrl:'',appUrlPasswordProtected:false,thumbnail:'',showOnPublic:true,showOnPortfolio:true,
     public:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]},
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]}};
 }
@@ -466,16 +468,18 @@ function editItem(type,id){
 }
 function cancelForm(){
   var type=state.editingType;
-  document.getElementById(type+'s-list-view').style.display='block';
-  document.getElementById(type+'s-form-view').style.display='none';
+  var prefix=formPrefix(type);
+  document.getElementById(prefix+'-list-view').style.display='block';
+  document.getElementById(prefix+'-form-view').style.display='none';
 }
 
 function renderForm(){
   var type=state.editingType;
+  var prefix=formPrefix(type);
   var item=state.editingItem;
   var isNew=!item.id;
-  document.getElementById(type+'s-list-view').style.display='none';
-  var fv=document.getElementById(type+'s-form-view');
+  document.getElementById(prefix+'-list-view').style.display='none';
+  var fv=document.getElementById(prefix+'-form-view');
   fv.style.display='block';
 
   if(type==='project'){
@@ -495,6 +499,10 @@ function renderForm(){
         '<div class="field"><label>Live app / project URL (optional)</label>'+
           '<input type="url" id="f-app-url" value="'+esc(item.appUrl||'')+'" placeholder="e.g. /scout/ or https://example.com">'+
           '<p class="hint">Adds a "Try the app" button on the project detail page.</p></div>'+
+        '<div class="checkbox-row" style="margin-top:-8px;">'+
+          '<label class="check-label"><input type="checkbox" id="f-app-url-pw" '+(item.appUrlPasswordProtected?'checked':'')+'>Password protect this link</label>'+
+        '</div>'+
+        '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">'+(item.id?('Set the real password in Vercel as <code>TOOL_PASSWORD_'+item.id.toUpperCase().replace(/[^A-Z0-9]/g,'_')+'</code>.'):'Set the URL slug and save once first, then set the password in Vercel as TOOL_PASSWORD_&lt;YOUR-SLUG&gt;.')+'</p>'+
         '<div class="field"><label>Thumbnail image</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[''],false)+'</div>'+
       '</div>'+
 
@@ -569,6 +577,7 @@ async function saveItem(asDraft){
     item={
       id:id,draft:asDraft,
       appUrl:document.getElementById('f-app-url').value.trim(),
+      appUrlPasswordProtected:document.getElementById('f-app-url-pw').checked,
       thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',
       showOnPublic:document.getElementById('f-public').checked,
       showOnPortfolio:document.getElementById('f-portfolio').checked,
@@ -654,7 +663,7 @@ function renderSettingsForm(){
 
     '<div class="card">'+
       '<h2 style="font-size:1.1rem;margin-bottom:6px;">Google Analytics</h2>'+
-      '<p class=\"hint\" style=\"margin-bottom:12px;\">Enter your GA4 Measurement ID (e.g. G-XXXXXXXXXX) after setting up Google Analytics. See the Analytics page for setup instructions.</p>'+
+      '<p class="hint" style="margin-bottom:12px;">Enter your GA4 Measurement ID (e.g. G-XXXXXXXXXX) after setting up Google Analytics. See the Analytics page for setup instructions.</p>'+
       '<div class="field"><label>GA4 Measurement ID</label><input type="text" id="s-ga4" value="'+esc((s.analytics&&s.analytics.ga4MeasurementId)||'')+'" placeholder="G-XXXXXXXXXX"></div>'+
     '</div>'+
 
