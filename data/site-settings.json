@@ -61,7 +61,11 @@
       "status": "private",
       "statusLabel": "",
       "thumbnail": "/images/projects/site/1783609612608-scoutfaviconsquare.webp",
-      "showOnHome": true
+      "showOnHome": true,
+      "useLabel": "Use It",
+      "passwordProtected": true,
+      "downloadLabel": "Download",
+      "downloadFile": null
     }
   ]
 }
