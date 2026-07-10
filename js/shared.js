@@ -168,7 +168,9 @@ function renderProjectDetail(section) {
   var content = project[dataKey];
   var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
   var appLinkHtml = project.appUrl
-    ? '<div class="app-link-row"><a class="btn btn-primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a></div>'
+    ? '<div class="app-link-row">' + (project.appUrlPasswordProtected
+        ? '<button type="button" class="btn btn-primary" onclick="openToolLink(this,\'' + project.id + '\',\'' + encodeURIComponent(project.appUrl) + '\')">Try the app →</button>'
+        : '<a class="btn btn-primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a>') + '</div>'
     : '';
   var galleryHtml = (content.gallery && content.gallery.length)
     ? '<div class="gallery-grid">' + content.gallery.map(function (src) {
@@ -265,7 +267,10 @@ function renderCreations(containerId) {
   }).join('');
 }
 
-/* ---- Password-gated "Use It" link ---- */
+/* ---- Password-gated "Use It" link ----
+   Used both by Creations (renderCreations) and by password-protected
+   project "Try the app" links (renderProjectDetail). Generic by id —
+   checks against TOOL_PASSWORD_<ID> in Vercel via /api/verify-tool-password. */
 async function openToolLink(btnEl, id, encodedUrl) {
   var pw = prompt('This tool is password protected. Enter password:');
   if (pw === null) return; // user cancelled
