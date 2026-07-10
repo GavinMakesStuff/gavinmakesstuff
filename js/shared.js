@@ -342,7 +342,7 @@ async function openToolLink(btnEl, id, encodedUrl) {
       window.location.href = decodeURIComponent(encodedUrl);
       return;
     }
-    alert('Incorrect password.');
+    alert(data.error || 'Incorrect password.');
   } catch (e) {
     alert('Could not verify password. Check your connection and try again.');
   }
