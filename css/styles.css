@@ -296,6 +296,9 @@ a:focus-visible, button:focus-visible {
 .detail-meta { color: var(--color-muted); font-size: 0.88rem; margin-bottom: 20px; }
 .detail-thumb {
   width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  max-height: 420px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-ink-border);
   margin-bottom: 32px;
@@ -304,7 +307,7 @@ a:focus-visible, button:focus-visible {
 .detail-body h2 { margin-top: 1.8em; font-size: 1.3rem; }
 .detail-body h3 { margin-top: 1.4em; }
 .detail-body ul { margin-bottom: 1em; }
-.detail-body li { margin-bottom: 0.3em; color: var(--color-muted); }
+.detail-body li { margin-bottom: 0.3em; }
 .detail-body strong { color: var(--color-paper); }
 
 /* app link button on detail pages */
