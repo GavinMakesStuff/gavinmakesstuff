@@ -504,7 +504,7 @@ function blankProject(){
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'}};
 }
 function blankPost(){
-  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'};
+  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',appUrl:'',appUrlPasswordProtected:false,downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'};
 }
 function newItem(type){
   state.editingType=type;
@@ -617,6 +617,13 @@ function renderForm(){
         '<div class="field"><label>Title</label><input type="text" id="f-title" value="'+esc(item.title)+'"></div>'+
         '<div class="field"><label>Date</label><input type="date" id="f-date" value="'+esc(item.date)+'"></div>'+
         '<div class="field"><label>Card summary</label><input type="text" id="f-summary" value="'+esc(item.summary)+'"></div>'+
+        '<div class="field"><label>Live app / project URL (optional)</label>'+
+          '<input type="url" id="f-blog-app-url" value="'+esc(item.appUrl||'')+'" placeholder="e.g. /scout/ or https://example.com">'+
+          '<p class="hint">Adds a "Try the app" button on the blog post page.</p></div>'+
+        '<div class="checkbox-row" style="margin-top:-8px;">'+
+          '<label class="check-label"><input type="checkbox" id="f-blog-app-url-pw" '+(item.appUrlPasswordProtected?'checked':'')+'>Password protect this link</label>'+
+        '</div>'+
+        '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">'+(item.id?('Set the real password in Vercel as <code>TOOL_PASSWORD_'+item.id.toUpperCase().replace(/[^A-Z0-9]/g,'_')+'</code> — same environment variable convention as projects.'):'Set the URL slug and save once first, then set the password in Vercel as TOOL_PASSWORD_&lt;YOUR-SLUG&gt;.')+'</p>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
         '<div class="field"><label>Post content</label>'+toolbar('f-body')+'<textarea id="f-body" rows="16">'+esc(item.body)+'</textarea></div>'+
         '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('blog',item)+'</div>'+
@@ -683,6 +690,8 @@ async function saveItem(asDraft){
     };
   }else{
     item={id:id,draft:asDraft,title:document.getElementById('f-title').value,date:document.getElementById('f-date').value,summary:document.getElementById('f-summary').value,thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',body:document.getElementById('f-body').value,
+      appUrl:document.getElementById('f-blog-app-url').value.trim(),
+      appUrlPasswordProtected:document.getElementById('f-blog-app-url-pw').checked,
       downloads:window.__downloads['blog-downloads']||[],
       downloadsEnabled:document.getElementById('blog-dl-enabled').checked,
       downloadsShowHeading:document.getElementById('blog-dl-show-heading').checked,
