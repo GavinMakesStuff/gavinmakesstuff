@@ -4,13 +4,10 @@
       "id": "jorgen-and-his-times",
       "draft": false,
       "appUrl": "",
+      "appUrlPasswordProtected": false,
       "thumbnail": "/images/projects/jorgen-and-his-times/1783109537237-JorgenHisTimesCover.webp",
       "showOnPublic": true,
       "showOnPortfolio": false,
-      "showInCreations": false,
-      "status": "open",
-      "statusLabel": "",
-      "creationsThumbnail": "",
       "public": {
         "title": "Jorgen and His Times - Passing down the family story",
         "summary": "I turned my great-great-grandfather's typewritten immigration story into a printed book as a Christmas gift for my dad—and it became so meaningful, we ended up making 11 copies for the whole family.",
@@ -19,7 +16,13 @@
         "gallery": [
           "/images/projects/jorgen-and-his-times/1783617184501-JorgenHisTimesCover.webp"
         ],
-        "downloads": []
+        "downloads": [
+          {
+            "label": "Read Me",
+            "file": "/files/jorgen-and-his-times/1783662012139-JorgenHisTimes.pdf",
+            "meta": ""
+          }
+        ]
       },
       "portfolio": {
         "title": "Jorgen and His Times: Family Memoir Publishing",
