@@ -290,7 +290,7 @@ a:focus-visible, button:focus-visible {
 }
 
 /* ── detail page ── */
-.detail-header { padding: 48px 0 32px; }
+.detail-header { padding: 48px 0 32px; max-width: 950px; margin: 0 auto; }
 .breadcrumb { color: var(--color-muted); font-size: 0.85rem; margin-bottom: 16px; }
 .detail-header h1 { margin-bottom: 14px; }
 .detail-meta { color: var(--color-muted); font-size: 0.88rem; margin-bottom: 20px; }
@@ -303,7 +303,7 @@ a:focus-visible, button:focus-visible {
   border: 1px solid var(--color-ink-border);
   margin-bottom: 32px;
 }
-.detail-body { font-size: 1rem; max-width: 720px; }
+.detail-body { font-size: 1rem; }
 .detail-body h2 { margin-top: 1.8em; font-size: 1.3rem; }
 .detail-body h3 { margin-top: 1.4em; }
 .detail-body ul { margin-bottom: 1em; }
