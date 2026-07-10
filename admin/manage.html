@@ -117,6 +117,8 @@
     .creation-item-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
     .creation-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     @media(max-width:600px){.creation-row{grid-template-columns:1fr;}}
+    .creation-pw-hint{background:rgba(217,48,37,.06);border:1px solid rgba(217,48,37,.15);border-radius:6px;padding:8px 12px;font-size:.75rem;color:var(--muted);margin:-4px 0 12px;}
+    .creation-pw-hint code{color:var(--paper);background:var(--ink-r2);padding:1px 5px;border-radius:3px;}
   </style>
 </head>
 <body>
@@ -255,6 +257,7 @@ function showStatus(msg,isError,isOk){
   document.getElementById('status-text').textContent=msg;
   document.getElementById('status-spinner').style.display=(isError||isOk)?'none':'block';
   bar.className='status-bar visible'+(isError?' error':isOk?' ok':'');
+  bar.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function hideStatus(){document.getElementById('status-bar').className='status-bar';}
 
@@ -443,7 +446,6 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').repla
 /* ── New / Edit item ── */
 function blankProject(){
   return{id:'',draft:true,appUrl:'',thumbnail:'',showOnPublic:true,showOnPortfolio:true,
-    showInCreations:false,status:'private',statusLabel:'',creationsThumbnail:'',
     public:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]},
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[]}};
 }
@@ -494,29 +496,6 @@ function renderForm(){
           '<input type="url" id="f-app-url" value="'+esc(item.appUrl||'')+'" placeholder="e.g. /scout/ or https://example.com">'+
           '<p class="hint">Adds a "Try the app" button on the project detail page.</p></div>'+
         '<div class="field"><label>Thumbnail image</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[''],false)+'</div>'+
-      '</div>'+
-
-      /* Creations section */
-      '<div class="card">'+
-        '<h3 style="font-size:.95rem;margin-bottom:14px;">Creations section</h3>'+
-        '<div class="checkbox-row">'+
-          '<label class="check-label"><input type="checkbox" id="f-in-creations" '+(item.showInCreations?'checked':'')+' onchange="toggleCreationsFields()">Show in Creations section on homepage</label>'+
-        '</div>'+
-        '<div id="creations-fields" style="'+(item.showInCreations?'':'display:none;')+'">'+
-          '<div class="field"><label>Status</label>'+
-            '<select id="f-status" onchange="toggleCustomStatus()">'+
-              '<option value="open" '+(item.status==='open'?'selected':'')+'>Open to All</option>'+
-              '<option value="private" '+(item.status==='private'?'selected':'')+'>Private — For Now</option>'+
-              '<option value="wip" '+(item.status==='wip'?'selected':'')+'>Work In Progress</option>'+
-              '<option value="custom" '+(item.status==='custom'?'selected':'')+'>Custom label…</option>'+
-            '</select></div>'+
-          '<div class="field" id="custom-status-field" style="'+(item.status==='custom'?'':'display:none;')+'">'+
-            '<label>Custom status label</label>'+
-            '<input type="text" id="f-status-label" value="'+esc(item.statusLabel||'')+'" placeholder="e.g. Beta"></div>'+
-          '<div class="field"><label>Creations thumbnail (optional — replaces icon)</label>'+
-            uploadWidget('creations-thumb',item.creationsThumbnail?[item.creationsThumbnail]:[],false)+
-          '</div>'+
-        '</div>'+
       '</div>'+
 
       /* Public section */
@@ -579,15 +558,6 @@ function renderForm(){
   }
 }
 
-function toggleCreationsFields(){
-  var show=document.getElementById('f-in-creations').checked;
-  document.getElementById('creations-fields').style.display=show?'block':'none';
-}
-function toggleCustomStatus(){
-  var val=document.getElementById('f-status').value;
-  document.getElementById('custom-status-field').style.display=val==='custom'?'block':'none';
-}
-
 /* ── Save item ── */
 async function saveItem(asDraft){
   var type=state.editingType;
@@ -602,10 +572,6 @@ async function saveItem(asDraft){
       thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',
       showOnPublic:document.getElementById('f-public').checked,
       showOnPortfolio:document.getElementById('f-portfolio').checked,
-      showInCreations:document.getElementById('f-in-creations').checked,
-      status:document.getElementById('f-status')?document.getElementById('f-status').value:'private',
-      statusLabel:document.getElementById('f-status-label')?document.getElementById('f-status-label').value:'',
-      creationsThumbnail:(window.__uploads['creations-thumb']&&window.__uploads['creations-thumb'][0])||'',
       public:{title:document.getElementById('f-pub-title').value,summary:document.getElementById('f-pub-summary').value,tags:tags,description:document.getElementById('f-pub-desc').value,gallery:window.__uploads['pub-gallery']||[],downloads:window.__downloads['pub-downloads']||[]},
       portfolio:{title:document.getElementById('f-port-title').value,summary:document.getElementById('f-port-summary').value,tags:tags,description:document.getElementById('f-port-desc').value,gallery:window.__uploads['port-gallery']||[],downloads:window.__downloads['port-downloads']||[]},
     };
@@ -682,7 +648,7 @@ function renderSettingsForm(){
         '<h2 style="font-size:1.1rem;">Creations section</h2>'+
         '<button class="btn btn-sm btn-primary" onclick="addCreation()">+ Add creation</button>'+
       '</div>'+
-      '<p class="hint" style="margin-bottom:14px;">Manage the items shown in the Creations row on the homepage. You can also set this per-project from the project editor.</p>'+
+      '<p class="hint" style="margin-bottom:14px;">Manage the items shown in the Creations row on the homepage.</p>'+
       '<div id="creations-builder">'+renderCreationsBuilder(creations)+'</div>'+
     '</div>'+
 
@@ -735,6 +701,7 @@ function renderSettingsForm(){
 function renderCreationsBuilder(creations){
   if(!creations||!creations.length)return '<p class="hint">No creations added yet.</p>';
   return creations.map(function(c,i){
+    var envKey='TOOL_PASSWORD_'+(c.id||'id').toUpperCase().replace(/[^A-Z0-9]/g,'_');
     return '<div class="creation-item" id="creation-'+i+'">'+
       '<div class="creation-item-head">'+
         '<strong style="font-size:.9rem;">'+(c.name||'Unnamed')+'</strong>'+
@@ -762,6 +729,19 @@ function renderCreationsBuilder(creations){
           '<label class="check-label"><input type="checkbox" id="cr-show-'+i+'" '+(c.showOnHome?'checked':'')+'>Show on homepage</label>'+
         '</div>'+
       '</div>'+
+      '<div class="creation-row">'+
+        '<div class="field"><label>"Use It" button label</label><input type="text" id="cr-uselabel-'+i+'" value="'+esc(c.useLabel||'Use It')+'"></div>'+
+        '<div class="field" style="display:flex;align-items:center;gap:8px;padding-top:22px;">'+
+          '<label class="check-label"><input type="checkbox" id="cr-pw-'+i+'" onchange="toggleCreationPwHint('+i+')" '+(c.passwordProtected?'checked':'')+'>Password protected</label>'+
+        '</div>'+
+      '</div>'+
+      '<div class="creation-pw-hint" id="cr-pw-hint-'+i+'" style="'+(c.passwordProtected?'':'display:none;')+'">'+
+        'Set the real password in Vercel → Environment Variables as <code>'+envKey+'</code>. It never lives in this JSON file, since visitors can fetch it directly.'+
+      '</div>'+
+      '<div class="creation-row">'+
+        '<div class="field"><label>"Download" button label</label><input type="text" id="cr-downloadlabel-'+i+'" value="'+esc(c.downloadLabel||'Download')+'"></div>'+
+        '<div class="field"><label>Download file (optional)</label>'+downloadWidget('cr-download-'+i,c.downloadFile?[c.downloadFile]:[])+'</div>'+
+      '</div>'+
     '</div>';
   }).join('');
 }
@@ -770,10 +750,14 @@ function toggleCreationCustom(i){
   var val=document.getElementById('cr-status-'+i).value;
   document.getElementById('cr-custom-'+i).style.display=val==='custom'?'block':'none';
 }
+function toggleCreationPwHint(i){
+  var checked=document.getElementById('cr-pw-'+i).checked;
+  document.getElementById('cr-pw-hint-'+i).style.display=checked?'block':'none';
+}
 
 function addCreation(){
   state.settings.creations=state.settings.creations||[];
-  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',showOnHome:true});
+  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadLabel:'Download',downloadFile:null});
   renderSettingsForm();
 }
 function removeCreation(i){
@@ -811,6 +795,10 @@ async function saveSettings(){
       statusLabel:document.getElementById('cr-label-'+i)?.value||'',
       thumbnail:(window.__uploads['cr-thumb-'+i]&&window.__uploads['cr-thumb-'+i][0])||c.thumbnail||'',
       showOnHome:document.getElementById('cr-show-'+i)?document.getElementById('cr-show-'+i).checked:true,
+      useLabel:document.getElementById('cr-uselabel-'+i)?.value||'Use It',
+      passwordProtected:document.getElementById('cr-pw-'+i)?document.getElementById('cr-pw-'+i).checked:false,
+      downloadLabel:document.getElementById('cr-downloadlabel-'+i)?.value||'Download',
+      downloadFile:(window.__downloads['cr-download-'+i]&&window.__downloads['cr-download-'+i][0])||c.downloadFile||null,
     };
   });
 
