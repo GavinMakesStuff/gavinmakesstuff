@@ -157,6 +157,26 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
   }).join('');
 }
 
+/* ---- Shared downloads-box builder ----
+   Used by both renderProjectDetail and renderBlogDetail. `data` is the
+   object holding downloadsEnabled/downloadsShowHeading/downloadsHeading/downloads
+   (a project's public/portfolio object, or a blog post itself). */
+function buildDownloadsHtml(data) {
+  var enabled = data.downloadsEnabled !== false;
+  if (!enabled || !data.downloads || !data.downloads.length) return '';
+  var showHeading = data.downloadsShowHeading !== false;
+  var heading = data.downloadsHeading || 'Downloads';
+  var itemsHtml = data.downloads.map(function (d) {
+    var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
+    var btnText = d.buttonText || 'Download';
+    var labelHtml = d.label ? '<div class="file-label">' + d.label + '</div>' : '';
+    var metaHtml = d.meta ? '<div class="file-meta">' + d.meta + '</div>' : '';
+    return '<div class="download-item"><div>' + labelHtml + metaHtml + '</div>' +
+      '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>' + btnText + '</a></div>';
+  }).join('');
+  return '<div class="downloads-box">' + (showHeading ? '<h3>' + heading + '</h3>' : '') + itemsHtml + '</div>';
+}
+
 /* ---- Project detail ---- */
 function renderProjectDetail(section) {
   var dataKey = (section === 'studio') ? 'public' : 'portfolio';
@@ -176,13 +196,13 @@ function renderProjectDetail(section) {
     ? '<div class="gallery-grid">' + content.gallery.map(function (src) {
         return '<img src="' + src + '" alt="' + content.title + '" onclick="openLightbox(\'' + src + '\')" tabindex="0">';
       }).join('') + '</div>' : '';
-  var downloadsHtml = (content.downloads && content.downloads.length)
-    ? '<div class="downloads-box"><h3>Downloads</h3>' + content.downloads.map(function (d) {
-        var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
-        return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
-          '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>Download</a></div>';
-      }).join('') + '</div>' : '';
-  document.title = content.title;
+  var downloadsHtml = buildDownloadsHtml(content);
+  document.title = (content.seo && content.seo.title) ? content.seo.title : content.title;
+  if (content.seo && content.seo.metaDescription) {
+    var metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.setAttribute('name', 'description'); document.head.appendChild(metaDesc); }
+    metaDesc.setAttribute('content', content.seo.metaDescription);
+  }
   root.innerHTML = (
     '<div class="card-tags" style="margin-bottom:16px;">' + tags + '</div>' +
     '<h1>' + content.title + '</h1>' +
@@ -226,12 +246,7 @@ function renderBlogDetail() {
     if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.setAttribute('name', 'description'); document.head.appendChild(metaDesc); }
     metaDesc.setAttribute('content', post.seo.metaDescription);
   }
-  var downloadsHtml = (post.downloads && post.downloads.length)
-    ? '<div class="downloads-box"><h3>Downloads</h3>' + post.downloads.map(function (d) {
-        var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
-        return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
-          '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>Download</a></div>';
-      }).join('') + '</div>' : '';
+  var downloadsHtml = buildDownloadsHtml(post);
   root.innerHTML = (
     '<div class="post-date" style="margin-bottom:12px;">' + formatDate(post.date) + '</div>' +
     '<h1>' + post.title + '</h1>' +
@@ -260,7 +275,7 @@ function renderCreations(containerId) {
     var useBtnHtml = c.passwordProtected
       ? '<button type="button" class="cell-tool-btn cell-tool-btn-primary" onclick="event.preventDefault();openToolLink(this,\'' + c.id + '\',\'' + encodeURIComponent(c.url) + '\')">' + useLabel + '</button>'
       : '<a class="cell-tool-btn cell-tool-btn-primary" href="' + c.url + '">' + useLabel + '</a>';
-    var downloadBtnHtml = (c.downloadFile && c.downloadFile.file)
+    var downloadBtnHtml = (c.downloadEnabled !== false && c.downloadFile && c.downloadFile.file)
       ? '<a class="cell-tool-btn" href="' + c.downloadFile.file + '" download>' + downloadLabel + '</a>'
       : '';
     return (
