@@ -46,7 +46,7 @@
     .creations-label{display:flex;align-items:center;gap:12px;font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
     .creations-label::after{content:'';flex:1;height:1px;background:var(--border);}
     .creations-row{display:flex;gap:var(--gap);flex-wrap:wrap;}
-    .cell-tool{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .18s,transform .18s;min-width:200px;flex:0 0 auto;text-decoration:none;color:inherit;}
+    .cell-tool{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;transition:border-color .18s,transform .18s;min-width:200px;flex:0 0 auto;color:inherit;}
     .cell-tool:hover{border-color:var(--red);transform:translateY(-2px);}
     .cell-tool:hover .cell-icon-wrap{background:var(--red);}
     .cell-tool .cell-icon-wrap{width:36px;height:36px;border-radius:8px;background:var(--border-h);display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0;overflow:hidden;}
@@ -57,6 +57,12 @@
     .tool-badge.private{background:rgba(217,48,37,.08);color:var(--red);border:1px solid rgba(217,48,37,.25);}
     .tool-badge.wip{background:rgba(234,179,8,.08);color:#ca8a04;border:1px solid rgba(234,179,8,.25);}
     .tool-badge.open{background:rgba(34,197,94,.08);color:#16a34a;border:1px solid rgba(34,197,94,.25);}
+    .cell-tool-actions{display:flex;gap:8px;flex-shrink:0;width:100%;margin-top:4px;}
+    .cell-tool-btn{font-family:'Inter',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:6px 12px;border-radius:6px;border:1px solid var(--border-h);background:transparent;color:var(--white);cursor:pointer;text-align:center;flex:1;transition:background .15s,border-color .15s;}
+    .cell-tool-btn:hover{background:var(--border-h);}
+    .cell-tool-btn:disabled{opacity:.5;cursor:not-allowed;}
+    .cell-tool-btn-primary{background:var(--red);border-color:var(--red);}
+    .cell-tool-btn-primary:hover{background:#bc251c;border-color:#bc251c;}
     .site-footer{border-top:1px solid var(--border);padding:20px 28px;color:var(--muted);font-size:.75rem;letter-spacing:.03em;}
     @media(max-width:960px){.bento-main{grid-template-columns:1fr 1fr;grid-template-rows:auto;min-height:unset;}.cell-hero{grid-column:1/3;grid-row:1;min-height:240px;}}
     @media(max-width:580px){.bento-main{grid-template-columns:1fr;}.cell-hero{grid-column:1;}.page-body{padding:12px;}.top-nav{padding:16px;}.nav-links{gap:14px;}.cell-tool{min-width:unset;flex:1 1 calc(50% - var(--gap));}}
