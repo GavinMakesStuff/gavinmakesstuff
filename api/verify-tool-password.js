@@ -8,16 +8,25 @@
    the browser on every page load and would be readable by
    anyone via dev tools.
 
-   To password-protect a creation:
-     1. Check "Password protected" for that creation in
-        Admin → Site Settings → Creations section.
+   To password-protect a creation, project, or blog post:
+     1. Check "Password protected" for it in the admin.
      2. In Vercel → Settings → Environment Variables, add
-        TOOL_PASSWORD_<ID> where <ID> is the creation's id,
+        TOOL_PASSWORD_<ID> where <ID> is the item's id,
         uppercased, non-alphanumeric characters replaced with _
-        (e.g. id "scout" → TOOL_PASSWORD_SCOUT).
+        (e.g. id "scout" → TOOL_PASSWORD_SCOUT). The admin UI
+        shows you the exact expected name once the item is saved.
+     3. IMPORTANT: Vercel does not apply new/changed environment
+        variables to an already-running deployment. After adding
+        or editing one, trigger a redeploy (e.g. Deployments →
+        "..." → Redeploy) or it will not be visible to this
+        function yet.
+     4. Make sure the variable is enabled for the "Production"
+        environment (not only Preview/Development), or it won't
+        exist when visitors hit the live site.
 
    No GitHub auth required here — this is called by anonymous
-   site visitors clicking "Use It" on a protected creation.
+   site visitors clicking "Use It"/"Try the app" on a protected
+   item.
    ============================================================ */
 
 module.exports = async function (req, res) {
@@ -33,9 +42,25 @@ module.exports = async function (req, res) {
   }
 
   const envKey = 'TOOL_PASSWORD_' + String(id).toUpperCase().replace(/[^A-Z0-9]/g, '_');
-  const realPassword = process.env[envKey] || '';
+  // Trim defensively — a stray trailing newline from copy/pasting into
+  // Vercel's env var field, or a trailing space typed into the password
+  // prompt, is a common false-negative here and shouldn't be treated as
+  // a genuinely wrong password.
+  const realPassword = (process.env[envKey] || '').trim();
+  const suppliedPassword = String(password).trim();
 
-  if (!realPassword || password !== realPassword) {
+  if (!realPassword) {
+    // Distinct from "wrong password" on purpose: this tells you the env
+    // var isn't set (or wasn't picked up because the site needs a
+    // redeploy since it was added), which is the far more common cause
+    // of this failing than an actually-mistyped password.
+    res.status(401).json({
+      error: 'No password is configured for this yet. Set ' + envKey + ' in Vercel (Production environment) and redeploy.',
+    });
+    return;
+  }
+
+  if (suppliedPassword !== realPassword) {
     res.status(401).json({ error: 'Incorrect password.' });
     return;
   }
