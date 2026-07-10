@@ -16,6 +16,9 @@ function applySettings(settings, pageKey) {
   if (!settings) return;
   window.SITE_SETTINGS = settings;
 
+  // ── Google Analytics (GA4) ──────────────────────────────────────────
+  injectAnalytics(settings);
+
   // ── Nav logo text ──────────────────────────────────────────────────
   if (settings.site && settings.site.name) {
     var logo = document.querySelector('.logo');
@@ -55,6 +58,29 @@ function applySettings(settings, pageKey) {
   if (studioBioEl && settings.bio && settings.bio.studioSummary) {
     studioBioEl.textContent = settings.bio.studioSummary;
     studioBioEl.style.display = 'block';
+  }
+}
+
+/* ---- Google Analytics (GA4) ----
+   Reads settings.analytics.ga4MeasurementId (set via Admin → Site Settings
+   → Google Analytics) and injects the tracking snippet dynamically. Runs
+   on any page that calls applySettings() — no per-file editing needed.
+   Skips Gavin's own visits if 'gms-self-exclude' is set in localStorage,
+   same as the original static snippet. */
+function injectAnalytics(settings) {
+  var id = settings && settings.analytics && settings.analytics.ga4MeasurementId;
+  if (!id) return;
+  if (document.getElementById('gms-ga4-script')) return; // already injected this page load
+  var s1 = document.createElement('script');
+  s1.async = true;
+  s1.id = 'gms-ga4-script';
+  s1.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;
+  document.head.appendChild(s1);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  gtag('js', new Date());
+  if (!localStorage.getItem('gms-self-exclude')) {
+    gtag('config', id);
   }
 }
 
