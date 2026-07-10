@@ -554,7 +554,7 @@ function renderForm(){
         '<div class="checkbox-row" style="margin-top:-8px;">'+
           '<label class="check-label"><input type="checkbox" id="f-app-url-pw" '+(item.appUrlPasswordProtected?'checked':'')+'>Password protect this link</label>'+
         '</div>'+
-        '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">'+(item.id?('Set the real password in Vercel as <code>TOOL_PASSWORD_'+item.id.toUpperCase().replace(/[^A-Z0-9]/g,'_')+'</code>.'):'Set the URL slug and save once first, then set the password in Vercel as TOOL_PASSWORD_&lt;YOUR-SLUG&gt;.')+'</p>'+
+        '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">Uses the single shared <code>TOOL_PASSWORD</code> environment variable in Vercel — the same password protects every protected item site-wide (projects, blog posts, creations, and Scout).</p>'+
         '<div class="field"><label>Thumbnail image</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[''],false)+'</div>'+
       '</div>'+
 
@@ -623,7 +623,7 @@ function renderForm(){
         '<div class="checkbox-row" style="margin-top:-8px;">'+
           '<label class="check-label"><input type="checkbox" id="f-blog-app-url-pw" '+(item.appUrlPasswordProtected?'checked':'')+'>Password protect this link</label>'+
         '</div>'+
-        '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">'+(item.id?('Set the real password in Vercel as <code>TOOL_PASSWORD_'+item.id.toUpperCase().replace(/[^A-Z0-9]/g,'_')+'</code> — same environment variable convention as projects.'):'Set the URL slug and save once first, then set the password in Vercel as TOOL_PASSWORD_&lt;YOUR-SLUG&gt;.')+'</p>'+
+        '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">Uses the single shared <code>TOOL_PASSWORD</code> environment variable in Vercel — the same password protects every protected item site-wide (projects, blog posts, creations, and Scout).</p>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
         '<div class="field"><label>Post content</label>'+toolbar('f-body')+'<textarea id="f-body" rows="16">'+esc(item.body)+'</textarea></div>'+
         '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('blog',item)+'</div>'+
@@ -820,7 +820,6 @@ function renderSettingsForm(){
 function renderCreationsBuilder(creations){
   if(!creations||!creations.length)return '<p class="hint">No creations added yet.</p>';
   return creations.map(function(c,i){
-    var envKey='TOOL_PASSWORD_'+(c.id||'id').toUpperCase().replace(/[^A-Z0-9]/g,'_');
     var downloadEnabled=c.downloadEnabled!==false;
     return '<div class="creation-item" id="creation-'+i+'">'+
       '<div class="creation-item-head">'+
@@ -858,7 +857,7 @@ function renderCreationsBuilder(creations){
         '</div>'+
       '</div>'+
       '<div class="creation-pw-hint" id="cr-pw-hint-'+i+'" style="'+(c.passwordProtected?'':'display:none;')+'">'+
-        'Set the real password in Vercel → Environment Variables as <code>'+envKey+'</code>. It never lives in this JSON file, since visitors can fetch it directly.'+
+        'Uses the single shared <code>TOOL_PASSWORD</code> environment variable in Vercel — the same password protects every protected item site-wide, including Scout. It never lives in this JSON file, since visitors can fetch it directly.'+
       '</div>'+
 
       '<div class="creation-section-label">Download button</div>'+
