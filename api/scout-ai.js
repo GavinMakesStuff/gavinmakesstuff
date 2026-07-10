@@ -8,7 +8,14 @@
 
    Required Vercel environment variables:
      ANTHROPIC_API_KEY   — shared with the admin AI Draft tool
-     SCOUT_PASSWORD       — the shared password Scout users must enter
+     TOOL_PASSWORD        — shared password, same one used by every
+                             other password-protected item on the site
+                             (see api/verify-tool-password.js)
+
+   SCOUT_PASSWORD is still checked as a fallback if TOOL_PASSWORD
+   isn't set, so Scout keeps working during the switch to the shared
+   variable. Once TOOL_PASSWORD is confirmed working, SCOUT_PASSWORD
+   can be removed from Vercel.
    ============================================================ */
 
 module.exports = async function (req, res) {
@@ -18,7 +25,7 @@ module.exports = async function (req, res) {
   }
 
   const suppliedPassword = req.headers['x-scout-password'] || '';
-  const realPassword = process.env.SCOUT_PASSWORD || '';
+  const realPassword = process.env.TOOL_PASSWORD || process.env.SCOUT_PASSWORD || '';
 
   if (!realPassword || suppliedPassword !== realPassword) {
     res.status(401).json({ error: 'Incorrect password.' });
