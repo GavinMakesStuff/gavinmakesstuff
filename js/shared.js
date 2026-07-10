@@ -226,11 +226,18 @@ function renderBlogDetail() {
     if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.setAttribute('name', 'description'); document.head.appendChild(metaDesc); }
     metaDesc.setAttribute('content', post.seo.metaDescription);
   }
+  var downloadsHtml = (post.downloads && post.downloads.length)
+    ? '<div class="downloads-box"><h3>Downloads</h3>' + post.downloads.map(function (d) {
+        var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
+        return '<div class="download-item"><div><div class="file-label">' + d.label + '</div><div class="file-meta">' + (d.meta || '') + '</div></div>' +
+          '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>Download</a></div>';
+      }).join('') + '</div>' : '';
   root.innerHTML = (
     '<div class="post-date" style="margin-bottom:12px;">' + formatDate(post.date) + '</div>' +
     '<h1>' + post.title + '</h1>' +
     '<img class="detail-thumb" src="' + post.thumbnail + '" alt="' + post.title + '" style="margin-bottom:28px;">' +
-    '<div class="detail-body">' + renderMarkdown(post.body) + '</div>'
+    '<div class="detail-body">' + renderMarkdown(post.body) + '</div>' +
+    downloadsHtml
   );
 }
 
