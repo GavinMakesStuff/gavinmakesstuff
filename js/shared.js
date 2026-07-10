@@ -273,10 +273,16 @@ function renderBlogDetail() {
     metaDesc.setAttribute('content', post.seo.metaDescription);
   }
   var downloadsHtml = buildDownloadsHtml(post);
+  var appLinkHtml = post.appUrl
+    ? '<div class="app-link-row">' + (post.appUrlPasswordProtected
+        ? '<button type="button" class="btn btn-primary" onclick="openToolLink(this,\'' + post.id + '\',\'' + encodeURIComponent(post.appUrl) + '\')">Try the app →</button>'
+        : '<a class="btn btn-primary" href="' + post.appUrl + '" target="_blank" rel="noopener">Try the app →</a>') + '</div>'
+    : '';
   root.innerHTML = (
     '<div class="post-date" style="margin-bottom:12px;">' + formatDate(post.date) + '</div>' +
     '<h1>' + post.title + '</h1>' +
     '<img class="detail-thumb" src="' + post.thumbnail + '" alt="' + post.title + '" style="margin-bottom:28px;">' +
+    appLinkHtml +
     '<div class="detail-body">' + renderMarkdown(post.body) + '</div>' +
     downloadsHtml
   );
