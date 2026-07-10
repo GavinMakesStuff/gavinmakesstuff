@@ -246,14 +246,49 @@ function renderCreations(containerId) {
     var iconHtml = c.thumbnail
       ? '<img src="' + c.thumbnail + '" alt="' + c.name + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">'
       : '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#F2EFE9;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+    var useLabel = c.useLabel || 'Use It';
+    var downloadLabel = c.downloadLabel || 'Download';
+    var useBtnHtml = c.passwordProtected
+      ? '<button type="button" class="cell-tool-btn cell-tool-btn-primary" onclick="event.preventDefault();openToolLink(this,\'' + c.id + '\',\'' + encodeURIComponent(c.url) + '\')">' + useLabel + '</button>'
+      : '<a class="cell-tool-btn cell-tool-btn-primary" href="' + c.url + '">' + useLabel + '</a>';
+    var downloadBtnHtml = (c.downloadFile && c.downloadFile.file)
+      ? '<a class="cell-tool-btn" href="' + c.downloadFile.file + '" download>' + downloadLabel + '</a>'
+      : '';
     return (
-      '<a class="cell-tool" href="' + c.url + '">' +
+      '<div class="cell-tool">' +
         '<div class="cell-icon-wrap">' + iconHtml + '</div>' +
         '<div class="tool-info"><p class="tool-name">' + c.name + '</p><p class="tool-desc">' + c.description + '</p></div>' +
         (label ? '<span class="' + badgeClass + '">' + label + '</span>' : '') +
-      '</a>'
+        '<div class="cell-tool-actions">' + useBtnHtml + downloadBtnHtml + '</div>' +
+      '</div>'
     );
   }).join('');
+}
+
+/* ---- Password-gated "Use It" link ---- */
+async function openToolLink(btnEl, id, encodedUrl) {
+  var pw = prompt('This tool is password protected. Enter password:');
+  if (pw === null) return; // user cancelled
+  var originalText = btnEl.textContent;
+  btnEl.disabled = true;
+  btnEl.textContent = 'Checking…';
+  try {
+    var res = await fetch('/api/verify-tool-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, password: pw }),
+    });
+    var data = await res.json();
+    if (res.ok && data.ok) {
+      window.location.href = decodeURIComponent(encodedUrl);
+      return;
+    }
+    alert('Incorrect password.');
+  } catch (e) {
+    alert('Could not verify password. Check your connection and try again.');
+  }
+  btnEl.disabled = false;
+  btnEl.textContent = originalText;
 }
 
 function formatDate(str) {
