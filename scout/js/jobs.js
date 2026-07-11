@@ -63,7 +63,8 @@ async function analyzeJobs() {
   const texts = getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
-  switchSubtab('results');
+  if (typeof switchView === 'function') switchView('results');
+else if (typeof switchSubtab === 'function') switchSubtab('results');
 
   const container = document.getElementById('results-container');
   document.getElementById('status-bar').style.display = 'none';
