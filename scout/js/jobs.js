@@ -66,7 +66,17 @@ async function analyzeJobs() {
   switchSubtab('results');
 
   const container = document.getElementById('results-container');
-  document.getElementById('status-bar').style.display = 'none';
+  const statusBar  = document.getElementById('status-bar');
+
+  // Defensive guard — log what's null so we can diagnose
+  if (!container) {
+    console.error('[Scout] results-container not found in DOM. Available IDs:', 
+      Array.from(document.querySelectorAll('[id]')).map(el => el.id).join(', '));
+    showToast('UI error — please refresh the page and try again.');
+    return;
+  }
+
+  if (statusBar) statusBar.style.display = 'none';
 
   container.innerHTML = `
     <div class="loading-state">
