@@ -1,8 +1,9 @@
 /* ═══════════════════════════════════════
-   js/nav.js — Sidebar, views, guide, welcome
+   scout/js/nav.js
+   Sidebar, view switching, guide, auth state.
    ═══════════════════════════════════════ */
 
-// ── Sidebar ───────────────────────────────
+// ── Sidebar collapse ──────────────────────────────────────────
 let sidebarCollapsed = localStorage.getItem('scout-sidebar') === 'collapsed';
 
 function initSidebar() {
@@ -31,18 +32,16 @@ function updateCollapseBtn() {
   btn.title = sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
 }
 
-// ── View switching ────────────────────────
+// ── View switching ────────────────────────────────────────────
 let currentView = 'results';
 
 function switchView(view) {
   currentView = view;
 
-  // Update active state on all sidebar items that have data-view
   document.querySelectorAll('.sb-item[data-view]').forEach(el => {
     el.classList.toggle('active', el.dataset.view === view);
   });
 
-  // Show/hide main panels
   document.querySelectorAll('.view-panel').forEach(el => {
     el.style.display = el.dataset.view === view ? 'flex' : 'none';
   });
@@ -51,20 +50,8 @@ function switchView(view) {
   if (view === 'applied') renderApplied();
 }
 
-// ── Guide popup ───────────────────────────
-function toggleGuide() {
-  const overlay = document.getElementById('guide-overlay');
-  if (!overlay) return;
-  overlay.classList.toggle('open');
-}
-
-function closeGuideOnBackdrop(e) {
-  if (e.target === e.currentTarget) toggleGuide();
-}
-
-// ── Profile page ──────────────────────────
+// ── Profile page ──────────────────────────────────────────────
 function openProfileEditor() {
-  // Populate fields from current profile
   const f = id => document.getElementById(id);
   if (f('p-role'))       f('p-role').value       = userProfile.role       || '';
   if (f('p-industry'))   f('p-industry').value   = userProfile.industry   || '';
@@ -75,32 +62,35 @@ function openProfileEditor() {
   if (f('p-certs'))      f('p-certs').value      = userProfile.certs      || '';
   if (f('p-notes'))      f('p-notes').value      = userProfile.notes      || '';
   if (f('p-jobgoal'))    f('p-jobgoal').value    = userProfile.jobGoal    || '';
-
-  // Refresh status indicators
   refreshProfileStatus();
-
-  // Switch to profile view — this also sets the sidebar active bar
   switchView('profile');
 }
 
-function closeProfileEditor() {
-  switchView('results');
-}
+function closeProfileEditor() { switchView('results'); }
+
 function refreshProfileStatus() {
-  const resumeStatus = document.getElementById('profile-resume-status');
-  const locStatus    = document.getElementById('profile-location-status');
-  if (resumeStatus) {
-    const hasProfile = !!(userProfile.role || userProfile.industry || userProfile.certs);
-    resumeStatus.textContent = hasProfile ? 'Profile data loaded' : 'Not uploaded yet';
-    resumeStatus.style.color = hasProfile ? 'var(--green)' : 'var(--text-dim)';
+  const resumeEl = document.getElementById('profile-resume-status');
+  const locEl    = document.getElementById('profile-location-status');
+  if (resumeEl) {
+    const has = !!(userProfile.role || userProfile.industry || userProfile.certs);
+    resumeEl.textContent = has ? 'Profile data loaded' : 'Not uploaded yet';
+    resumeEl.style.color = has ? 'var(--green)' : 'var(--text-dim)';
   }
-  if (locStatus) {
-    locStatus.textContent = userLocation ? 'Location saved' : 'Not shared';
-    locStatus.style.color = userLocation ? 'var(--green)' : 'var(--text-dim)';
+  if (locEl) {
+    locEl.textContent = userLocation ? 'Location saved' : 'Not shared';
+    locEl.style.color = userLocation ? 'var(--green)' : 'var(--text-dim)';
   }
 }
 
-// ── Welcome modal ─────────────────────────
+// ── Guide popup ───────────────────────────────────────────────
+function toggleGuide() {
+  document.getElementById('guide-overlay')?.classList.toggle('open');
+}
+function closeGuideOnBackdrop(e) {
+  if (e.target === e.currentTarget) toggleGuide();
+}
+
+// ── Welcome modal ─────────────────────────────────────────────
 function openWelcomeModal() {
   document.getElementById('welcome-modal')?.classList.add('open');
 }
@@ -113,7 +103,7 @@ function welcomeGoToProfile() {
   openProfileEditor();
 }
 
-// ── Init ──────────────────────────────────
+// ── DOMContentLoaded ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
 
@@ -122,14 +112,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const icon  = document.getElementById('theme-icon');
   if (icon) icon.className = theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
 
-  // Start on results view
-  switchView('results');
-
-  // Welcome modal on first visit
-  if (localStorage.getItem('scout-welcome-seen') !== 'true') {
-    openWelcomeModal();
-  }
-
-  // Update location badges
   updateLocationBadge();
 });
+
+// ── Auth-ready: decide what to show ──────────────────────────
+document.addEventListener('scout:auth-ready', () => {
+  if (!scoutSession) {
+    // Not logged in — show auth overlay
+    showAuthScreen('signup');
+  } else {
+    // Logged in — update UI and show app
+    updateUserUI();
+    switchView('results');
+    if (localStorage.getItem('scout-welcome-seen') !== 'true') {
+      openWelcomeModal();
+    }
+    // Handle Stripe return
+    checkPaymentReturn();
+  }
+});
+
+// ── Handle Stripe success/cancel redirect ─────────────────────
+function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    const tokens = params.get('tokens');
+    showToast(`Payment successful! ${tokens} tokens added to your account.`);
+    refreshUserData().then(updateUserUI);
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (params.get('payment') === 'cancelled') {
+    showToast('Payment cancelled.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
