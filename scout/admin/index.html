@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Scout Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Nunito',sans-serif;background:#F4F6F8;color:#1A2B38;min-height:100vh;padding:32px 24px;}
+    [data-theme="dark"]{background:#111113;color:#F0F0F0;}
+    .card{background:#fff;border:1px solid #E2E8EC;border-radius:12px;padding:24px;margin-bottom:20px;max-width:680px;margin-left:auto;margin-right:auto;}
+    [data-theme="dark"] .card{background:#1C1C1E;border-color:#38383D;}
+    h1{font-size:1.4rem;font-weight:800;color:#005A7A;margin-bottom:4px;}
+    .subtitle{font-size:0.85rem;color:#3A5A6E;margin-bottom:28px;}
+    label{font-size:12px;font-weight:700;color:#3A5A6E;display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+    input,textarea,select{border:1px solid #D0D7DD;border-radius:7px;padding:9px 12px;font-family:'Nunito',sans-serif;font-size:13px;color:#1A2B38;background:#F0F4F7;outline:none;width:100%;}
+    input:focus,select:focus{border-color:#005A7A;}
+    [data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:#2A2A2E;border-color:#48484E;color:#F0F0F0;}
+    .btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Nunito',sans-serif;display:inline-flex;align-items:center;gap:6px;}
+    .btn-primary{background:#005A7A;color:#fff;}
+    .btn-primary:hover{background:#006E96;}
+    .btn-danger{background:none;border:1px solid rgba(164,41,27,0.35);color:#A4291B;}
+    .btn-danger:hover{background:#FCECEA;}
+    .result-box{background:#F0F4F7;border:1px solid #D0D7DD;border-radius:8px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.7;color:#2C3E4A;min-height:60px;white-space:pre-wrap;margin-top:12px;}
+    [data-theme="dark"] .result-box{background:#2A2A2E;border-color:#48484E;color:#C8C8CC;}
+    .section-title{font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4A6880;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #E2E8EC;}
+    [data-theme="dark"] .section-title{color:#6E6E78;border-color:#38383D;}
+    .alert{padding:10px 14px;border-radius:7px;font-size:12px;font-weight:600;margin-bottom:16px;}
+    .alert-error{background:#FCECEA;color:#A4291B;border:1px solid rgba(164,41,27,0.2);}
+    .alert-success{background:#E8F5EE;color:#1A7A47;border:1px solid rgba(26,122,71,0.2);}
+    .flex-row{display:flex;gap:10px;align-items:flex-end;}
+    .flex-row label{flex:1;margin-bottom:0;}
+    #access-gate{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:999;}
+    #access-gate .inner{background:#fff;border-radius:14px;padding:36px;max-width:360px;width:90%;text-align:center;}
+    [data-theme="dark"] #access-gate .inner{background:#1C1C1E;}
+  </style>
+</head>
+<body>
+
+<!-- Access gate — shown while checking auth -->
+<div id="access-gate">
+  <div class="inner">
+    <div style="font-size:1.5rem;margin-bottom:12px;">🔐</div>
+    <div style="font-size:1rem;font-weight:800;color:#005A7A;margin-bottom:8px;">Scout Admin</div>
+    <div style="font-size:0.85rem;color:#3A5A6E;" id="gate-msg">Checking access…</div>
+  </div>
+</div>
+
+<!-- Admin panel (hidden until VIP confirmed) -->
+<div id="admin-panel" style="display:none;">
+
+  <div style="max-width:680px;margin:0 auto 24px;">
+    <h1>Scout Admin Panel</h1>
+    <div class="subtitle">Token management and user administration. VIP access only.</div>
+  </div>
+
+  <!-- Lookup user -->
+  <div class="card">
+    <div class="section-title">Look up user</div>
+    <div class="flex-row">
+      <label>Email address
+        <input id="lookup-email" type="email" placeholder="user@example.com"/>
+      </label>
+      <button class="btn btn-primary" onclick="lookupUser()"><i class="ti ti-search"></i> Look up</button>
+    </div>
+    <div class="result-box" id="lookup-result">Enter an email above to look up a user.</div>
+  </div>
+
+  <!-- Adjust tokens -->
+  <div class="card">
+    <div class="section-title">Adjust token balance</div>
+    <label>User email
+      <input id="adjust-email" type="email" placeholder="user@example.com"/>
+    </label>
+    <div class="flex-row" style="margin-bottom:14px;">
+      <label>Token amount (positive = add, negative = deduct)
+        <input id="adjust-amount" type="number" placeholder="e.g. 20 or -5"/>
+      </label>
+      <label>Reason (optional)
+        <input id="adjust-reason" type="text" placeholder="e.g. refund, goodwill"/>
+      </label>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="adjustTokens(1)"><i class="ti ti-plus"></i> Add tokens</button>
+      <button class="btn btn-danger"  onclick="adjustTokens(-1)"><i class="ti ti-minus"></i> Deduct tokens</button>
+    </div>
+    <div class="result-box" id="adjust-result">Enter user email and amount above.</div>
+  </div>
+
+  <!-- Set tier -->
+  <div class="card">
+    <div class="section-title">Change user tier</div>
+    <label>User email
+      <input id="tier-email" type="email" placeholder="user@example.com"/>
+    </label>
+    <label style="margin-bottom:14px;">New tier
+      <select id="tier-select">
+        <option value="free">Free</option>
+        <option value="paid">Paid</option>
+        <option value="vip">VIP</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" onclick="setTier()"><i class="ti ti-edit"></i> Update tier</button>
+    <div class="result-box" id="tier-result">Enter user email and select tier.</div>
+  </div>
+
+  <!-- Recent adjustments log -->
+  <div class="card">
+    <div class="section-title">Recent admin adjustments</div>
+    <button class="btn btn-primary" onclick="loadAdjustments()" style="margin-bottom:14px;"><i class="ti ti-refresh"></i> Load log</button>
+    <div class="result-box" id="adjustments-log">Click Load log to view recent adjustments.</div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL      = 'https://danpqkwdttjqwduhhrbp.supabase.co';
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
+
+const _supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let adminSession = null;
+
+// ── Check VIP access on load ──────────────────────────────────
+(async function checkAccess() {
+  const { data: { session } } = await _supa.auth.getSession();
+
+  if (!session) {
+    document.getElementById('gate-msg').innerHTML =
+      'You must be signed in with a VIP account.<br><br>' +
+      '<a href="/scout/" style="color:#005A7A;font-weight:700;">← Back to Scout</a>';
+    return;
+  }
+
+  const { data: profile } = await _supa
+    .from('profiles').select('tier').eq('id', session.user.id).single();
+
+  if (profile?.tier !== 'vip') {
+    document.getElementById('gate-msg').innerHTML =
+      'Access denied. VIP accounts only.<br><br>' +
+      '<a href="/scout/" style="color:#005A7A;font-weight:700;">← Back to Scout</a>';
+    return;
+  }
+
+  adminSession = session;
+  document.getElementById('access-gate').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+})();
+
+// ── Helper: call admin API via edge function ──────────────────
+async function adminPost(action, body) {
+  const token = adminSession?.access_token;
+  const res   = await fetch('/api/scout-admin', {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action, ...body }),
+  });
+  return res.json();
+}
+
+// ── Look up user ──────────────────────────────────────────────
+async function lookupUser() {
+  const email = document.getElementById('lookup-email').value.trim();
+  const el    = document.getElementById('lookup-result');
+  if (!email) { el.textContent = 'Please enter an email.'; return; }
+  el.textContent = 'Looking up…';
+  const data = await adminPost('lookup', { email });
+  if (data.error) { el.textContent = 'Error: ' + data.error; return; }
+  el.textContent = JSON.stringify(data, null, 2);
+}
+
+// ── Adjust tokens ─────────────────────────────────────────────
+async function adjustTokens(sign) {
+  const email  = document.getElementById('adjust-email').value.trim();
+  const amount = parseInt(document.getElementById('adjust-amount').value, 10);
+  const reason = document.getElementById('adjust-reason').value.trim();
+  const el     = document.getElementById('adjust-result');
+
+  if (!email || isNaN(amount)) { el.textContent = 'Please enter email and amount.'; return; }
+  const delta = Math.abs(amount) * sign;
+  el.textContent = `Adjusting ${delta > 0 ? '+' : ''}${delta} tokens for ${email}…`;
+
+  const data = await adminPost('adjust_tokens', { email, delta, reason });
+  el.textContent = data.error ? 'Error: ' + data.error : `Done. New balance: ${data.new_balance} tokens.`;
+}
+
+// ── Set tier ──────────────────────────────────────────────────
+async function setTier() {
+  const email = document.getElementById('tier-email').value.trim();
+  const tier  = document.getElementById('tier-select').value;
+  const el    = document.getElementById('tier-result');
+  if (!email) { el.textContent = 'Please enter an email.'; return; }
+  el.textContent = `Setting tier to "${tier}" for ${email}…`;
+  const data = await adminPost('set_tier', { email, tier });
+  el.textContent = data.error ? 'Error: ' + data.error : `Done. ${email} is now on the ${tier} tier.`;
+}
+
+// ── Load adjustments log ──────────────────────────────────────
+async function loadAdjustments() {
+  const el = document.getElementById('adjustments-log');
+  el.textContent = 'Loading…';
+  const data = await adminPost('recent_adjustments', {});
+  if (data.error) { el.textContent = 'Error: ' + data.error; return; }
+  if (!data.adjustments?.length) { el.textContent = 'No adjustments recorded yet.'; return; }
+  el.textContent = data.adjustments.map(a =>
+    `${new Date(a.created_at).toLocaleString()}  ${a.token_delta > 0 ? '+' : ''}${a.token_delta} tokens  [${a.reason || 'no reason'}]  user: ${a.user_id.slice(0,8)}…`
+  ).join('\n');
+}
+</script>
+</body>
+</html>
