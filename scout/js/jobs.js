@@ -91,19 +91,40 @@ async function analyzeJobs() {
   }, d));
   window._progressTimers = timers;
 
+  // ── Tier gate (free tier: show ad, paid: deduct token) ───────
+  const adWatched = await showAdGateIfNeeded();
+  if (adWatched === false) return; // user closed the gate
+
   try {
+    const jwt = await getAuthToken();
     const response = await fetch('/api/scout-ai', {
       method: 'POST',
       headers: {
-        'Content-Type':'application/json',
-        'x-scout-password': window.__scoutPassword || '',
+        'Content-Type':       'application/json',
+        'Authorization':      `Bearer ${jwt}`,
+        'x-scout-ad-watched': adWatched ? 'true' : 'false',
       },
       body: JSON.stringify({
         model:'claude-sonnet-4-6',
         max_tokens:8000,
-        messages:[{role:'user', content:buildPrompt(texts)}]
+        messages:[{role:'user', content:buildPrompt(texts)}],
+        _postings_count: texts.length,
       })
     });
+
+    // Handle tier-specific errors
+    if (response.status === 402) {
+      const err = await response.json();
+      (window._progressTimers||[]).forEach(t=>clearTimeout(t));
+      if (err.error === 'daily_limit_reached') {
+        if (list) list.innerHTML = `<div class="error-state"><strong>Daily limit reached</strong>You have used your 2 free analyses for today. <a href="#" onclick="openCheckout('starter');return false;" style="color:var(--teal);font-weight:700;">Upgrade to get more →</a></div>`;
+      } else if (err.error === 'insufficient_tokens') {
+        if (list) list.innerHTML = `<div class="error-state"><strong>Out of tokens</strong>You have run out of Scout Tokens. <a href="#" onclick="showTokenShop();return false;" style="color:var(--teal);font-weight:700;">Top up to continue →</a></div>`;
+      } else {
+        if (list) list.innerHTML = `<div class="error-state"><strong>Access error</strong>${escHtml(err.message)}</div>`;
+      }
+      return;
+    }
 
     if (!response.ok) { const e=await response.json(); throw new Error(e.error?.message||'API error '+response.status); }
     const data     = await response.json();
@@ -661,9 +682,10 @@ async function findContact(idx,isApplied) {
   if(!job||!resultEl) return;
   resultEl.textContent='⏳ Searching…'; resultEl.className='contact-result';
   try {
+    const _jwt2=await getAuthToken();
     const response=await fetch('/api/scout-ai',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-scout-password':window.__scoutPassword||''},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt2}`,'x-scout-ad-watched':'false'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,tools:[{type:'web_search_20250305',name:'web_search'}],
         messages:[{role:'user',content:`Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.\nCompany: ${job.company}\nJob title: ${job.title}\nWebsite: ${job.companyUrl||'unknown'}\nReturn ONLY a JSON object, no markdown:\n{"name":"name or empty","email":"email or empty","note":"one short sentence"}`}]})
     });
@@ -752,9 +774,11 @@ async function extractTextFromDocx(file) {
 }
 
 async function analyzeResumeText(text) {
+  // Resume analysis is always free — uses a special header so proxy skips token deduction
+  const _jwt3=await getAuthToken();
   const response=await fetch('/api/scout-ai',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-scout-password':window.__scoutPassword||''},
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt3}`,'x-scout-ad-watched':'false','x-scout-resume-only':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":""}\nRESUME: ${text.slice(0,6000)}`}]})
   });
   if(!response.ok){const e=await response.json();throw new Error(e.error?.message||'API error');}
@@ -796,6 +820,93 @@ function saveProfile() {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+// ── Ad gate ──────────────────────────────────────────────────
+// Shows a 30-second countdown for free-tier users before analysis.
+// Returns true if ad was watched, false if cancelled, null if not needed.
+async function showAdGateIfNeeded() {
+  if (!scoutUser) return false;
+  if (scoutUser.tier === 'vip')  return null;  // no gate
+  if (scoutUser.tier === 'paid') return null;  // no gate
+
+  // Free tier — show 30s ad gate
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px 36px;max-width:420px;width:90%;text-align:center;box-shadow:var(--shadow-lg);">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">Free analysis</div>
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">Watch a short ad to continue</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:24px;line-height:1.6;">
+          Free users get 2 analyses per day by watching a short ad.<br>
+          <a href="#" onclick="showTokenShop();document.body.removeChild(this.closest('[style*=fixed]'));return false;" style="color:var(--teal);font-weight:700;">Upgrade to skip ads →</a>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--text-dim);font-size:12px;">
+          <!-- AdSense unit will go here -->
+          <div id="ad-placeholder" style="text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:6px;">📢</div>
+            <div style="font-size:11px;font-weight:600;">Advertisement</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+          Continue in <span id="ad-countdown" style="font-weight:800;color:var(--teal);font-family:var(--font-mono);">30</span> seconds…
+        </div>
+        <button id="ad-continue-btn" disabled
+          style="width:100%;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:not-allowed;opacity:0.5;font-family:var(--font-ui);">
+          Analyzing… (wait for countdown)
+        </button>
+        <button id="ad-cancel-btn"
+          style="width:100%;background:none;border:none;color:var(--text-dim);font-size:11px;margin-top:10px;cursor:pointer;font-family:var(--font-ui);padding:5px;">
+          Cancel
+        </button>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    let seconds = 30;
+    const countdownEl = overlay.querySelector('#ad-countdown');
+    const continueBtn = overlay.querySelector('#ad-continue-btn');
+    const cancelBtn   = overlay.querySelector('#ad-cancel-btn');
+
+    const timer = setInterval(() => {
+      seconds--;
+      if (countdownEl) countdownEl.textContent = seconds;
+      if (seconds <= 0) {
+        clearInterval(timer);
+        if (continueBtn) {
+          continueBtn.disabled = false;
+          continueBtn.style.cursor = 'pointer';
+          continueBtn.style.opacity = '1';
+          continueBtn.textContent = 'Continue to analysis →';
+        }
+        if (countdownEl) countdownEl.textContent = '0';
+      }
+    }, 1000);
+
+    continueBtn.addEventListener('click', () => {
+      if (continueBtn.disabled) return;
+      clearInterval(timer);
+      document.body.removeChild(overlay);
+      resolve(true);
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      clearInterval(timer);
+      document.body.removeChild(overlay);
+      resolve(false);
+    });
+  });
+}
+
+// ── Token shop modal ─────────────────────────────────────────
+function showTokenShop() {
+  const existing = document.getElementById('token-shop-overlay');
+  if (existing) { existing.classList.add('open'); return; }
+
+  const overlay = document.getElementById('token-shop-modal');
+  if (overlay) { overlay.classList.add('open'); return; }
+}
+
 (function init() {
   const theme=document.documentElement.getAttribute('data-theme')||'light';
   const icon=document.getElementById('theme-icon');
@@ -803,7 +914,4 @@ function saveProfile() {
   updateLocationBadge();
   addJobSlot();
   updateBadges();
-  // Restore password from session (gate is handled by index.html)
-  const cached = sessionStorage.getItem('scout-pw');
-  if (cached) window.__scoutPassword = cached;
 })();
