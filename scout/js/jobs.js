@@ -63,7 +63,18 @@ async function analyzeJobs() {
   const texts = getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
-  switchSubtab('results');
+  // switchSubtab comes from nav.js — call safely in case of load order issues
+  if (typeof switchSubtab === 'function') {
+    switchSubtab('results');
+  } else {
+    // Fallback: manually show results panel
+    document.querySelectorAll('.subtab-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+    const rp = document.getElementById('subtab-results');
+    if (rp) { rp.style.display = 'block'; rp.classList.add('active'); }
+    document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+    const rb = document.getElementById('subtab-results-btn');
+    if (rb) rb.classList.add('active');
+  }
 
   const container = document.getElementById('results-container');
   const statusBar  = document.getElementById('status-bar');
@@ -714,7 +725,7 @@ function renderSavedCard(job, idx, isApplied) {
 function renderPreviewCard(job, listName, idx) {
   const cardClass = scoreCardClass(job.viabilityScore || 0);
   return `
-    <div class="preview-card ${cardClass}" onclick="switchSubtab('${listName}')" title="${escHtml(job.title)} at ${escHtml(job.company)}">
+    <div class="preview-card ${cardClass}" onclick="typeof switchSubtab==='function'?switchSubtab('${listName}'):null" title="${escHtml(job.title)} at ${escHtml(job.company)}">
       <div class="preview-card-title">${escHtml(job.title)}</div>
       <div class="preview-card-company">${escHtml(job.company)}</div>
       <div class="preview-card-meta">
