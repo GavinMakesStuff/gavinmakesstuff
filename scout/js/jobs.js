@@ -68,9 +68,8 @@ async function analyzeJobs() {
   const container = document.getElementById('results-container');
   const statusBar  = document.getElementById('status-bar');
 
-  // Defensive guard — log what's null so we can diagnose
   if (!container) {
-    console.error('[Scout] results-container not found in DOM. Available IDs:', 
+    console.error('[Scout] results-container not found. DOM IDs present:',
       Array.from(document.querySelectorAll('[id]')).map(el => el.id).join(', '));
     showToast('UI error — please refresh the page and try again.');
     return;
@@ -1312,8 +1311,7 @@ function closeProfileEditor() {
 })();
 
 // ── Password gate ─────────────────────────
-// Handled by index.html — restores password from sessionStorage if
-// the user is returning to an already-verified session.
+// Gate is handled by index.html. Restore the password for this session.
 (function () {
   const cached = sessionStorage.getItem('scout-pw');
   if (cached) window.__scoutPassword = cached;
