@@ -1,13 +1,17 @@
 /* ═══════════════════════════════════════
-   js/utils.js — Shared state and helpers
+   scout/js/utils.js
+   Supabase config + shared helpers.
+   API key is server-side only.
    ═══════════════════════════════════════ */
 
-// ── API Key ───────────────────────────────
-// API key is server-side in Vercel env (SCOUT_ANTHROPIC_API_KEY).
-// All requests go through /api/scout-ai — key never touches the browser.
-const ANTHROPIC_API_KEY = null; // unused
+// ── Supabase config (public — safe to expose) ─────────────────
+window.SCOUT_SUPABASE_URL      = 'https://danpqkwdttjqwduhhrbp.supabase.co';
+window.SCOUT_SUPABASE_ANON_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
 
-// ── Shared State ──────────────────────────
+// ── Stripe publishable key (public — safe to expose) ──────────
+window.SCOUT_STRIPE_PK = 'PASTE_YOUR_STRIPE_PUBLISHABLE_KEY_HERE';
+
+// ── Shared State ──────────────────────────────────────────────
 let savedJobs   = JSON.parse(localStorage.getItem('scout-saved')   || '[]');
 let appliedJobs = JSON.parse(localStorage.getItem('scout-applied') || '[]');
 
@@ -16,14 +20,14 @@ let userProfile = JSON.parse(localStorage.getItem('scout-profile') || 'null') ||
   experience:'', travel:'', certs:'', notes:'', jobGoal:''
 };
 
-// ── Currency ──────────────────────────────
+// ── Currency ──────────────────────────────────────────────────
 const CURRENCY_SYMBOLS = {
   USD:'$', CAD:'CA$', EUR:'€', GBP:'£', AUD:'AU$',
   NZD:'NZ$', JPY:'¥', INR:'₹', MXN:'MX$', CHF:'CHF', ZAR:'R'
 };
 function currencySymbol() { return CURRENCY_SYMBOLS[userProfile.currency] || '$'; }
 
-// ── HTML Escaping ─────────────────────────
+// ── HTML Escaping ─────────────────────────────────────────────
 function escHtml(str) {
   if (!str) return '';
   return String(str)
@@ -31,7 +35,7 @@ function escHtml(str) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Toast ─────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -42,7 +46,7 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── Theme ─────────────────────────────────
+// ── Theme ─────────────────────────────────────────────────────
 function toggleTheme() {
   const html   = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
@@ -57,7 +61,7 @@ function toggleTheme() {
   if (saved) document.documentElement.setAttribute('data-theme', saved);
 })();
 
-// ── Location ──────────────────────────────
+// ── Location ──────────────────────────────────────────────────
 let userLocation = JSON.parse(localStorage.getItem('scout-location') || 'null');
 
 async function requestUserLocation() {
