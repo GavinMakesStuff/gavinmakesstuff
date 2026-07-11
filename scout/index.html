@@ -343,24 +343,25 @@
     <div class="detail-panel" id="detail-content">
 
       <!-- Inline paste area — shown when no job is selected -->
-      <div id="inline-paste-area" style="display:flex;flex-direction:column;height:100%;padding:28px 32px;max-width:700px;width:100%;">
+      <div id="inline-paste-area" style="display:flex;flex-direction:column;width:100%;height:100%;padding:28px 32px;box-sizing:border-box;">
         <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;">Analyze a job posting</div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">
           Paste the full text of any job posting below. The more complete the text, the more accurate the analysis.
-          Use <strong>Add another posting</strong> to analyze several at once.
         </div>
 
-        <div class="job-slots" id="job-slots" style="flex:1;overflow-y:auto;"></div>
+        <div class="job-slots" id="job-slots" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
 
-        <button class="add-slot-btn" onclick="addJobSlot()" style="margin-bottom:16px;">
+        <button class="add-slot-btn" onclick="addJobSlot()" style="margin-bottom:24px;max-width:220px;">
           <i class="ti ti-plus"></i> Add another posting
         </button>
 
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-primary" onclick="analyzeJobs()">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
             <i class="ti ti-search"></i> Analyze
           </button>
-          <button class="btn btn-ghost" onclick="clearAllSlots()">Clear</button>
+          <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">
+            Clear
+          </button>
         </div>
       </div>
 
