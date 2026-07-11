@@ -59,6 +59,10 @@ async function analyzeJobs() {
   switchView('results');
   selectedIdx = null;
 
+  // Hide inline paste area while analyzing
+  const pasteArea = document.getElementById('inline-paste-area');
+  if (pasteArea) pasteArea.style.display = 'none';
+
   const detail = document.getElementById('detail-content');
   const list   = document.getElementById('job-list-inner');
   const sb     = document.getElementById('status-bar');
@@ -297,6 +301,10 @@ function selectJob(idx) {
   const detail = document.getElementById('detail-content');
   if (!detail) return;
 
+  // Hide inline paste area when showing job detail
+  const pasteArea = document.getElementById('inline-paste-area');
+  if (pasteArea) pasteArea.style.display = 'none';
+
   const s         = job.viabilityScore||0;
   const key       = jobKey(job);
   const isSaved   = savedJobs.some(x=>jobKey(x)===key);
@@ -531,14 +539,14 @@ function renderSaved() {
   const panel = document.getElementById('saved-panel');
   if (!panel) return;
   if (!savedJobs.length) { panel.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-bookmark" style="font-size:2rem;opacity:0.3;"></i></div><div class="empty-title">No saved jobs yet</div><div class="empty-sub">Click Save on any result to bookmark it here.</div></div>`; return; }
-  panel.innerHTML = savedJobs.map((j,i)=>`<div style="border-bottom:1px solid var(--border-dim);">${renderSavedCard(j,i,false)}</div>`).join('');
+  panel.innerHTML = savedJobs.map((j,i)=>`<div data-saved-idx="${i}" style="border-bottom:1px solid var(--border-dim);">${renderSavedCard(j,i,false)}</div>`).join('');
 }
 
 function renderApplied() {
   const panel = document.getElementById('applied-panel');
   if (!panel) return;
   if (!appliedJobs.length) { panel.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-send" style="font-size:2rem;opacity:0.3;"></i></div><div class="empty-title">No applications tracked yet</div><div class="empty-sub">Click Mark Applied on any job to move it here.</div></div>`; return; }
-  panel.innerHTML = appliedJobs.map((j,i)=>`<div style="border-bottom:1px solid var(--border-dim);">${renderSavedCard(j,i,true)}</div>`).join('');
+  panel.innerHTML = appliedJobs.map((j,i)=>`<div data-applied-idx="${i}" style="border-bottom:1px solid var(--border-dim);">${renderSavedCard(j,i,true)}</div>`).join('');
 }
 
 // ══════════════════════════════════════════
@@ -556,9 +564,10 @@ function clearAll() {
   allResults=[]; currentFilter='all'; selectedIdx=null;
   clearAllSlots();
   const inner=document.getElementById('job-list-inner');
-  if (inner) inner.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No results yet</div><div class="empty-sub">Click Analyze posting above, paste a job description, and hit Analyze.</div></div>`;
-  const detail=document.getElementById('detail-content');
-  if (detail) detail.innerHTML='';
+  if (inner) inner.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-file-text" style="font-size:2.2rem;opacity:0.3;"></i></div><div class="empty-title">No results yet</div><div class="empty-sub">Paste a job description on the right and hit Analyze.</div></div>`;
+  // Restore inline paste area
+  const pasteArea = document.getElementById('inline-paste-area');
+  if (pasteArea) pasteArea.style.display = 'flex';
   const sb=document.getElementById('status-bar');
   if (sb) sb.style.display='none';
   document.querySelectorAll('.filter-pill').forEach((b,i)=>b.classList.toggle('active',i===0));
@@ -569,6 +578,9 @@ function updateCounts(jobs) {
   if(h) h.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='high').length;
   if(m) m.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='mid').length;
   if(l) l.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='low').length;
+  // Show the inline status bar
+  const sb=document.getElementById('status-bar');
+  if(sb){ sb.style.display='flex'; }
 }
 
 function updateBadges() {
@@ -579,9 +591,14 @@ function updateBadges() {
 }
 
 function renderPreviewStrips() {
-  const render=(jobs,view)=>jobs.slice(0,8).map(j=>{
+  const render=(jobs,view)=>jobs.slice(0,8).map((j,i)=>{
     const cls=scoreCardClass(j.viabilityScore||0);
-    return `<div class="preview-card ${cls}" onclick="switchView('${view}')" title="${escHtml(j.title)}"><div class="pc-title">${escHtml(j.title)}</div><div class="pc-company">${escHtml(j.company)}</div><div class="pc-meta"><span>${j.viabilityScore||0}/10</span><span>${j.starred?'★':''}</span></div></div>`;
+    const clickFn = view==='saved'
+      ? `scrollToSaved(${i})`
+      : view==='applied'
+        ? `scrollToApplied(${i})`
+        : `switchView('${view}')`;
+    return `<div class="preview-card ${cls}" onclick="${clickFn}" title="${escHtml(j.title)}"><div class="pc-title">${escHtml(j.title)}</div><div class="pc-company">${escHtml(j.company)}</div><div class="pc-meta"><span>${j.viabilityScore||0}/10</span><span>${j.starred?'★':''}</span></div></div>`;
   }).join('');
   const ss=document.getElementById('saved-preview-strip'),as=document.getElementById('applied-preview-strip');
   if(ss) ss.innerHTML=render(savedJobs,'saved');
@@ -820,6 +837,44 @@ function saveProfile() {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+// ── Scroll to saved/applied job ─────────────────────────────
+// Called from preview strip — scrolls the panel to the job
+// and highlights it by rendering its full card at the top.
+function scrollToSaved(idx) {
+  const job = savedJobs[idx];
+  if (!job) return;
+  // Switch to saved view if not already there
+  if (currentView !== 'saved') switchView('saved');
+  // Find the card in the panel and scroll to it
+  setTimeout(() => {
+    const panel = document.getElementById('saved-panel');
+    if (!panel) return;
+    const cards = panel.querySelectorAll('[data-saved-idx]');
+    const target = panel.querySelector(`[data-saved-idx="${idx}"]`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.style.outline = '2px solid var(--teal)';
+      setTimeout(() => target.style.outline = '', 1800);
+    }
+  }, 80);
+}
+
+function scrollToApplied(idx) {
+  const job = appliedJobs[idx];
+  if (!job) return;
+  if (currentView !== 'applied') switchView('applied');
+  setTimeout(() => {
+    const panel = document.getElementById('applied-panel');
+    if (!panel) return;
+    const target = panel.querySelector(`[data-applied-idx="${idx}"]`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.style.outline = '2px solid var(--teal)';
+      setTimeout(() => target.style.outline = '', 1800);
+    }
+  }, 80);
+}
+
 // ── Ad gate ──────────────────────────────────────────────────
 // Shows a 30-second countdown for free-tier users before analysis.
 // Returns true if ad was watched, false if cancelled, null if not needed.
