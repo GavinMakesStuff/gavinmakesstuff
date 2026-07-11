@@ -55,7 +55,6 @@ async function analyzeJobs() {
   const texts = getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
-  closePasteModal();
   switchView('results');
   selectedIdx = null;
 
