@@ -1,509 +1,151 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Scout — Job Intelligence</title>
-  <link rel="icon" type="image/png" href="media/scoutfavicon.png"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
-  <link rel="stylesheet" href="css/styles.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gavin makes stuff</title>
+  <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Google Analytics is injected dynamically by shared.js (applySettings → injectAnalytics),
+       based on the GA4 Measurement ID set in Admin → Site Settings → Google Analytics.
+       No per-page snippet needed. -->
+  <style>
+    :root{--bg:#0C0D0E;--surface:#131416;--surface-2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--white:#F2EFE9;--muted:#6B7075;--radius:14px;--gap:10px;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+    a{text-decoration:none;color:inherit;}
+    .top-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);}
+    .nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.06em;text-transform:uppercase;}
+    .nav-links{display:flex;gap:28px;list-style:none;}
+    .nav-links a{font-size:.78rem;font-weight:500;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;transition:color .15s;}
+    .nav-links a:hover{color:var(--white);}
+    .page-body{padding:24px 28px 28px;display:flex;flex-direction:column;gap:var(--gap);min-height:calc(100vh - 61px);}
+    .bento-main{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:var(--gap);flex:1;min-height:480px;}
+    .cell-hero{grid-column:1;grid-row:1/3;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;}
+    .gms-ghost{position:absolute;top:-.1em;left:-.06em;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(100px,16vw,180px);line-height:1;color:transparent;-webkit-text-stroke:1px var(--border-h);pointer-events:none;user-select:none;letter-spacing:-.04em;white-space:nowrap;}
+    .hero-eyebrow{font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:12px;position:relative;display:flex;align-items:center;gap:8px;}
+    .hero-eyebrow::before{content:'';display:inline-block;width:16px;height:1px;background:var(--red);flex-shrink:0;}
+    .hero-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.9rem,3.2vw,2.6rem);line-height:1.08;letter-spacing:-.025em;position:relative;margin-bottom:14px;white-space:pre-line;}
+    .hero-desc{font-size:.85rem;color:var(--muted);line-height:1.65;max-width:260px;position:relative;margin-bottom:24px;}
+    .hero-location{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted);position:relative;}
+    .hero-location::before{content:'◎';color:var(--red);font-size:.62rem;}
+    .cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:border-color .18s,transform .18s;position:relative;overflow:hidden;}
+    .cell:hover{border-color:var(--red);transform:translateY(-3px);}
+    .cell:hover .cell-arrow{color:var(--red);}
+    .cell:hover .cell-icon-wrap{background:var(--red);}
+    .cell-top{display:flex;align-items:flex-start;justify-content:space-between;}
+    .cell-icon-wrap{width:40px;height:40px;border-radius:9px;background:var(--border-h);display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0;}
+    .cell-icon-wrap svg{width:18px;height:18px;stroke:var(--white);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+    .cell-arrow{font-size:1rem;color:var(--muted);transition:color .18s;}
+    .cell-body{margin-top:24px;}
+    .cell-label{font-size:.65rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+    .cell-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.2rem,2vw,1.65rem);letter-spacing:-.02em;line-height:1.1;color:var(--white);margin-bottom:7px;}
+    .cell-desc{font-size:.8rem;color:var(--muted);line-height:1.55;}
+    .creations-section{display:flex;flex-direction:column;gap:var(--gap);}
+    .creations-label{display:flex;align-items:center;gap:12px;font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+    .creations-label::after{content:'';flex:1;height:1px;background:var(--border);}
+    .creations-row{display:flex;gap:var(--gap);flex-wrap:wrap;}
+    .cell-tool{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;transition:border-color .18s,transform .18s;min-width:200px;flex:0 0 auto;color:inherit;}
+    .cell-tool:hover{border-color:var(--red);transform:translateY(-2px);}
+    .cell-tool:hover .cell-icon-wrap{background:var(--red);}
+    .cell-tool .cell-icon-wrap{width:36px;height:36px;border-radius:8px;background:var(--border-h);display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0;overflow:hidden;}
+    .tool-info{flex:1;min-width:0;}
+    .tool-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:-.01em;color:var(--white);margin-bottom:2px;}
+    .tool-desc{font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tool-badge{font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:4px;flex-shrink:0;}
+    .tool-badge.private{background:rgba(217,48,37,.08);color:var(--red);border:1px solid rgba(217,48,37,.25);}
+    .tool-badge.wip{background:rgba(234,179,8,.08);color:#ca8a04;border:1px solid rgba(234,179,8,.25);}
+    .tool-badge.open{background:rgba(34,197,94,.08);color:#16a34a;border:1px solid rgba(34,197,94,.25);}
+    .cell-tool-actions{display:flex;gap:8px;flex-shrink:0;width:100%;margin-top:4px;}
+    .cell-tool-btn{font-family:'Inter',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:6px 12px;border-radius:6px;border:1px solid var(--border-h);background:transparent;color:var(--white);cursor:pointer;text-align:center;flex:1;transition:background .15s,border-color .15s;}
+    .cell-tool-btn:hover{background:var(--border-h);}
+    .cell-tool-btn:disabled{opacity:.5;cursor:not-allowed;}
+    .cell-tool-btn-primary{background:var(--red);border-color:var(--red);}
+    .cell-tool-btn-primary:hover{background:#bc251c;border-color:#bc251c;}
+    .site-footer{border-top:1px solid var(--border);padding:20px 28px;color:var(--muted);font-size:.75rem;letter-spacing:.03em;}
+    @media(max-width:960px){.bento-main{grid-template-columns:1fr 1fr;grid-template-rows:auto;min-height:unset;}.cell-hero{grid-column:1/3;grid-row:1;min-height:240px;}}
+    @media(max-width:580px){.bento-main{grid-template-columns:1fr;}.cell-hero{grid-column:1;}.page-body{padding:12px;}.top-nav{padding:16px;}.nav-links{gap:14px;}.cell-tool{min-width:unset;flex:1 1 calc(50% - var(--gap));}}
+  </style>
 </head>
 <body>
-
-<!-- ══════════════════════════════════════
-     GUIDE BAR — clicks open popup modal
-     ══════════════════════════════════════ -->
-<div class="guide-bar" onclick="toggleGuide()">
-  <span class="guide-bar-icon"><i class="ti ti-bulb"></i></span>
-  <span class="guide-bar-text">How to use Scout</span>
-  <span class="guide-bar-hint">Click to open guide</span>
-</div>
-
-<!-- ══════════════════════════════════════
-     GUIDE POPUP MODAL
-     ══════════════════════════════════════ -->
-<div class="guide-modal-overlay" id="guide-overlay" onclick="closeGuideOnBackdrop(event)">
-  <div class="guide-modal-box">
-    <div class="guide-modal-header">
-      <span style="font-size:1.4rem;color:var(--sand);"><i class="ti ti-bulb"></i></span>
-      <div style="flex:1;">
-        <div class="guide-modal-title">Getting started with Scout</div>
-        <div class="guide-modal-sub">Follow these steps to analyze postings, track applications, and stay organized.</div>
-      </div>
-      <button class="guide-modal-close" onclick="toggleGuide()"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="guide-modal-body">
-      <div class="guide-steps">
-        <div class="guide-step">
-          <div class="guide-step-num">1</div>
-          <div class="guide-step-title">Set up your profile</div>
-          <div class="guide-step-body">Click <b>Edit profile</b> in the sidebar to enter your background, target industry, salary, experience, and certifications. Or <b>Upload resume</b> to auto-fill everything.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">2</div>
-          <div class="guide-step-title">Share your location (optional)</div>
-          <div class="guide-step-body">Click <b>Share location</b> in the sidebar so Scout can calculate driving distance to each job's work address. Entirely optional.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">3</div>
-          <div class="guide-step-title">Paste job descriptions</div>
-          <div class="guide-step-body">Click <b>Analyze posting</b> in the middle column and paste any job description text. Use <b>Add another</b> to analyze several postings at once.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">4</div>
-          <div class="guide-step-title">Review results</div>
-          <div class="guide-step-body">Each posting gets a <b>1–10 score</b> with a written explanation. Click any card in the list to see the full detail on the right. Use the filter pills to focus on High, Partial, or Low matches.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">5</div>
-          <div class="guide-step-title">Star, save, and apply</div>
-          <div class="guide-step-body">Use the quick action buttons at the bottom of each card to <b>Star</b> priority postings, <b>Save</b> to bookmark, or <b>Apply</b> to move it to your application tracker.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">6</div>
-          <div class="guide-step-title">Track applications</div>
-          <div class="guide-step-body">In the <b>Applied</b> view, log date applied, follow up status, contact name, email, LinkedIn, posting URL, and notes for each application.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">7</div>
-          <div class="guide-step-title">Find a contact</div>
-          <div class="guide-step-body">Click <b>Find contact</b> on any saved or applied card to search for a publicly listed HR or hiring manager email. Or enter one manually.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">8</div>
-          <div class="guide-step-title">Copy resume keywords</div>
-          <div class="guide-step-body">Each card shows Hard Skills, Soft Skills, and Industry Terms extracted from the posting. Click any keyword to copy it, or use <b>Copy all</b> for the full list.</div>
-        </div>
-      </div>
-      <div class="guide-tip">
-        <span style="font-size:1.1rem;flex-shrink:0;color:var(--sand-lo);"><i class="ti ti-bulb"></i></span>
-        <div><b>Tips for best results:</b> Paste the complete job description — the more text Scout has, the more accurate the analysis. Fill in your years of experience and certifications in your profile, since these have the biggest effect on match scoring. All data is stored locally in your browser and persists between sessions.</div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
-        <button class="btn btn-ghost" onclick="toggleGuide()"><i class="ti ti-x"></i> Close guide</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════
-     APP SHELL
-     ══════════════════════════════════════ -->
-<div class="app-shell">
-
-  <!-- ══════════════════════════════════════
-       SIDEBAR
-       ══════════════════════════════════════ -->
-  <nav class="sidebar" id="sidebar">
-
-    <!-- Header with logo and collapse button -->
-    <div class="sb-header">
-      <div class="sb-logo-mark">
-        <img src="media/Scout Logo.png" alt="Scout"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-        <span class="sb-logo-fallback" style="display:none;">Scout</span>
-      </div>
-      <button class="sb-collapse-btn" id="collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar">
-        <i class="ti ti-layout-sidebar-left-collapse" id="collapse-icon"></i>
-      </button>
-    </div>
-
-    <!-- Expand button — only shows when collapsed -->
-    <button class="sb-expand-btn" onclick="toggleSidebar()" title="Expand sidebar">
-      <i class="ti ti-layout-sidebar-left-expand"></i>
-    </button>
-
-    <!-- Menu section -->
-    <div class="sb-section-label">Menu</div>
-    <div class="sb-item active" data-view="results" data-label="Results" onclick="switchView('results')">
-      <i class="ti ti-briefcase sb-icon"></i>
-      <span class="sb-label">Results</span>
-    </div>
-    <div class="sb-item" data-view="saved" data-label="Saved" onclick="switchView('saved')">
-      <i class="ti ti-bookmark sb-icon"></i>
-      <span class="sb-label">Saved</span>
-      <span class="sb-badge" id="saved-count" style="display:none;">0</span>
-    </div>
-    <div class="sb-item" data-view="applied" data-label="Applied" onclick="switchView('applied')">
-      <i class="ti ti-send sb-icon"></i>
-      <span class="sb-label">Applied</span>
-      <span class="sb-badge" id="applied-count" style="display:none;">0</span>
-    </div>
-
-    <!-- Profile section -->
-    <div class="sb-section-label">Profile</div>
-    <div class="sb-item" data-view="profile" data-label="Edit profile" onclick="openProfileEditor()">
-      <i class="ti ti-user sb-icon"></i>
-      <span class="sb-label">Edit profile</span>
-    </div>
-
-    <!-- General section -->
-    <div class="sb-section-label">General</div>
-    <div class="sb-item" data-label="Guide" onclick="toggleGuide()">
-      <i class="ti ti-help sb-icon"></i>
-      <span class="sb-label">Guide</span>
-    </div>
-    <div class="sb-item" data-label="Toggle theme" onclick="toggleTheme()">
-      <i class="ti ti-moon sb-icon" id="theme-icon"></i>
-      <span class="sb-label">Toggle theme</span>
-    </div>
-
-    <!-- Footer -->
-    <div class="sb-footer">
-      <div class="sb-avatar">G</div>
-      <div class="sb-user">
-        <div class="sb-username">Gavin</div>
-        <div class="sb-role location-badge-el">Not shared</div>
-      </div>
-    </div>
+  <nav class="top-nav">
+    <span class="nav-logo" id="home-nav-logo">Gavin makes stuff</span>
+    <ul class="nav-links">
+      <li><a href="/studio/index.html">The Studio</a></li>
+      <li><a href="/portfolio/index.html">Portfolio</a></li>
+      <li><a href="/studio/blog.html">Blog</a></li>
+      <li><a href="/contact.html">Contact</a></li>
+    </ul>
   </nav>
 
-
-  <!-- ══════════════════════════════════════
-       VIEW: RESULTS
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="results" style="flex:1;display:flex;overflow:hidden;">
-
-    <!-- Middle column -->
-    <div class="mid-col">
-      <div class="mid-header">
-        <div class="mid-title">Job postings</div>
-        <div class="mid-sub">Paste a posting and click Analyze</div>
-      </div>
-
-      <div class="analyze-btn-wrap">
-        <button class="btn-analyze" onclick="openPasteModal()">
-          <i class="ti ti-plus"></i> Analyze posting
-        </button>
-      </div>
-
-      <div class="filter-row">
-        <button class="filter-pill active" onclick="filterResults('all',this)">All</button>
-        <button class="filter-pill" onclick="filterResults('high',this)">High</button>
-        <button class="filter-pill" onclick="filterResults('mid',this)">Partial</button>
-        <button class="filter-pill" onclick="filterResults('low',this)">Low</button>
-      </div>
-
-      <div id="status-bar" style="display:none;padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
-        <div style="display:flex;gap:12px;font-size:10px;font-weight:600;color:var(--text-muted);flex-wrap:wrap;">
-          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;"></span><span id="count-high">0</span> High</span>
-          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:4px;"></span><span id="count-mid">0</span> Partial</span>
-          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px;"></span><span id="count-low">0</span> Low</span>
-          <button class="btn-ghost btn-sm" onclick="clearAll()" style="margin-left:auto;font-size:10px;padding:2px 8px;">Clear</button>
-        </div>
-      </div>
-
-      <div class="job-list" id="job-list-inner">
-        <div class="empty-state">
-          <div class="empty-icon"><i class="ti ti-file-text" style="font-size:2.2rem;opacity:0.3;"></i></div>
-          <div class="empty-title">No results yet</div>
-          <div class="empty-sub">
-            Click <strong>Analyze posting</strong> above,<br>paste a job description, and hit Analyze.<br><br>
-            <a href="#" onclick="toggleGuide();return false;" style="color:var(--teal);font-weight:700;font-size:11px;">Open guide ↑</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detail panel -->
-    <div class="detail-panel" id="detail-content">
-      <div class="empty-state" style="margin:auto;">
-        <div class="empty-icon"><i class="ti ti-layout-sidebar-right" style="font-size:2.2rem;opacity:0.25;"></i></div>
-        <div class="empty-title">Select a posting</div>
-        <div class="empty-sub">Click any job in the list to see the full analysis here.</div>
-      </div>
-    </div>
-
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: SAVED
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="saved" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">Saved Jobs</div>
-      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Bookmarked postings you want to revisit</div>
-    </div>
-    <div class="preview-strip-section">
-      <div class="preview-strip-label">Quick scroll</div>
-      <div class="preview-strip" id="saved-preview-strip"></div>
-    </div>
-    <div style="flex:1;overflow-y:auto;" id="saved-panel">
-      <div class="empty-state">
-        <div class="empty-icon"><i class="ti ti-bookmark" style="font-size:2rem;opacity:0.3;"></i></div>
-        <div class="empty-title">No saved jobs yet</div>
-        <div class="empty-sub">Click Save on any result card to bookmark it here.</div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: APPLIED
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="applied" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">Applications</div>
-      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Track every application with dates, contacts, and follow ups</div>
-    </div>
-    <div class="preview-strip-section">
-      <div class="preview-strip-label">Quick scroll</div>
-      <div class="preview-strip" id="applied-preview-strip"></div>
-    </div>
-    <div style="flex:1;overflow-y:auto;" id="applied-panel">
-      <div class="empty-state">
-        <div class="empty-icon"><i class="ti ti-send" style="font-size:2rem;opacity:0.3;"></i></div>
-        <div class="empty-title">No applications tracked yet</div>
-        <div class="empty-sub">Click Mark Applied on any job card to move it here.</div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: PROFILE (full page, not modal)
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="profile" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-    <div class="profile-page">
-
-      <div class="profile-page-header">
+  <div class="page-body">
+    <div class="bento-main">
+      <div class="cell-hero">
+        <div class="gms-ghost" aria-hidden="true">GMS</div>
         <div>
-          <div class="profile-page-title">Job Search Profile</div>
-          <div class="profile-page-sub">
-            The more detail you provide here, the more accurate Scout's match scores will be.
-            Years of experience and certifications have the biggest effect on scoring accuracy.
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
-          <button class="btn btn-ghost" onclick="closeProfileEditor()"><i class="ti ti-arrow-left"></i> Back</button>
+          <p class="hero-eyebrow" id="hero-eyebrow">Designer &amp; Maker</p>
+          <h1 class="hero-name" id="hero-tagline">Gavin
+makes
+stuff.</h1>
+          <p class="hero-desc" id="hero-desc">UI/UX design, hardware builds, and the occasional thing that catches fire a little.</p>
+          <p class="hero-location" id="hero-location">Vancouver, BC</p>
         </div>
       </div>
 
-      <div class="profile-page-body">
+      <a class="cell" href="/studio/index.html">
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Workshop</p><p class="cell-name">The Studio</p><p class="cell-desc">Projects, builds, files to download, and steps to follow.</p></div>
+      </a>
 
-        <!-- Resume & Location status -->
-        <div class="profile-card full-width">
-          <div class="profile-card-title"><i class="ti ti-info-circle"></i> Quick Setup</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <a class="cell" href="/portfolio/index.html">
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Professional</p><p class="cell-name">Portfolio</p><p class="cell-desc">Selected work, problems solved, skills behind them.</p></div>
+      </a>
 
-            <div class="profile-status-row">
-              <div class="profile-status-icon"><i class="ti ti-file-text"></i></div>
-              <div style="flex:1;min-width:0;">
-                <div class="profile-status-label">Resume upload</div>
-                <div class="profile-status-value resume-status-el">Not uploaded yet</div>
-              </div>
-              <label style="cursor:pointer;flex-shrink:0;">
-                <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
-                <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
-              </label>
-            </div>
+      <a class="cell" href="/studio/blog.html">
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Writing</p><p class="cell-name">Blog</p><p class="cell-desc">Stories behind the builds, lessons learned, and what's next.</p></div>
+      </a>
 
-            <div class="profile-status-row">
-              <div class="profile-status-icon"><i class="ti ti-map-pin"></i></div>
-              <div style="flex:1;min-width:0;">
-                <div class="profile-status-label">Location sharing</div>
-                <div class="profile-status-value location-badge-el">Not shared</div>
-              </div>
-              <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)" style="flex-shrink:0;">
-                <i class="ti ti-map-pin"></i> Share
-              </button>
-            </div>
+      <a class="cell" href="/contact.html">
+        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><span class="cell-arrow">↗</span></div>
+        <div class="cell-body"><p class="cell-label">Get in touch</p><p class="cell-name">Contact</p><p class="cell-desc">LinkedIn, Dribbble, email — find me where it makes sense.</p></div>
+      </a>
+    </div>
 
-          </div>
-          <div style="font-size:11px;color:var(--text-dim);padding:8px 12px;background:var(--teal-light);border-radius:var(--radius-xs);border-left:3px solid var(--teal);line-height:1.6;">
-            <i class="ti ti-bulb" style="color:var(--teal);"></i>
-            Upload your resume to auto-fill all fields below. Share your location to see driving distances on job cards.
-          </div>
-        </div>
-
-        <!-- Background card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-user"></i> Background</div>
-          <label class="field-label">Current role and background
-            <input id="p-role" class="field-input"
-                   placeholder="e.g. Mid-level tech employee with 4 years project coordination experience"/>
-          </label>
-          <label class="field-label">Years of experience
-            <input id="p-experience" class="field-input"
-                   placeholder="e.g. 4 years total, 1 year project coordination, no mining experience"/>
-          </label>
-          <label class="field-label">Certifications and qualifications
-            <input id="p-certs" class="field-input"
-                   placeholder="e.g. PMP, First Aid Level 1, WHMIS, Class 5 Driver's Licence"/>
-          </label>
-        </div>
-
-        <!-- Target & Salary card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-target"></i> Target and Compensation</div>
-          <label class="field-label">Target industry
-            <input id="p-industry" class="field-input"
-                   placeholder="e.g. Mining industry preferred, open to oil and gas or construction"/>
-          </label>
-          <label class="field-label">Minimum salary
-            <input id="p-salary" class="field-input"
-                   placeholder="e.g. 70,000/yr or 35/hr minimum"/>
-          </label>
-          <label class="field-label">Currency
-            <select id="p-currency" class="field-input">
-              <option value="USD">USD — US Dollar ($)</option>
-              <option value="CAD">CAD — Canadian Dollar (CA$)</option>
-              <option value="GBP">GBP — British Pound (£)</option>
-              <option value="EUR">EUR — Euro (€)</option>
-              <option value="AUD">AUD — Australian Dollar (AU$)</option>
-              <option value="NZD">NZD — New Zealand Dollar (NZ$)</option>
-              <option value="JPY">JPY — Japanese Yen (¥)</option>
-              <option value="INR">INR — Indian Rupee (₹)</option>
-              <option value="MXN">MXN — Mexican Peso (MX$)</option>
-              <option value="CHF">CHF — Swiss Franc</option>
-              <option value="ZAR">ZAR — South African Rand (R)</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- Preferences card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-adjustments"></i> Work Preferences</div>
-          <label class="field-label">Travel willingness
-            <input id="p-travel" class="field-input"
-                   placeholder="e.g. Willing to travel up to 50%, open to rotational camp-based work"/>
-          </label>
-          <label class="field-label">Other preferences and notes
-            <textarea id="p-notes" class="field-input" style="resize:vertical;min-height:80px;"
-                      placeholder="e.g. Prefer project management roles, open to coordinator or scheduler titles, not interested in purely administrative roles"></textarea>
-          </label>
-        </div>
-
-        <!-- Job goal card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-flag"></i> Career Goal</div>
-          <label class="field-label">What kind of work are you looking for?
-            <textarea id="p-jobgoal" class="field-input" style="resize:vertical;min-height:120px;"
-                      placeholder="e.g. Looking for a project management or coordination role in the mining or resources sector. Ideally site-based or hybrid with a clear path to senior leadership. Open to rotational schedules for the right opportunity."></textarea>
-          </label>
-          <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
-            Be specific here. Scout uses this directly when assessing how well a posting fits your goals.
-          </div>
-        </div>
-
-        <!-- Save bar -->
-        <div class="profile-save-bar">
-          <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
-          <button class="btn btn-ghost" onclick="closeProfileEditor()"><i class="ti ti-arrow-left"></i> Back to results</button>
-          <div style="margin-left:auto;font-size:11px;color:var(--text-dim);">
-            Changes are saved to your browser and used in all future analyses.
-          </div>
-        </div>
-
-      </div>
+    <div class="creations-section">
+      <p class="creations-label">Creations</p>
+      <div class="creations-row" id="creations-row"></div>
     </div>
   </div>
 
-</div><!-- /app-shell -->
+  <footer class="site-footer">
+    <span id="footer-text">© 2026 Gavin makes stuff</span>
+  </footer>
 
-
-<!-- ══════════════════════════════════════
-     PASTE MODAL
-     ══════════════════════════════════════ -->
-<div id="paste-modal" class="modal-overlay">
-  <div class="modal-box" style="max-width:720px;">
-    <div class="modal-title">Analyze job posting</div>
-    <div class="modal-hint">
-      <i class="ti ti-info-circle"></i>
-      Copy the full text of any job posting and paste it below.
-      More complete text means more accurate analysis.
-      Use <strong>Add another posting</strong> to analyze several at once.
-    </div>
-
-    <div class="paste-label">Job descriptions</div>
-    <div class="job-slots" id="job-slots"></div>
-    <button class="add-slot-btn" onclick="addJobSlot()">
-      <i class="ti ti-plus"></i> Add another posting
-    </button>
-
-    <div style="display:flex;gap:7px;padding-top:14px;border-top:1px solid var(--border-dim);">
-      <button class="btn btn-primary" onclick="analyzeJobs()">
-        <i class="ti ti-search"></i> Analyze
-      </button>
-      <button class="btn btn-ghost" onclick="clearAllSlots()">Clear</button>
-      <button class="btn btn-ghost" style="margin-left:auto;" onclick="closePasteModal()">Cancel</button>
-    </div>
-
-    <!-- Profile and location quick access -->
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-dim);display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;">Resume</span>
-        <label style="cursor:pointer;">
-          <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
-          <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
-        </label>
-        <span class="resume-status-el" style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">No resume uploaded</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;">Location</span>
-        <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)">
-          <i class="ti ti-map-pin"></i> Share
-        </button>
-        <span class="location-badge-el" style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">Not shared</span>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="closePasteModal();openProfileEditor();" style="margin-left:auto;">
-        <i class="ti ti-user"></i> Edit profile
-      </button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════
-     WELCOME MODAL (first visit only)
-     ══════════════════════════════════════ -->
-<div id="welcome-modal" class="modal-overlay">
-  <div class="modal-box welcome-box">
-    <div class="welcome-icon">👋</div>
-    <div class="welcome-title">Welcome to Scout</div>
-    <div class="welcome-body">
-      Before you analyze your first job posting, it helps to set up your profile so Scout knows
-      your background, salary expectations, and experience.<br><br>
-      You can upload a resume to fill most of this in automatically, or skip ahead and add it
-      later. This is entirely optional — you can run an analysis right away without a profile.
-    </div>
-    <div class="welcome-actions">
-      <button class="btn btn-primary" onclick="welcomeGoToProfile()">
-        <i class="ti ti-user"></i> Set up my profile
-      </button>
-      <button class="btn btn-ghost" onclick="dismissWelcome(true)">Skip for now</button>
-    </div>
-  </div>
-</div>
-
-
-<div id="toast"></div>
-
-
-<!-- ══════════════════════════════════════
-     SCRIPTS
-     ══════════════════════════════════════ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/jobs.js"></script>
-<script>
-// Paste modal helpers (need DOM, defined inline)
-function openPasteModal()  {
-  document.getElementById('paste-modal').classList.add('open');
-  // Sync location badges inside modal
-  updateLocationBadge();
-}
-function closePasteModal() { document.getElementById('paste-modal').classList.remove('open'); }
-</script>
-
+  <script src="/js/shared.js"></script>
+  <script>
+    (async function () {
+      try {
+        var res = await fetch('/data/site-settings.json');
+        var settings = await res.json();
+        initSettings(settings);
+        applySettings(settings, 'home');
+        // Home page has its own nav logo element (not injected by buildNav)
+        var logo = document.getElementById('home-nav-logo');
+        if (logo && settings.site && settings.site.name) logo.textContent = settings.site.name;
+        // Hero text
+        var h = settings.home;
+        if (h) {
+          if (h.eyebrow)     document.getElementById('hero-eyebrow').textContent = h.eyebrow;
+          if (h.tagline)     document.getElementById('hero-tagline').textContent  = h.tagline;
+          if (h.description) document.getElementById('hero-desc').textContent     = h.description;
+          if (h.location)    document.getElementById('hero-location').textContent = h.location;
+        }
+      } catch (e) { console.error('Settings load failed', e); }
+      renderCreations('creations-row');
+    })();
+  </script>
 </body>
 </html>
