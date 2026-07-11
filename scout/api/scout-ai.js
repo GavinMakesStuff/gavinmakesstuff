@@ -5,6 +5,11 @@
 //   SCOUT_PASSWORD           — the password users must enter to access Scout
 
 export default async function handler(req, res) {
+
+  // TEMPORARY DEBUG — remove after confirming key is present
+  console.log('Key present:', !!process.env.SCOUT_ANTHROPIC_API_KEY);
+  console.log('Key prefix:', (process.env.SCOUT_ANTHROPIC_API_KEY || '').slice(0, 10));
+
   // Only accept POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
