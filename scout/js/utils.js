@@ -2,9 +2,10 @@
    js/utils.js — Shared state and helpers
    ═══════════════════════════════════════ */
 
-// No API key here — requests go through the proxy
+// ── API Key ───────────────────────────────
+// API key is server-side in Vercel env (SCOUT_ANTHROPIC_API_KEY).
+// All requests go through /api/scout-ai — key never touches the browser.
 const ANTHROPIC_API_KEY = null; // unused
-const SCOUT_PROXY_TOKEN = 'scout-g4v1n-2026'; // matches SCOUT_TOKEN in Vercel
 
 // ── Shared State ──────────────────────────
 let savedJobs   = JSON.parse(localStorage.getItem('scout-saved')   || '[]');
