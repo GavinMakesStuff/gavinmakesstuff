@@ -540,9 +540,9 @@ select.field-input { cursor: pointer; }
    ══════════════════════════════════════ */
 .paste-label { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; }
 .job-slots { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.job-slot { display: flex; gap: 8px; align-items: flex-start; }
+.job-slot { display: flex; gap: 8px; align-items: flex-start; width: 100%; }
 .slot-number { width: 22px; height: 22px; border-radius: 50%; background: var(--teal-light); color: var(--teal); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 9px; }
-.paste-area { flex: 1; min-height: 88px; max-height: 180px; resize: vertical; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-family: var(--font-ui); font-size: 12px; line-height: 1.65; outline: none; transition: border-color 0.15s; }
+.paste-area { flex: 1; width: 100%; min-height: 200px; max-height: none; resize: vertical; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-family: var(--font-ui); font-size: 12px; line-height: 1.65; outline: none; transition: border-color 0.15s; }
 .paste-area:focus { border-color: var(--teal); }
 .paste-area::placeholder { color: var(--text-dim); font-size: 11px; }
 .slot-remove { flex-shrink: 0; background: none; border: 1px solid var(--border); color: var(--text-dim); width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 7px; transition: all 0.13s; }
