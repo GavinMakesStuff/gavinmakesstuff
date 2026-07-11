@@ -63,8 +63,7 @@ async function analyzeJobs() {
   const texts = getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
-  if (typeof switchView === 'function') switchView('results');
-else if (typeof switchSubtab === 'function') switchSubtab('results');
+  switchSubtab('results');
 
   const container = document.getElementById('results-container');
   document.getElementById('status-bar').style.display = 'none';
@@ -1303,147 +1302,11 @@ function closeProfileEditor() {
 })();
 
 // ── Password gate ─────────────────────────
-// Prompts on first visit, stores in sessionStorage so the user
-// only types it once per browser session. Never written to localStorage
-// so it is not persisted across sessions. Never sent anywhere except
-// the /api/scout-ai proxy header — the actual key stays server-side.
+// Handled by index.html — restores password from sessionStorage if
+// the user is returning to an already-verified session.
 (function () {
-  const SESSION_KEY = 'scout-session-auth';
-  const OVERLAY_ID  = 'scout-auth-overlay';
-
-  function showPasswordGate() {
-    // Build overlay if it doesn't already exist
-    if (document.getElementById(OVERLAY_ID)) return;
-
-    const overlay = document.createElement('div');
-    overlay.id = OVERLAY_ID;
-    overlay.style.cssText = [
-      'position:fixed', 'inset:0', 'z-index:9999',
-      'background:var(--bg,#F4F6F8)',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'font-family:var(--font-ui,"Nunito",sans-serif)',
-    ].join(';');
-
-    overlay.innerHTML = `
-      <div style="
-        background:var(--surface,#fff);
-        border:1px solid var(--border,#D0D7DD);
-        border-radius:14px;
-        padding:40px 44px;
-        width:100%;
-        max-width:400px;
-        box-shadow:0 8px 32px rgba(0,90,122,0.14);
-        text-align:center;">
-        <div style="font-size:2rem;margin-bottom:12px;">🔐</div>
-        <div style="font-size:1.25rem;font-weight:800;color:var(--text,#1A2B38);margin-bottom:8px;">Scout</div>
-        <div style="font-size:0.85rem;color:var(--text-muted,#3A5A6E);margin-bottom:24px;line-height:1.6;">
-          Enter the access password to continue.
-        </div>
-        <input
-          id="scout-pw-input"
-          type="password"
-          placeholder="Password"
-          style="
-            width:100%;
-            padding:10px 14px;
-            border:1px solid var(--border,#D0D7DD);
-            border-radius:8px;
-            font-size:0.9rem;
-            font-family:inherit;
-            background:var(--surface-2,#F0F4F7);
-            color:var(--text,#1A2B38);
-            outline:none;
-            margin-bottom:10px;
-            box-sizing:border-box;"/>
-        <div id="scout-pw-error" style="
-          font-size:0.78rem;
-          color:#A4291B;
-          margin-bottom:10px;
-          min-height:18px;"></div>
-        <button
-          id="scout-pw-btn"
-          style="
-            width:100%;
-            background:#005A7A;
-            color:#fff;
-            border:none;
-            border-radius:8px;
-            padding:10px;
-            font-size:0.9rem;
-            font-weight:700;
-            cursor:pointer;
-            font-family:inherit;">
-          Continue →
-        </button>
-      </div>`;
-
-    document.body.appendChild(overlay);
-
-    const input  = document.getElementById('scout-pw-input');
-    const btn    = document.getElementById('scout-pw-btn');
-    const errEl  = document.getElementById('scout-pw-error');
-
-    async function attempt() {
-      const pw = input.value.trim();
-      if (!pw) { errEl.textContent = 'Please enter the password.'; return; }
-
-      btn.disabled    = true;
-      btn.textContent = 'Checking…';
-      errEl.textContent = '';
-
-      // Verify by making a lightweight probe request to the proxy.
-      // If the password is wrong the proxy returns 403 — we show an error.
-      // If correct, we store it in sessionStorage and remove the gate.
-      try {
-        const probe = await fetch('/api/scout-ai', {
-          method: 'POST',
-          headers: {
-            'Content-Type':      'application/json',
-            'anthropic-version': '2023-06-01',
-            'x-scout-password':  pw,
-          },
-          body: JSON.stringify({
-            model:      'claude-sonnet-4-6',
-            max_tokens: 1,
-            messages:   [{ role: 'user', content: 'hi' }],
-          }),
-        });
-
-        if (probe.status === 403) {
-          errEl.textContent   = 'Incorrect password. Please try again.';
-          btn.disabled        = false;
-          btn.textContent     = 'Continue →';
-          input.value         = '';
-          input.focus();
-          return;
-        }
-
-        // Any non-403 (including 200, 400, 500) means the password passed
-        window.__scoutPassword = pw;
-        sessionStorage.setItem(SESSION_KEY, pw);
-        overlay.remove();
-
-      } catch (err) {
-        // Network error — allow through so offline dev still works
-        window.__scoutPassword = pw;
-        sessionStorage.setItem(SESSION_KEY, pw);
-        overlay.remove();
-      }
-    }
-
-    btn.addEventListener('click', attempt);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); });
-    // Focus after a short delay to ensure overlay is painted
-    setTimeout(() => input.focus(), 80);
-  }
-
-  // If already authenticated this session, restore and skip gate
-  const cached = sessionStorage.getItem(SESSION_KEY);
-  if (cached) {
-    window.__scoutPassword = cached;
-  } else {
-    showPasswordGate();
-  }
+  const cached = sessionStorage.getItem('scout-pw');
+  if (cached) window.__scoutPassword = cached;
 })();
 
 addJobSlot();
