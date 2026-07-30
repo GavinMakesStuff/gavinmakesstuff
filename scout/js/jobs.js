@@ -56,6 +56,16 @@ async function analyzeJobs() {
   const texts = getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
+  const { hasAny, missing } = getProfileCompleteness();
+  if (!hasAny) {
+    showEmptyProfileGate();
+    return;
+  }
+  if (missing.length >= 2) {
+    const proceed = await showWeakProfileWarning(missing);
+    if (!proceed) return;
+  }
+
   switchView('results');
   selectedIdx = null;
 
@@ -173,6 +183,82 @@ async function analyzeJobs() {
     if (list) list.innerHTML = `<div class="error-state"><strong>Could not analyze</strong>${escHtml(err.message)}<br><br><span style="color:var(--text-muted);font-size:0.82rem;">Make sure each posting includes a job title and company name.</span></div>`;
     console.error(err);
   }
+}
+
+// ══════════════════════════════════════════
+// PROFILE COMPLETENESS GATE
+// ══════════════════════════════════════════
+function getProfileCompleteness() {
+  const p = userProfile || {};
+  const hardSkills = p.skills?.hardSkills || [];
+  const hasAny = !!(p.role || p.industry || p.certs || p.experience || hardSkills.length);
+
+  const missing = [];
+  if (!p.role)            missing.push('Background / current role');
+  if (!p.industry)        missing.push('Target industry');
+  if (!p.experience)      missing.push('Years of experience');
+  if (!hardSkills.length) missing.push('Hard skills');
+
+  return { hasAny, missing };
+}
+
+// Blocking — no profile data at all, nothing to compare the posting against.
+function showEmptyProfileGate() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 30px;max-width:400px;width:90%;text-align:center;box-shadow:var(--shadow-lg);">
+      <div style="font-size:1.3rem;margin-bottom:12px;">🧭</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">Set up your profile first</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">Scout scores postings against your background, skills, and experience. Without a profile there's nothing to compare the posting to, so we can't give you an accurate result yet.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="this.closest('[style*=fixed]').remove(); openProfileEditor();">
+          <i class="ti ti-user"></i> Set up profile
+        </button>
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="this.closest('[style*=fixed]').remove()">
+          Cancel
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Soft warning — some profile data exists but significant fields are
+// missing, which materially affects match accuracy. Returns a Promise that
+// resolves true if the user chooses to proceed anyway.
+function showWeakProfileWarning(missing) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 30px;max-width:420px;width:90%;text-align:center;box-shadow:var(--shadow-lg);">
+        <div style="font-size:1.3rem;margin-bottom:12px;">⚠️</div>
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">Your profile is missing some details</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:18px;line-height:1.6;">
+          Missing: <strong>${missing.map(escHtml).join(', ')}</strong>.<br>
+          The match score may not be accurate without this.
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="weak-profile-continue" class="btn btn-ghost" style="flex:1;justify-content:center;">
+            Analyze anyway
+          </button>
+          <button id="weak-profile-edit" class="btn btn-primary" style="flex:1;justify-content:center;">
+            <i class="ti ti-user"></i> Update profile
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#weak-profile-continue').addEventListener('click', () => {
+      overlay.remove();
+      resolve(true);
+    });
+    overlay.querySelector('#weak-profile-edit').addEventListener('click', () => {
+      overlay.remove();
+      openProfileEditor();
+      resolve(false);
+    });
+  });
 }
 
 // ══════════════════════════════════════════
@@ -812,6 +898,11 @@ function confirmReanalyze(idx) {
 async function reanalyzeSaved(idx) {
   const job = savedJobs[idx];
   if (!job) return;
+
+  if (!getProfileCompleteness().hasAny) {
+    showEmptyProfileGate();
+    return;
+  }
 
   // We need the original job description text — store it if we have it,
   // otherwise use the summary as a fallback prompt
