@@ -125,9 +125,19 @@ export default async function handler(req, res) {
   // ── Handle invoice.paid: credit monthly tokens (first cycle + renewals) ──
   if (event.type === 'invoice.paid') {
     const invoice = event.data.object;
-    const subscriptionId = invoice.subscription;
+
+    // Newer Stripe API versions moved the subscription link off the
+    // top-level `subscription` field and onto `parent.subscription_details`.
+    // Check both so this keeps working regardless of API version.
+    const subscriptionId =
+      invoice.subscription ||
+      invoice.parent?.subscription_details?.subscription ||
+      null;
+
+    console.log(`invoice.paid received: invoice=${invoice.id} resolvedSubscriptionId=${subscriptionId}`);
 
     if (!subscriptionId) {
+      console.log('invoice.paid: no subscription id found on invoice, treating as non-subscription invoice. Raw keys:', Object.keys(invoice).join(', '));
       return res.status(200).json({ received: true }); // not a subscription invoice
     }
 
@@ -139,16 +149,25 @@ export default async function handler(req, res) {
       .single();
 
     if (existing?.status === 'completed') {
+      console.log(`invoice.paid: invoice ${invoice.id} already processed, skipping`);
       return res.status(200).json({ received: true, note: 'already processed' });
     }
 
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const userId = subscription.metadata?.user_id;
-    const plan   = subscription.metadata?.plan;
+    // Metadata may also be mirrored directly onto the invoice in newer API
+    // versions — check that first, fall back to retrieving the subscription.
+    let userId = invoice.parent?.subscription_details?.metadata?.user_id;
+    let plan   = invoice.parent?.subscription_details?.metadata?.plan;
+
+    if (!userId || !plan) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      userId = userId || subscription.metadata?.user_id;
+      plan   = plan   || subscription.metadata?.plan;
+    }
+
     const planDef = PLANS[plan];
 
     if (!userId || !planDef) {
-      console.error('Missing/invalid subscription metadata on subscription:', subscriptionId);
+      console.error(`invoice.paid: missing/invalid subscription metadata. subscriptionId=${subscriptionId} userId=${userId} plan=${plan}`);
       return res.status(200).json({ received: true });
     }
 
