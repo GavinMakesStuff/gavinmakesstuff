@@ -43,6 +43,7 @@ function getAllJobText() {
 
 function clearAllSlots() {
   const c = document.getElementById('job-slots');
+  if (!c) { slotCount = 0; return; } // slots live inside paste area which may have been destroyed
   c.innerHTML = '';
   slotCount = 0;
   addJobSlot();
@@ -58,9 +59,7 @@ async function analyzeJobs() {
   switchView('results');
   selectedIdx = null;
 
-  // Hide inline paste area while analyzing
-  const pasteArea = document.getElementById('inline-paste-area');
-  if (pasteArea) pasteArea.style.display = 'none';
+  // Paste area will be replaced by detail.innerHTML — no explicit hide needed
 
   const detail = document.getElementById('detail-content');
   const list   = document.getElementById('job-list-inner');
@@ -94,33 +93,44 @@ async function analyzeJobs() {
   }, d));
   window._progressTimers = timers;
 
-  // ── Tier gate (free tier: show ad, paid: deduct token) ───────
-  const adWatched = await showAdGateIfNeeded();
-  if (adWatched === false) return; // user closed the gate
-
   try {
     const jwt = await getAuthToken();
-    const response = await fetch('/api/scout-ai', {
-      method: 'POST',
-      headers: {
-        'Content-Type':       'application/json',
-        'Authorization':      `Bearer ${jwt}`,
-        'x-scout-ad-watched': adWatched ? 'true' : 'false',
-      },
-      body: JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:8000,
-        messages:[{role:'user', content:buildPrompt(texts)}],
-        _postings_count: texts.length,
-      })
-    });
+    const isLocal = (typeof ANTHROPIC_API_KEY !== 'undefined' && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'null');
+    const response = isLocal
+      ? await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model:'claude-sonnet-4-6',
+            max_tokens:8000,
+            messages:[{role:'user', content:buildPrompt(texts)}],
+          })
+        })
+      : await fetch('/api/scout-ai', {
+          method: 'POST',
+          headers: {
+            'Content-Type':       'application/json',
+            'Authorization':      `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            model:'claude-sonnet-4-6',
+            max_tokens:8000,
+            messages:[{role:'user', content:buildPrompt(texts)}],
+            _postings_count: texts.length,
+          })
+        });
 
     // Handle tier-specific errors
     if (response.status === 402) {
       const err = await response.json();
       (window._progressTimers||[]).forEach(t=>clearTimeout(t));
-      if (err.error === 'daily_limit_reached') {
-        if (list) list.innerHTML = `<div class="error-state"><strong>Daily limit reached</strong>You have used your 2 free analyses for today. <a href="#" onclick="openCheckout('starter');return false;" style="color:var(--teal);font-weight:700;">Upgrade to get more →</a></div>`;
+      if (err.error === 'weekly_limit_reached') {
+        if (list) list.innerHTML = `<div class="error-state"><strong>Weekly limit reached</strong>You have used your 3 free analyses for this week. <a href="#" onclick="showTokenShop();return false;" style="color:var(--teal);font-weight:700;">Subscribe or top up →</a></div>`;
       } else if (err.error === 'insufficient_tokens') {
         if (list) list.innerHTML = `<div class="error-state"><strong>Out of tokens</strong>You have run out of Scout Tokens. <a href="#" onclick="showTokenShop();return false;" style="color:var(--teal);font-weight:700;">Top up to continue →</a></div>`;
       } else {
@@ -131,9 +141,17 @@ async function analyzeJobs() {
 
     if (!response.ok) { const e=await response.json(); throw new Error(e.error?.message||'API error '+response.status); }
     const data     = await response.json();
-    const fullText = data.content.map(c=>c.type==='text'?c.text:'').join('\n');
 
+    // Clear progress timers immediately on response
     (window._progressTimers||[]).forEach(t=>clearTimeout(t));
+
+    // Diagnostic — remove after confirming working
+    console.log('[Scout] API response type:', typeof data);
+    console.log('[Scout] content blocks:', data?.content?.length);
+    console.log('[Scout] first block type:', data?.content?.[0]?.type);
+    console.log('[Scout] text preview:', data?.content?.map(c=>c.type==='text'?c.text:'').join('').slice(0,200));
+
+    const fullText = data.content.map(c=>c.type==='text'?c.text:'').join('\n');
     const bar=document.getElementById('progress-bar');
     const lbl=document.getElementById('progress-label');
     if (bar){bar.style.width='100%';bar.style.background='var(--green)';}
@@ -180,13 +198,22 @@ USER PROFILE:
 - Minimum salary: ${userProfile.salary||'Not specified'} ${userProfile.currency||'USD'}
 - Years of experience: ${userProfile.experience||'Not specified'}
 - Certifications: ${userProfile.certs||'Not specified'}
+- Hard Skills: ${(userProfile.skills?.hardSkills||[]).join(', ')||'Not specified'}
+- Soft Skills: ${(userProfile.skills?.softSkills||[]).join(', ')||'Not specified'}
+- Industry Terms: ${(userProfile.skills?.industryTerms||[]).join(', ')||'Not specified'}
 - Travel: ${userProfile.travel||'Not specified'}
 - Notes: ${userProfile.notes||'Not specified'}
 - Job goal: ${userProfile.jobGoal||'Not specified'}
 
-SCORING (viabilityScore 1-10):
-9-10: Near-perfect match. 7-8: Strong, minor gaps. 5-6: Partial, missing 1-2 requirements. 3-4: Weak, significant gaps. 1-2: Poor fit.
-RULES: Cap at 4 if requires 5+ years in an industry user hasn't worked in. Cap at 5 if requires a designation user doesn't hold. Reduce by 2 if salary clearly below minimum. Be specific in viabilityReason.
+SCORING (viabilityScore 1-100):
+85-100: Near-perfect match. 70-84: Strong, minor gaps. 40-69: Partial, missing 1-2 requirements. 20-39: Weak, significant gaps. 1-19: Poor fit.
+RULES: Cap at 40 if requires 5+ years in an industry the user hasn't worked in. Cap at 50 if requires a professional designation the user doesn't hold. Reduce by 20 if salary is clearly below user minimum. Be specific and direct in viabilityReason.
+
+MISSING KEYWORDS: Identify the top 5 keywords from the job posting that are absent from the user's profile/resume. These are the most important gaps to address before applying.
+
+HIGHLIGHT SKILLS: Identify the top 5 skills or experiences the user already has that are most relevant and impressive for this specific posting. These are what they should lead with in their cover letter and emphasize in their resume. Be specific — name the actual skill and briefly say why it matters for this role.
+
+RED FLAGS: Identify exactly 3 things a hiring manager would notice in under 10 seconds when scanning the user's profile against this posting that would cause them to move on. Be blunt and specific — vague feedback is useless. Focus on what immediately disqualifies or weakens the application at first glance.
 
 Return ONLY a valid JSON array — no markdown, no backticks, no explanation.
 
@@ -195,12 +222,19 @@ For EACH job:
   "title":"Job title","company":"Company name","companyUrl":"URL or empty","companyCareersUrl":"URL or empty","postingUrl":"URL or empty",
   "salary":"As stated with currency or Not listed","level":"Entry/Mid-level/Senior/Manager/Director/Executive/Not specified",
   "industry":"Industry","summary":"2-3 sentence summary","requirements":["req1","req2"],
-  "viabilityScore":7,"viabilityReason":"Specific explanation",
+  "viabilityScore":72,"viabilityReason":"Specific explanation of score",
   "benefits":["benefit1"],
   "companyReputation":{"rating":"X.X / 5 or Not available","summary":"2-3 sentences","pros":["pro1"],"cons":["con1"],"source":"Glassdoor/Indeed Reviews/Limited public data/Unknown"},
   "workLocation":{"type":"Remote|On-site|Hybrid|Not specified","address":"full address or empty","city":"city/province or empty","distanceKm":null},
   "contact":{"name":"name or empty","email":"email or empty"},
-  "keywords":{"hardSkills":["skill1"],"softSkills":["skill1"],"industryTerms":["term1"]}
+  "keywords":{
+    "hardSkills":["skill1"],
+    "softSkills":["skill1"],
+    "industryTerms":["term1"],
+    "missingFromResume":["top missing keyword 1","top missing keyword 2","top missing keyword 3","top missing keyword 4","top missing keyword 5"]
+  },
+  "highlightSkills":["Specific skill — why it matters for this role (1 sentence each)","...","...","...","..."],
+  "redFlags":["Blunt specific red flag 1","Blunt specific red flag 2","Blunt specific red flag 3"]
 }
 
 ${jobsBlock}`;
@@ -218,14 +252,14 @@ function parseJobsFromResponse(text) {
   catch(e) { console.error('Parse error:',e); return null; }
 }
 
-function scoreTier(s) { return s>=7?'high':s>=4?'mid':'low'; }
-function scoreCardClass(s) { return s>=7?'viable':s>=4?'potential':'not-viable'; }
-function scoreCssClass(s)  { return s>=7?'score-high':s>=4?'score-mid':'score-low'; }
-function scoreLabel(s)     { return s>=7?'Strong':s>=4?'Partial':'Low'; }
+function scoreTier(s) { return s>=70?'high':s>=40?'mid':'low'; }
+function scoreCardClass(s) { return s>=70?'viable':s>=40?'potential':'not-viable'; }
+function scoreCssClass(s)  { return s>=70?'score-high':s>=40?'score-mid':'score-low'; }
+function scoreLabel(s)     { return s>=70?'Strong':s>=40?'Partial':'Low'; }
 function initials(co) { return (co||'??').split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 function iconStyle(s) {
-  if (s>=7) return 'background:var(--teal-light);color:var(--teal);';
-  if (s>=4) return 'background:var(--amber-bg);color:var(--amber);';
+  if (s>=70) return 'background:var(--teal-light);color:var(--teal);';
+  if (s>=40) return 'background:var(--amber-bg);color:var(--amber);';
   return 'background:var(--red-bg);color:var(--red);';
 }
 function jobKey(j) { return (j.title||'')+'||'+(j.company||''); }
@@ -263,7 +297,7 @@ function renderJobList(jobs) {
           <div class="jlc-company">${escHtml(job.company)}</div>
         </div>
         <div class="jlc-score">
-          <div class="jlc-score-num ${scoreCssClass(s)}">${s}<span style="font-size:9px;opacity:0.5">/10</span></div>
+          <div class="jlc-score-num ${scoreCssClass(s)}">${s}<span style="font-size:9px;opacity:0.5">/100</span></div>
           <div class="jlc-score-lbl ${scoreCssClass(s)}">${scoreLabel(s)}</div>
         </div>
       </div>
@@ -300,9 +334,7 @@ function selectJob(idx) {
   const detail = document.getElementById('detail-content');
   if (!detail) return;
 
-  // Hide inline paste area when showing job detail
-  const pasteArea = document.getElementById('inline-paste-area');
-  if (pasteArea) pasteArea.style.display = 'none';
+  // Paste area will be rebuilt by showInlinePaste/clearAll — nothing to hide explicitly
 
   const s         = job.viabilityScore||0;
   const key       = jobKey(job);
@@ -317,6 +349,23 @@ function selectJob(idx) {
   const kwHard = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
   const kwSoft = (kw.softSkills||[]).map(k=>`<span class="chip chip-soft" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
   const kwInd  = (kw.industryTerms||[]).map(k=>`<span class="chip chip-ind"  onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwMissing = (kw.missingFromResume||[]).map(k=>`<span class="chip" style="background:var(--red-bg);border-color:rgba(164,41,27,0.3);color:var(--red);font-family:var(--font-mono);" onclick="copyKw('${escHtml(k).replace(/'/g,"\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const highlightSkills = job.highlightSkills||[];
+  const highlightHtml = highlightSkills.length ? `<div class="detail-section" style="border-left:3px solid var(--green);">
+    <div class="ds-label" style="color:var(--green);">✨ Lead With These</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Your strongest assets for this role — lead with these in your cover letter and resume:</div>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+      ${highlightSkills.map((f,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">${i+1}</span>${escHtml(f)}</li>`).join('')}
+    </ul>
+  </div>` : '';
+  const redFlags  = job.redFlags||[];
+  const redFlagsHtml = redFlags.length ? `<div class="detail-section" style="border-left:3px solid var(--red);">
+    <div class="ds-label" style="color:var(--red);">⚡ Hiring Manager Red Flags</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Things a recruiter scanning your profile would notice in under 10 seconds:</div>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+      ${redFlags.map((f,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">${i+1}</span>${escHtml(f)}</li>`).join('')}
+    </ul>
+  </div>` : '';
   const reqs     = (job.requirements||[]).map(r=>`<span class="chip chip-req">${escHtml(r)}</span>`).join(' ');
   const benefits = (job.benefits||[]).map(b=>`<span class="benefit-pill">${escHtml(b)}</span>`).join(' ');
 
@@ -357,7 +406,7 @@ function selectJob(idx) {
         <div class="dh-icon">${initials(job.company)}</div>
         <div class="dh-body">
           <div class="dh-title">${escHtml(job.title)}</div>
-          <div class="dh-company">${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
+          <div class="dh-company">${safeHref(job.companyUrl)?`<a href="${safeHref(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
         </div>
         <div class="dh-actions">
           <button class="btn-icon${isStarred?' star-active':''}" onclick="toggleStarResult(${idx})" id="dp-star-${idx}" title="Star">
@@ -372,7 +421,7 @@ function selectJob(idx) {
           <button class="btn-icon" onclick="copyCard(${idx})" title="Copy"><i class="ti ti-copy"></i></button>
         </div>
         <div class="dh-score">
-          <div class="dh-score-num">${s}<span style="font-size:13px;opacity:0.5">/10</span></div>
+          <div class="dh-score-num">${s}<span style="font-size:13px;opacity:0.5">/100</span></div>
           <div class="dh-score-lbl">${scoreLabel(s)} match</div>
         </div>
       </div>
@@ -382,7 +431,7 @@ function selectJob(idx) {
       <div class="meta-item"><span class="meta-val salary">${escHtml(job.salary||'Not listed')}</span></div>
       <div class="meta-item">Level: <span class="meta-val">${escHtml(job.level||'Not specified')}</span></div>
       <div class="meta-item">Industry: <span class="meta-val">${escHtml(job.industry||'—')}</span></div>
-      ${job.postingUrl?`<div class="meta-item"><a href="${escHtml(job.postingUrl)}" target="_blank" rel="noopener" style="font-size:11px;font-family:var(--font-mono);">View posting ↗</a></div>`:''}
+      ${safeHref(job.postingUrl)?`<div class="meta-item"><a href="${safeHref(job.postingUrl)}" target="_blank" rel="noopener" style="font-size:11px;font-family:var(--font-mono);">View posting ↗</a></div>`:''}
     </div>
 
     <div class="detail-body">
@@ -391,6 +440,7 @@ function selectJob(idx) {
         <div class="ds-body">${escHtml(job.summary)}</div>
         <div class="viability-note">🤔 ${escHtml(job.viabilityReason||'')}</div>
       </div>
+      ${highlightHtml}
       ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
       ${benefits?`<div class="detail-section"><div class="ds-label">Benefits and Compensation</div><div class="chip-row">${benefits}</div></div>`:''}
       ${(kwHard||kwSoft||kwInd)?`<div class="detail-section">
@@ -400,20 +450,25 @@ function selectJob(idx) {
         </div>
         ${kwHard?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}
         ${kwSoft?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:5px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}
-        ${kwInd?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}
+        ${kwInd?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}
+        ${kwMissing?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:5px;">⚠ Missing from your resume</div><div class="chip-row">${kwMissing}</div></div>`:''}
       </div>`:''}
+      ${redFlagsHtml}
       ${repHtml}
       ${locHtml}
       <div class="detail-section">
         <div class="ds-label">Company Links</div>
         <div class="company-links">
-          ${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-world"></i> Website ↗</a>`:`<span class="company-link-missing"><i class="ti ti-world"></i> Not found</span>`}
-          ${job.companyCareersUrl?`<a href="${escHtml(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-briefcase"></i> Careers ↗</a>`:`<span class="company-link-missing"><i class="ti ti-briefcase"></i> Not found</span>`}
+          ${safeHref(job.companyUrl)?`<a href="${safeHref(job.companyUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-world"></i> Website ↗</a>`:`<span class="company-link-missing"><i class="ti ti-world"></i> Not found</span>`}
+          ${safeHref(job.companyCareersUrl)?`<a href="${safeHref(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-briefcase"></i> Careers ↗</a>`:`<span class="company-link-missing"><i class="ti ti-briefcase"></i> Not found</span>`}
         </div>
       </div>
     </div>
 
     <div class="detail-footer">
+      <button class="btn btn-primary btn-sm" onclick="showInlinePaste()" style="gap:6px;">
+        <i class="ti ti-plus"></i> New analysis
+      </button>
       <button class="btn-icon" onclick="copyCard(${idx})" style="margin-left:auto;"><i class="ti ti-copy"></i> Copy full details</button>
     </div>`;
 }
@@ -434,6 +489,23 @@ function renderSavedCard(job, idx, isApplied) {
   const kwHard    = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard">${escHtml(k)}</span>`).join(' ');
   const kwSoft    = (kw.softSkills||[]).map(k=>`<span class="chip chip-soft">${escHtml(k)}</span>`).join(' ');
   const kwInd     = (kw.industryTerms||[]).map(k=>`<span class="chip chip-ind">${escHtml(k)}</span>`).join(' ');
+  const kwMissingSc = (kw.missingFromResume||[]).map(k=>`<span class="chip" style="background:var(--red-bg);border-color:rgba(164,41,27,0.3);color:var(--red);font-family:var(--font-mono);">${escHtml(k)}</span>`).join(' ');
+  const highlightSc = job.highlightSkills||[];
+  const highlightScHtml = highlightSc.length ? `<div class="detail-section" style="border-left:3px solid var(--green);">
+    <div class="ds-label" style="color:var(--green);">✨ Lead With These</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Your strongest assets for this role — lead with these in your cover letter and resume:</div>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+      ${highlightSc.map((f,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">${i+1}</span>${escHtml(f)}</li>`).join('')}
+    </ul>
+  </div>` : '';
+  const redFlagsSc  = job.redFlags||[];
+  const redFlagsScHtml = redFlagsSc.length ? `<div class="detail-section" style="border-left:3px solid var(--red);">
+    <div class="ds-label" style="color:var(--red);">⚡ Hiring Manager Red Flags</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Things a recruiter scanning your profile would notice in under 10 seconds:</div>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+      ${redFlagsSc.map((f,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">${i+1}</span>${escHtml(f)}</li>`).join('')}
+    </ul>
+  </div>` : '';
   const contactName  = job.contactName||job.contact?.name||'';
   const contactEmail = job.contactEmail||job.contact?.email||'';
   const contactLinkedIn = job.contactLinkedIn||'';
@@ -457,7 +529,7 @@ function renderSavedCard(job, idx, isApplied) {
       <div class="dh-icon">${initials(job.company)}</div>
       <div class="dh-body">
         <div class="dh-title">${escHtml(job.title)}</div>
-        <div class="dh-company">${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
+        <div class="dh-company">${safeHref(job.companyUrl)?`<a href="${safeHref(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:3px;font-family:var(--font-mono);">${dateStr}</div>
       </div>
       <div class="dh-actions">
@@ -465,14 +537,20 @@ function renderSavedCard(job, idx, isApplied) {
           <i class="ti ti-star${isStarred?'-filled':''}"></i> ${isStarred?'Starred':'Star'}
         </button>
         ${!isApplied
-          ? `<button class="btn-icon" onclick="markAppliedFromSaved(${idx})" title="Mark Applied"><i class="ti ti-send"></i> Mark Applied</button>`
-          : `<span class="btn-icon apply-active"><i class="ti ti-check"></i> Applied</span>`}
+          ? `<button class="btn-icon" onclick="confirmReanalyze(${idx})" title="Re-analyze with current profile" style="font-size:10px;">
+               <i class="ti ti-refresh"></i> Re-analyze
+             </button>
+             <button class="btn-icon" onclick="markAppliedFromSaved(${idx})" title="Mark Applied"><i class="ti ti-send"></i> Mark Applied</button>`
+          : `<span class="btn-icon apply-active" style="cursor:default;"><i class="ti ti-check"></i> Applied</span>
+             <button class="btn-icon" onclick="moveBackToSaved(${idx})" title="Move back to saved" style="font-size:10px;">
+               <i class="ti ti-arrow-back-up"></i> Undo
+             </button>`}
         <button class="btn-icon btn-danger" onclick="${isApplied?'removeApplied':'removeSaved'}(${idx})" title="Remove">
           <i class="ti ti-trash"></i> Remove
         </button>
         <button class="btn-icon" onclick="copySavedJob(${idx},${isApplied})" title="Copy"><i class="ti ti-copy"></i></button>
       </div>
-      <div class="dh-score"><div class="dh-score-num">${s}<span style="font-size:13px;opacity:0.5">/10</span></div><div class="dh-score-lbl">${scoreLabel(s)} match</div></div>
+      <div class="dh-score"><div class="dh-score-num">${s}<span style="font-size:13px;opacity:0.5">/100</span></div><div class="dh-score-lbl">${scoreLabel(s)} match</div></div>
     </div>
   </div>
   <div class="meta-strip">
@@ -482,9 +560,11 @@ function renderSavedCard(job, idx, isApplied) {
   </div>
   <div class="detail-body">
     <div class="detail-section"><div class="ds-label">About this role</div><div class="ds-body">${escHtml(job.summary)}</div><div class="viability-note">🤔 ${escHtml(job.viabilityReason||'')}</div></div>
+    ${highlightScHtml}
     ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
     ${benefits?`<div class="detail-section"><div class="ds-label">Benefits</div><div class="chip-row">${benefits}</div></div>`:''}
-    ${(kwHard||kwSoft||kwInd)?`<div class="detail-section"><div class="ds-label" style="margin-bottom:10px;">Keywords</div>${kwHard?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}${kwSoft?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}${kwInd?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}</div>`:''}
+    ${(kwHard||kwSoft||kwInd||kwMissingSc)?`<div class="detail-section"><div class="ds-label" style="margin-bottom:10px;">Resume and Cover Letter Keywords</div>${kwHard?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}${kwSoft?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}${kwInd?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}${kwMissingSc?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:4px;">⚠ Missing from your resume</div><div class="chip-row">${kwMissingSc}</div></div>`:''}</div>`:''}
+    ${redFlagsScHtml}
     ${repHtml}
     ${locHtml}
     <div class="detail-section">
@@ -525,8 +605,8 @@ function renderSavedCard(job, idx, isApplied) {
       </div>
     </div>
     <div class="detail-section"><div class="ds-label">Company Links</div><div class="company-links">
-      ${job.companyUrl?`<a href="${escHtml(job.companyUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-world"></i> Website ↗</a>`:`<span class="company-link-missing"><i class="ti ti-world"></i> Not found</span>`}
-      ${job.companyCareersUrl?`<a href="${escHtml(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-briefcase"></i> Careers ↗</a>`:`<span class="company-link-missing"><i class="ti ti-briefcase"></i> Not found</span>`}
+      ${safeHref(job.companyUrl)?`<a href="${safeHref(job.companyUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-world"></i> Website ↗</a>`:`<span class="company-link-missing"><i class="ti ti-world"></i> Not found</span>`}
+      ${safeHref(job.companyCareersUrl)?`<a href="${safeHref(job.companyCareersUrl)}" target="_blank" rel="noopener" class="company-link"><i class="ti ti-briefcase"></i> Careers ↗</a>`:`<span class="company-link-missing"><i class="ti ti-briefcase"></i> Not found</span>`}
     </div></div>
   </div>
     <div class="detail-footer">
@@ -559,16 +639,58 @@ function filterResults(filter, btn) {
   if (selectedIdx!==null&&allResults[selectedIdx]) selectJob(selectedIdx);
 }
 
+function buildInlinePasteHTML() {
+  return `<div id="inline-paste-area" style="display:flex;flex-direction:column;width:100%;height:100%;padding:28px 32px;box-sizing:border-box;">
+    <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;">Analyze a job posting</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">
+      Paste the full text of any job posting below. The more complete the text, the more accurate the analysis.
+    </div>
+    <div class="job-slots" id="job-slots" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
+    <button class="add-slot-btn" onclick="addJobSlot()" style="margin-bottom:24px;max-width:220px;">
+      <i class="ti ti-plus"></i> Add another posting
+    </button>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
+        <i class="ti ti-search"></i> Analyze
+      </button>
+      <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">Clear</button>
+    </div>
+  </div>`;
+}
+
+function showInlinePaste() {
+  const detail = document.getElementById('detail-content');
+  if (!detail) return;
+  // Clear selected state
+  document.querySelectorAll('.job-list-card').forEach(el => el.classList.remove('selected'));
+  selectedIdx = null;
+  // Rebuild paste area (detail.innerHTML may have destroyed it)
+  slotCount = 0;
+  detail.innerHTML = buildInlinePasteHTML();
+  addJobSlot();
+  detail.querySelector('.paste-area')?.focus();
+}
+
 function clearAll() {
   allResults=[]; currentFilter='all'; selectedIdx=null;
   clearAllSlots();
   const inner=document.getElementById('job-list-inner');
   if (inner) inner.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-file-text" style="font-size:2.2rem;opacity:0.3;"></i></div><div class="empty-title">No results yet</div><div class="empty-sub">Paste a job description on the right and hit Analyze.</div></div>`;
-  // Restore inline paste area
-  const pasteArea = document.getElementById('inline-paste-area');
-  if (pasteArea) pasteArea.style.display = 'flex';
+  // Rebuild inline paste area (may have been destroyed by selectJob)
+  const detail2 = document.getElementById('detail-content');
+  if (detail2 && !document.getElementById('inline-paste-area')) {
+    slotCount = 0;
+    detail2.innerHTML = buildInlinePasteHTML();
+    addJobSlot();
+  } else {
+    const pasteArea = document.getElementById('inline-paste-area');
+    if (pasteArea) pasteArea.style.display = 'flex';
+  }
   const sb=document.getElementById('status-bar');
   if (sb) sb.style.display='none';
+  // Reset count dots to zero
+  const h=document.getElementById('count-high'),m=document.getElementById('count-mid'),l=document.getElementById('count-low');
+  if(h) h.textContent='0'; if(m) m.textContent='0'; if(l) l.textContent='0';
   document.querySelectorAll('.filter-pill').forEach((b,i)=>b.classList.toggle('active',i===0));
 }
 
@@ -597,7 +719,7 @@ function renderPreviewStrips() {
       : view==='applied'
         ? `scrollToApplied(${i})`
         : `switchView('${view}')`;
-    return `<div class="preview-card ${cls}" onclick="${clickFn}" title="${escHtml(j.title)}"><div class="pc-title">${escHtml(j.title)}</div><div class="pc-company">${escHtml(j.company)}</div><div class="pc-meta"><span>${j.viabilityScore||0}/10</span><span>${j.starred?'★':''}</span></div></div>`;
+    return `<div class="preview-card ${cls}" onclick="${clickFn}" title="${escHtml(j.title)}"><div class="pc-title">${escHtml(j.title)}</div><div class="pc-company">${escHtml(j.company)}</div><div class="pc-meta"><span>${j.viabilityScore||0}/100</span><span>${j.starred?'★':''}</span></div></div>`;
   }).join('');
   const ss=document.getElementById('saved-preview-strip'),as=document.getElementById('applied-preview-strip');
   if(ss) ss.innerHTML=render(savedJobs,'saved');
@@ -611,7 +733,7 @@ function toggleSave(idx) {
   const job=allResults[idx]; const key=jobKey(job);
   const ei=savedJobs.findIndex(s=>jobKey(s)===key);
   if(ei>=0){savedJobs.splice(ei,1);showToast('Removed from saved.');}
-  else{savedJobs.push({...job,savedAt:new Date().toISOString()});showToast('Job saved!');}
+  else{savedJobs.push({...job,savedAt:new Date().toISOString(),originalText:getAllJobText()[idx]||''});showToast('Job saved!');}
   localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx) selectJob(idx);
@@ -621,20 +743,151 @@ function markApplied(idx) {
   const job=allResults[idx]; const key=jobKey(job);
   if(appliedJobs.some(a=>jobKey(a)===key)){showToast('Already marked as applied.');return;}
   const today=new Date().toISOString().slice(0,10);
-  appliedJobs.push({...job,appliedAt:new Date().toISOString(),dateApplied:today});
-  if(!savedJobs.some(s=>jobKey(s)===key)){savedJobs.push({...job,savedAt:new Date().toISOString()});localStorage.setItem('scout-saved',JSON.stringify(savedJobs));}
+  // Carry over saved data if it exists, then remove from saved
+  const savedVersion = savedJobs.find(s=>jobKey(s)===key);
+  appliedJobs.push({...(savedVersion||job),appliedAt:new Date().toISOString(),dateApplied:today});
+  // Remove from saved — applied is the source of truth now
+  const si=savedJobs.findIndex(s=>jobKey(s)===key);
+  if(si>=0) savedJobs.splice(si,1);
+  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
   localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx) selectJob(idx);
-  showToast('Marked as applied!');
+  showToast('Marked as applied — removed from saved.');
 }
 
 function markAppliedFromSaved(idx) {
   const job=savedJobs[idx]; const key=jobKey(job);
   if(appliedJobs.some(a=>jobKey(a)===key)){showToast('Already applied.');return;}
   appliedJobs.push({...job,appliedAt:new Date().toISOString(),dateApplied:job.dateApplied||new Date().toISOString().slice(0,10)});
+  // Remove from saved — applied is the source of truth now
+  savedJobs.splice(idx,1);
+  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
   localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
-  updateBadges(); showToast('Marked as applied!'); renderSaved();
+  updateBadges(); showToast('Marked as applied — removed from saved.'); renderSaved();
+}
+
+// Confirm before re-analyzing a saved job (uses a token)
+function confirmReanalyze(idx) {
+  const job = savedJobs[idx];
+  if (!job) return;
+
+  // Check tier — warn about token cost
+  const isVip  = typeof scoutUser !== 'undefined' && scoutUser?.tier === 'vip';
+  const isFree = typeof scoutUser === 'undefined' || !scoutUser || scoutUser?.tier === 'free';
+
+  const tokenMsg = isVip
+    ? 'This will use your VIP access to re-analyze this posting against your current profile.'
+    : isFree
+    ? 'This will use one of your free weekly analyses to re-analyze this posting.'
+    : 'This will use <strong>1 Scout Token</strong> from your balance to re-analyze this posting with your current profile.';
+
+  // Build confirmation popup
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 30px;max-width:400px;width:90%;box-shadow:var(--shadow-lg);">
+      <div style="font-size:1.3rem;margin-bottom:12px;">🔄</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">Re-analyze this posting?</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.6;"><strong>${escHtml(job.title)}</strong> at ${escHtml(job.company)}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">${tokenMsg}</div>
+      <div style="display:flex;gap:8px;">
+        <button id="reanalyze-confirm-btn" class="btn btn-primary" style="flex:1;justify-content:center;">
+          <i class="ti ti-refresh"></i> Yes, re-analyze
+        </button>
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="this.closest('[style*=fixed]').remove()">
+          Cancel
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#reanalyze-confirm-btn').addEventListener('click', () => {
+    overlay.remove();
+    reanalyzeSaved(idx);
+  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function reanalyzeSaved(idx) {
+  const job = savedJobs[idx];
+  if (!job) return;
+
+  // We need the original job description text — store it if we have it,
+  // otherwise use the summary as a fallback prompt
+  const postingText = job.originalText || job.summary || `Job Title: ${job.title}
+Company: ${job.company}
+
+${job.summary || ''}`;
+
+  // Show loading in the current card view
+  showToast('Re-analyzing with your current profile…');
+
+  try {
+    const isLocal = (typeof ANTHROPIC_API_KEY !== 'undefined' && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'null');
+    const jwt = await getAuthToken();
+    const response = isLocal
+      ? await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
+          body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:8000, messages:[{role:'user', content:buildPrompt([postingText])}] })
+        })
+      : await fetch('/api/scout-ai', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','Authorization':`Bearer ${jwt}` },
+          body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:8000, messages:[{role:'user', content:buildPrompt([postingText])}], _postings_count:1 })
+        });
+
+    if (response.status === 402) {
+      const err = await response.json();
+      showToast(err.message || 'Insufficient tokens or weekly limit reached.');
+      return;
+    }
+    if (!response.ok) { const e=await response.json(); throw new Error(e.error?.message||'API error'); }
+
+    const data     = await response.json();
+    const fullText = data.content.map(c=>c.type==='text'?c.text:'').join('\n');
+    const jobs     = parseJobsFromResponse(fullText);
+
+    if (!jobs || !jobs[0]) { showToast('Re-analysis failed — could not parse response.'); return; }
+
+    // Update saved job with fresh analysis, preserve tracking data
+    const fresh = jobs[0];
+    savedJobs[idx] = {
+      ...fresh,
+      // Preserve tracking fields
+      savedAt:         job.savedAt,
+      starred:         job.starred,
+      dateApplied:     job.dateApplied,
+      followUpSent:    job.followUpSent,
+      followUpDate:    job.followUpDate,
+      contactName:     job.contactName,
+      contactEmail:    job.contactEmail,
+      contactLinkedIn: job.contactLinkedIn,
+      manualPostingUrl:job.manualPostingUrl,
+      notes:           job.notes,
+      originalText:    postingText,
+    };
+    localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
+    await refreshUserData?.();
+    updateUserUI?.();
+    showToast('Re-analysis complete!');
+    renderSaved();
+  } catch(err) {
+    showToast('Re-analysis failed: ' + err.message);
+    console.error(err);
+  }
+}
+
+// Move an applied job back to saved (undo applied)
+function moveBackToSaved(idx) {
+  const job=appliedJobs[idx]; const key=jobKey(job);
+  if(savedJobs.some(s=>jobKey(s)===key)){showToast('Already in saved.');return;}
+  savedJobs.push({...job,savedAt:new Date().toISOString()});
+  appliedJobs.splice(idx,1);
+  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
+  localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  updateBadges(); showToast('Moved back to saved.'); renderApplied();
 }
 
 function removeSaved(idx) {
@@ -699,9 +952,14 @@ async function findContact(idx,isApplied) {
   resultEl.textContent='⏳ Searching…'; resultEl.className='contact-result';
   try {
     const _jwt2=await getAuthToken();
-    const response=await fetch('/api/scout-ai',{
+    const _isLocal2=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
+    const _url2=_isLocal2?'https://api.anthropic.com/v1/messages':'/api/scout-ai';
+    const _hdrs2=_isLocal2
+      ?{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}
+      :{'Content-Type':'application/json','Authorization':`Bearer ${_jwt2}`};
+    const response=await fetch(_url2,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt2}`,'x-scout-ad-watched':'false'},
+      headers:_hdrs2,
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,tools:[{type:'web_search_20250305',name:'web_search'}],
         messages:[{role:'user',content:`Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.\nCompany: ${job.company}\nJob title: ${job.title}\nWebsite: ${job.companyUrl||'unknown'}\nReturn ONLY a JSON object, no markdown:\n{"name":"name or empty","email":"email or empty","note":"one short sentence"}`}]})
     });
@@ -746,7 +1004,7 @@ function copyJobData(job) {
     `SALARY:         ${job.salary||'Not listed'}`,`LEVEL:          ${job.level||'Not specified'}`,`INDUSTRY:       ${job.industry||'—'}`,``,
     `WORK LOCATION:  ${loc?.type||'Not specified'}`,`ADDRESS:        ${loc?.address||loc?.city||'Not listed'}`,
     `DISTANCE:       ${loc?.distanceKm!=null?'~'+Math.round(loc.distanceKm)+' km':'N/A'}`,``,
-    `MATCH SCORE:    ${job.viabilityScore||'N/A'}/10`,`ASSESSMENT:     ${job.viabilityReason||''}`,``,`SUMMARY:`,job.summary,``,
+    `MATCH SCORE:    ${job.viabilityScore||'N/A'}/100`,`ASSESSMENT:     ${job.viabilityReason||''}`,``,`SUMMARY:`,job.summary,``,
     `REQUIREMENTS:   ${(job.requirements||[]).join(', ')}`,``,`BENEFITS:       ${(job.benefits||[]).join(', ')||'None listed'}`,``,
     `KEYWORDS:`,`  Hard Skills:    ${(kw.hardSkills||[]).join(', ')}`,`  Soft Skills:    ${(kw.softSkills||[]).join(', ')}`,`  Industry Terms: ${(kw.industryTerms||[]).join(', ')}`,``,
     `REPUTATION:     ${rep?.rating||'N/A'} — ${rep?.summary||'N/A'}`,``,
@@ -792,10 +1050,15 @@ async function extractTextFromDocx(file) {
 async function analyzeResumeText(text) {
   // Resume analysis is always free — uses a special header so proxy skips token deduction
   const _jwt3=await getAuthToken();
-  const response=await fetch('/api/scout-ai',{
+  const _isLocal3=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
+  const _url3=_isLocal3?'https://api.anthropic.com/v1/messages':'/api/scout-ai';
+  const _hdrs3=_isLocal3
+    ?{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}
+    :{'Content-Type':'application/json','Authorization':`Bearer ${_jwt3}`,'x-scout-resume-only':'true'};
+  const response=await fetch(_url3,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt3}`,'x-scout-ad-watched':'false','x-scout-resume-only':'true'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":""}\nRESUME: ${text.slice(0,6000)}`}]})
+    headers:_hdrs3,
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":"","hardSkills":[],"softSkills":[],"industryTerms":[]}\nRESUME: ${text.slice(0,6000)}`}]})
   });
   if(!response.ok){const e=await response.json();throw new Error(e.error?.message||'API error');}
   const data=await response.json();
@@ -811,6 +1074,13 @@ async function analyzeResumeText(text) {
   if(parsed.certs)      userProfile.certs=parsed.certs;
   if(parsed.notes)      userProfile.notes=parsed.notes;
   if(parsed.jobGoal)    userProfile.jobGoal=parsed.jobGoal;
+  // Merge parsed skills into profile
+  if(parsed.hardSkills?.length || parsed.softSkills?.length || parsed.industryTerms?.length) {
+    if(!userProfile.skills) userProfile.skills={hardSkills:[],softSkills:[],industryTerms:[]};
+    if(parsed.hardSkills?.length)    userProfile.skills.hardSkills    = [...new Set([...userProfile.skills.hardSkills,   ...parsed.hardSkills])];
+    if(parsed.softSkills?.length)    userProfile.skills.softSkills    = [...new Set([...userProfile.skills.softSkills,   ...parsed.softSkills])];
+    if(parsed.industryTerms?.length) userProfile.skills.industryTerms = [...new Set([...userProfile.skills.industryTerms,...parsed.industryTerms])];
+  }
   localStorage.setItem('scout-profile',JSON.stringify(userProfile));
   document.querySelectorAll('.resume-status-el').forEach(el=>{el.textContent=`✓ Profile updated${parsed.name?' for '+parsed.name:''}`;el.style.color='var(--green)';});
   showToast('Profile updated from resume.');
@@ -823,14 +1093,21 @@ async function analyzeResumeText(text) {
 function saveProfile() {
   const g=id=>document.getElementById(id)?.value.trim()||'';
   userProfile={
-    role:g('p-role'), industry:g('p-industry'), salary:g('p-salary'),
+    name:g('p-name'), role:g('p-role'), industry:g('p-industry'), salary:g('p-salary'),
     currency:document.getElementById('p-currency')?.value||'USD',
     experience:g('p-experience'), travel:g('p-travel'),
     certs:g('p-certs'), notes:g('p-notes'), jobGoal:g('p-jobgoal'),
+    skills: {
+      hardSkills:     getSkillsFromUI('hardSkills'),
+      softSkills:     getSkillsFromUI('softSkills'),
+      industryTerms:  getSkillsFromUI('industryTerms'),
+    },
   };
   localStorage.setItem('scout-profile',JSON.stringify(userProfile));
   showToast('Profile saved.');
   refreshProfileStatus();
+  if(typeof updateSidebarName==='function') updateSidebarName();
+  updateSidebarName();
 }
 
 // ══════════════════════════════════════════
@@ -874,84 +1151,6 @@ function scrollToApplied(idx) {
   }, 80);
 }
 
-// ── Ad gate ──────────────────────────────────────────────────
-// Shows a 30-second countdown for free-tier users before analysis.
-// Returns true if ad was watched, false if cancelled, null if not needed.
-async function showAdGateIfNeeded() {
-  if (!scoutUser) return false;
-  if (scoutUser.tier === 'vip')  return null;  // no gate
-  if (scoutUser.tier === 'paid') return null;  // no gate
-
-  // Free tier — show 30s ad gate
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
-
-    overlay.innerHTML = `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px 36px;max-width:420px;width:90%;text-align:center;box-shadow:var(--shadow-lg);">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">Free analysis</div>
-        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">Watch a short ad to continue</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:24px;line-height:1.6;">
-          Free users get 2 analyses per day by watching a short ad.<br>
-          <a href="#" onclick="showTokenShop();document.body.removeChild(this.closest('[style*=fixed]'));return false;" style="color:var(--teal);font-weight:700;">Upgrade to skip ads →</a>
-        </div>
-        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--text-dim);font-size:12px;">
-          <!-- AdSense unit will go here -->
-          <div id="ad-placeholder" style="text-align:center;">
-            <div style="font-size:1.5rem;margin-bottom:6px;">📢</div>
-            <div style="font-size:11px;font-weight:600;">Advertisement</div>
-          </div>
-        </div>
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-          Continue in <span id="ad-countdown" style="font-weight:800;color:var(--teal);font-family:var(--font-mono);">30</span> seconds…
-        </div>
-        <button id="ad-continue-btn" disabled
-          style="width:100%;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:not-allowed;opacity:0.5;font-family:var(--font-ui);">
-          Analyzing… (wait for countdown)
-        </button>
-        <button id="ad-cancel-btn"
-          style="width:100%;background:none;border:none;color:var(--text-dim);font-size:11px;margin-top:10px;cursor:pointer;font-family:var(--font-ui);padding:5px;">
-          Cancel
-        </button>
-      </div>`;
-
-    document.body.appendChild(overlay);
-
-    let seconds = 30;
-    const countdownEl = overlay.querySelector('#ad-countdown');
-    const continueBtn = overlay.querySelector('#ad-continue-btn');
-    const cancelBtn   = overlay.querySelector('#ad-cancel-btn');
-
-    const timer = setInterval(() => {
-      seconds--;
-      if (countdownEl) countdownEl.textContent = seconds;
-      if (seconds <= 0) {
-        clearInterval(timer);
-        if (continueBtn) {
-          continueBtn.disabled = false;
-          continueBtn.style.cursor = 'pointer';
-          continueBtn.style.opacity = '1';
-          continueBtn.textContent = 'Continue to analysis →';
-        }
-        if (countdownEl) countdownEl.textContent = '0';
-      }
-    }, 1000);
-
-    continueBtn.addEventListener('click', () => {
-      if (continueBtn.disabled) return;
-      clearInterval(timer);
-      document.body.removeChild(overlay);
-      resolve(true);
-    });
-
-    cancelBtn.addEventListener('click', () => {
-      clearInterval(timer);
-      document.body.removeChild(overlay);
-      resolve(false);
-    });
-  });
-}
-
 // ── Token shop modal ─────────────────────────────────────────
 function showTokenShop() {
   const existing = document.getElementById('token-shop-overlay');
@@ -961,6 +1160,76 @@ function showTokenShop() {
   if (overlay) { overlay.classList.add('open'); return; }
 }
 
+// ── Skill tag input functions ─────────────────────────────────
+const _skillStore = { hardSkills:[], softSkills:[], industryTerms:[] };
+
+function getSkillsFromUI(field) {
+  return (_skillStore[field] || []).slice();
+}
+
+function renderSkillChips(field) {
+  const chipsEl = document.getElementById(
+    field==='hardSkills'?'hard-skills-chips':field==='softSkills'?'soft-skills-chips':'industry-skills-chips'
+  );
+  if (!chipsEl) return;
+  const typeClass = field==='hardSkills'?'hard':field==='softSkills'?'soft':'industry';
+  chipsEl.innerHTML = (_skillStore[field]||[]).map((s,i) =>
+    `<span class="skill-chip ${typeClass}">${escHtml(s)}<button class="skill-chip-remove" onclick="removeSkill('${field}',${i})" title="Remove">✕</button></span>`
+  ).join('');
+}
+
+function addSkill(field, value) {
+  const v = value.trim().replace(/,$/, '').trim();
+  if (!v || v.length < 2) return;
+  if (!_skillStore[field]) _skillStore[field] = [];
+  if (_skillStore[field].includes(v)) return; // no duplicates
+  _skillStore[field].push(v);
+  renderSkillChips(field);
+}
+
+function removeSkill(field, idx) {
+  _skillStore[field].splice(idx, 1);
+  renderSkillChips(field);
+}
+
+function handleSkillKey(event, field) {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    addSkill(field, event.target.value);
+    event.target.value = '';
+  } else if (event.key === 'Backspace' && !event.target.value && _skillStore[field]?.length) {
+    // Remove last chip on backspace when input is empty
+    _skillStore[field].pop();
+    renderSkillChips(field);
+  }
+}
+
+function handleSkillInput(event, field) {
+  // Auto-add on comma typed mid-word
+  if (event.target.value.endsWith(',')) {
+    addSkill(field, event.target.value);
+    event.target.value = '';
+  }
+}
+
+function loadSkillsUI() {
+  const skills = userProfile.skills || { hardSkills:[], softSkills:[], industryTerms:[] };
+  _skillStore.hardSkills    = [...(skills.hardSkills    || [])];
+  _skillStore.softSkills    = [...(skills.softSkills    || [])];
+  _skillStore.industryTerms = [...(skills.industryTerms || [])];
+  renderSkillChips('hardSkills');
+  renderSkillChips('softSkills');
+  renderSkillChips('industryTerms');
+}
+
+function updateSidebarName() {
+  const name   = userProfile.name || '';
+  const nameEl = document.getElementById('sb-user-name');
+  const avEl   = document.getElementById('sb-avatar');
+  if (nameEl) nameEl.textContent = name || 'Scout';
+  if (avEl)   avEl.textContent   = name ? name[0].toUpperCase() : '?';
+}
+
 (function init() {
   const theme=document.documentElement.getAttribute('data-theme')||'light';
   const icon=document.getElementById('theme-icon');
@@ -968,4 +1237,5 @@ function showTokenShop() {
   updateLocationBadge();
   addJobSlot();
   updateBadges();
+  updateSidebarName();
 })();
