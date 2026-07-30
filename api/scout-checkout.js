@@ -50,8 +50,14 @@ export default async function handler(req, res) {
       if (!selected) return res.status(400).json({ error: 'Invalid plan' });
 
       const session = await stripe.checkout.sessions.create({
-        mode:                 'subscription',
-        customer_email:       user.email,
+        // Managed Payments (a newer Stripe default) requires every product
+        // to carry a tax code, which we haven't set up (GST/HST status is
+        // still undecided — see roadmap). Opt out of it for now so checkout
+        // works with plain, untaxed prices, same as before it existed.
+        managed_payments:      { enabled: false },
+        payment_method_types:  ['card'],
+        mode:                  'subscription',
+        customer_email:        user.email,
         line_items: [{
           price_data: {
             currency:     'usd',
@@ -82,8 +88,10 @@ export default async function handler(req, res) {
     if (!selected) return res.status(400).json({ error: 'Invalid bundle' });
 
     const session = await stripe.checkout.sessions.create({
-      mode:                 'payment',
-      customer_email:       user.email,
+      managed_payments:      { enabled: false },
+      payment_method_types:  ['card'],
+      mode:                  'payment',
+      customer_email:        user.email,
       line_items: [{
         price_data: {
           currency:     'usd',
