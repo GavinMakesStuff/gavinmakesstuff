@@ -1151,12 +1151,23 @@ async function handleResumeUpload(input) {
     else throw new Error('Unsupported file type. Upload a PDF or .docx.');
     if(!text||text.trim().length<50) throw new Error('Could not read enough text.');
     document.querySelectorAll('.resume-status-el').forEach(el=>el.textContent='⏳ Analyzing…');
-    await analyzeResumeText(text);
+    await analyzeResumeText(text, file.name);
   } catch(err) {
     document.querySelectorAll('.resume-status-el').forEach(el=>{el.textContent='✕ '+err.message;el.style.color='var(--red)';});
     console.error(err);
   }
   input.value='';
+}
+
+// Clears the tracked resume filename so the upload slot resets to "Not
+// uploaded yet" and a new file can be attached. Doesn't touch the profile
+// fields themselves — those are independently editable at this point,
+// whether they originated from this resume or were typed in by hand.
+function removeResume() {
+  delete userProfile.resumeFileName;
+  localStorage.setItem('scout-profile', JSON.stringify(userProfile));
+  refreshProfileStatus();
+  showToast('Resume removed. Your profile fields are unchanged — edit or upload a new resume anytime.');
 }
 
 async function extractTextFromPdf(file) {
@@ -1170,7 +1181,7 @@ async function extractTextFromDocx(file) {
   const ab=await file.arrayBuffer(); return (await mammoth.extractRawText({arrayBuffer:ab})).value;
 }
 
-async function analyzeResumeText(text) {
+async function analyzeResumeText(text, fileName) {
   // Resume analysis is always free — uses a special header so proxy skips token deduction
   const _jwt3=await getAuthToken();
   const _isLocal3=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
@@ -1204,10 +1215,10 @@ async function analyzeResumeText(text) {
     if(parsed.softSkills?.length)    userProfile.skills.softSkills    = [...new Set([...userProfile.skills.softSkills,   ...parsed.softSkills])];
     if(parsed.industryTerms?.length) userProfile.skills.industryTerms = [...new Set([...userProfile.skills.industryTerms,...parsed.industryTerms])];
   }
+  if (fileName) userProfile.resumeFileName = fileName;
   localStorage.setItem('scout-profile',JSON.stringify(userProfile));
-  document.querySelectorAll('.resume-status-el').forEach(el=>{el.textContent=`✓ Profile updated${parsed.name?' for '+parsed.name:''}`;el.style.color='var(--green)';});
-  showToast('Profile updated from resume.');
-  if(currentView==='profile') refreshProfileStatus();
+  showToast(`Profile updated from resume${parsed.name?' for '+parsed.name:''}.`);
+  refreshProfileStatus();
 }
 
 // ══════════════════════════════════════════
