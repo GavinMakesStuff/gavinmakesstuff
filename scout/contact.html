@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Contact | Scout</title>
+  <link rel="icon" type="image/png" href="media/scoutfavicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <style>
+    :root {
+      --bg: #F4F6F8; --surface: #FFFFFF; --border: #D0D7DD;
+      --teal: #005A7A; --teal-light: #EBF5F9;
+      --text: #1A2B38; --text-body: #2C3E4A; --text-muted: #3A5A6E; --text-dim: #4A6880;
+      --font-ui: 'Nunito', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text-body); font-family: var(--font-ui); margin: 0; line-height: 1.7; }
+    a { color: var(--teal); }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 48px 24px 80px; }
+    .brand { display:flex; align-items:center; gap:9px; font-size: 1.25rem; font-weight: 800; color: var(--teal); text-decoration: none; margin-bottom: 36px; }
+    h1 { color: var(--text); font-size: 1.7rem; font-weight: 800; margin-bottom: 10px; }
+    .sub { color: var(--text-muted); font-size: 0.98rem; margin-bottom: 32px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 16px; }
+    .card i { font-size: 1.5rem; color: var(--teal); margin-top: 2px; }
+    .card h2 { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+    .card p { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 12px; }
+    .card a.mail { font-size: 1.05rem; font-weight: 800; color: var(--teal); text-decoration: none; }
+    .faq h2 { font-size: 1.1rem; font-weight: 800; color: var(--text); margin: 36px 0 16px; }
+    .faq-item { margin-bottom: 18px; }
+    .faq-item h3 { font-size: 0.92rem; font-weight: 700; color: var(--text); margin: 0 0 4px; }
+    .faq-item p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+    .back { display: inline-flex; align-items: center; gap: 6px; margin-top: 36px; font-size: 0.85rem; color: var(--text-dim); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="brand">Scout</a>
+
+  <h1>Get in touch</h1>
+  <div class="sub">Questions, bug reports, refund requests, feedback: all of it goes to the same inbox, and a real person (me) reads it.</div>
+
+  <div class="card">
+    <i class="ti ti-mail"></i>
+    <div>
+      <h2>Email</h2>
+      <p>The fastest way to reach me. I try to respond within a day or two.</p>
+      <a class="mail" href="mailto:gavinmakesstuff@gmail.com">gavinmakesstuff@gmail.com</a>
+    </div>
+  </div>
+
+  <div class="faq">
+    <h2>Common questions</h2>
+    <div class="faq-item">
+      <h3>I want a refund on a subscription or token purchase.</h3>
+      <p>Email me with your account email and what happened. Refunds are handled case-by-case, but I'll do my best to make it right.</p>
+    </div>
+    <div class="faq-item">
+      <h3>I want my account and data deleted.</h3>
+      <p>Email me a deletion request from your account's email address and I'll process it manually. See the <a href="legal/privacy.html">Privacy Policy</a> for details.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Something's broken.</h3>
+      <p>Let me know what you were doing, what you expected, and what happened instead. Screenshots help a lot.</p>
+    </div>
+    <div class="faq-item">
+      <h3>I have a feature idea.</h3>
+      <p>Send it over. Scout is actively developed and a lot of what exists today started as a user suggestion.</p>
+    </div>
+  </div>
+
+  <a href="index.html" class="back"><i class="ti ti-arrow-left"></i> Back to Scout</a>
+</div>
+</body>
+</html>
