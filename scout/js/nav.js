@@ -118,7 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Auth-ready: decide what to show ──────────────────────────
-document.addEventListener('scout:auth-ready', () => {
+// auth.js dispatches 'scout:auth-ready' as soon as its session check
+// resolves, which can happen before this script has finished loading
+// and registered the listener below (script-load race). If that
+// happens the event fires into the void and nobody ever shows the
+// login screen. Guard against it by also checking the ready-flag
+// directly the moment this listener registers, not just listening
+// for the event going forward.
+function handleAuthReady() {
   if (!scoutSession) {
     // Not logged in — show auth overlay
     showAuthScreen('signup');
@@ -132,7 +139,12 @@ document.addEventListener('scout:auth-ready', () => {
     // Handle Stripe return
     checkPaymentReturn();
   }
-});
+}
+
+document.addEventListener('scout:auth-ready', handleAuthReady);
+if (typeof scoutReady !== 'undefined' && scoutReady) {
+  handleAuthReady();
+}
 
 // ── Handle Stripe success/cancel redirect ─────────────────────
 function checkPaymentReturn() {
