@@ -122,6 +122,9 @@
         <button onclick="subscribeToPlan('pro')" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:14px;">Subscribe</button>
       </div>
     </div>
+    <div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:20px;margin-top:-8px;">
+      Already on Plus or Pro? Switching plans takes effect immediately at no extra charge — your new price and token amount start on your next billing date. Full details in the <a href="#" onclick="document.getElementById('token-shop-modal').classList.remove('open');switchView('faq');return false;" style="color:var(--teal);font-weight:700;">FAQ</a>.
+    </div>
 
     <!-- One-time bundle options -->
     <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Or top up as you go</div>
@@ -295,6 +298,10 @@
     <div class="sb-item" data-label="Guide" onclick="toggleGuide()">
       <i class="ti ti-help sb-icon"></i>
       <span class="sb-label">Guide</span>
+    </div>
+    <div class="sb-item" data-view="faq" data-label="FAQ" onclick="switchView('faq')">
+      <i class="ti ti-message-question sb-icon"></i>
+      <span class="sb-label">FAQ</span>
     </div>
     <div class="sb-item" data-label="Toggle theme" onclick="toggleTheme()">
       <i class="ti ti-moon sb-icon" id="theme-icon"></i>
@@ -614,6 +621,62 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW: FAQ
+       ══════════════════════════════════════ -->
+  <div class="view-panel" data-view="faq" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">FAQ</div>
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Billing, tokens, and common questions</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:22px;max-width:640px;">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--teal);margin-bottom:14px;">Billing and tokens</div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens when I run out of tokens?</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Free accounts get 3 analyses a week, resetting every Monday. Plus, Pro, and pay-as-you-go accounts draw from a token balance instead: if you use it all before your next billing date, you can top up with a one-time token pack anytime, or just wait for your next month's renewal to add more. Nothing is auto-charged beyond your regular subscription price.</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Do unused tokens expire?</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">No. Tokens never expire, whether they came from a subscription or a one-time top-up. Switching plans, cancelling, or letting a month pass doesn't wipe your balance.</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens if I switch between Plus and Pro?</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Your plan updates immediately with no extra charge and no double billing. Your existing token balance carries over untouched, and the new price plus the new plan's monthly token amount take effect starting your next regular billing date. For example: you're on Plus (40 tokens/mo) with 15 left, and you switch to Pro on day 10 of your cycle. You keep using those 15 tokens under Pro for free until your next billing date, when you're charged the Pro price and get 100 fresh tokens added to whatever's left.</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens if I cancel my subscription?</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">You keep whatever token balance you have. Cancelling moves you to pay-as-you-go: no more monthly refill, but any tokens already in your balance stay usable for as long as you want, with no expiry.</div>
+      </div>
+
+      <div style="margin-bottom:28px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">When does my free weekly limit reset?</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Every Monday, on a fixed weekly schedule. It's not a rolling 7 days from when you signed up.</div>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--teal);margin-bottom:14px;">Common questions</div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">I want a refund on a subscription or token purchase.</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Email <a href="mailto:gavinmakesstuff@gmail.com" style="color:var(--teal);">gavinmakesstuff@gmail.com</a> with your account email and what happened. Refunds are handled case-by-case, but we'll do our best to make it right.</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">I want my account and data deleted.</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Email a deletion request from your account's email address and it'll be processed manually. See the <a href="legal/privacy.html" target="_blank" style="color:var(--teal);">Privacy Policy</a> for details.</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Something's broken, or I have a feature idea.</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Email <a href="mailto:gavinmakesstuff@gmail.com" style="color:var(--teal);">gavinmakesstuff@gmail.com</a> — screenshots help a lot for bugs, and a lot of what exists in Scout today started as a user suggestion.</div>
       </div>
     </div>
   </div>
