@@ -149,14 +149,25 @@ if (typeof scoutReady !== 'undefined' && scoutReady) {
 // ── Handle Stripe success/cancel redirect ─────────────────────
 function checkPaymentReturn() {
   const params = new URLSearchParams(window.location.search);
+
   if (params.get('payment') === 'success') {
     const tokens = params.get('tokens');
     showToast(`Payment successful! ${tokens} tokens added to your account.`);
     refreshUserData().then(updateUserUI);
-    // Clean URL
     window.history.replaceState({}, '', window.location.pathname);
+
   } else if (params.get('payment') === 'cancelled') {
     showToast('Payment cancelled.');
+    window.history.replaceState({}, '', window.location.pathname);
+
+  } else if (params.get('subscription') === 'success') {
+    const plan = params.get('plan');
+    showToast(`Subscribed to ${plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : 'your plan'}!`);
+    refreshUserData().then(updateUserUI);
+    window.history.replaceState({}, '', window.location.pathname);
+
+  } else if (params.get('subscription') === 'cancelled') {
+    showToast('Subscription checkout cancelled.');
     window.history.replaceState({}, '', window.location.pathname);
   }
 }
