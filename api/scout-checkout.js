@@ -50,7 +50,6 @@ export default async function handler(req, res) {
       if (!selected) return res.status(400).json({ error: 'Invalid plan' });
 
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
         mode:                 'subscription',
         customer_email:       user.email,
         line_items: [{
@@ -83,7 +82,6 @@ export default async function handler(req, res) {
     if (!selected) return res.status(400).json({ error: 'Invalid bundle' });
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       mode:                 'payment',
       customer_email:       user.email,
       line_items: [{
