@@ -12,7 +12,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const FREE_DAILY_LIMIT = 2;
+const FREE_WEEKLY_LIMIT = 3;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -48,8 +48,8 @@ export default async function handler(req, res) {
 
   if (resumeOnly || tier === 'vip') {
     // No gate — free pass
-  } else if (tier === 'paid') {
-    // Check and deduct 1 Scout Token
+  } else if (tier === 'paid' || tier === 'plus' || tier === 'pro') {
+    // Subscribers (plus/pro) and pay-as-you-go users spend from their Scout Token balance
     const { data: canDeduct } = await supabase
       .rpc('deduct_tokens', { p_user_id: user.id, p_amount: 1 });
 
@@ -62,28 +62,19 @@ export default async function handler(req, res) {
     tokenDeducted = true;
 
   } else {
-    // Free tier: check daily limit
-    const { data: dailyCount } = await supabase
-      .rpc('get_daily_usage', { p_user_id: user.id });
+    // Free tier: 3 analyses per week, no ad required
+    const { data: weeklyCount } = await supabase
+      .rpc('get_weekly_usage', { p_user_id: user.id });
 
-    if ((dailyCount || 0) >= FREE_DAILY_LIMIT) {
+    if ((weeklyCount || 0) >= FREE_WEEKLY_LIMIT) {
       return res.status(402).json({
-        error:   'daily_limit_reached',
-        message: 'You have used your 2 free analyses for today. Upgrade or come back tomorrow.',
+        error:   'weekly_limit_reached',
+        message: 'You have used your 3 free analyses for this week. Upgrade or check back next week.',
       });
     }
 
-    // Validate that an ad was watched (sent as header)
-    const adWatched = req.headers['x-scout-ad-watched'] === 'true';
-    if (!adWatched) {
-      return res.status(402).json({
-        error:   'ad_required',
-        message: 'Please watch the short ad before analyzing.',
-      });
-    }
-
-    // Increment daily counter
-    await supabase.rpc('increment_daily_usage', { p_user_id: user.id });
+    // Increment weekly counter
+    await supabase.rpc('increment_weekly_usage', { p_user_id: user.id });
   }
 
   // ── 4. Call Anthropic ─────────────────────────────────────
@@ -134,7 +125,7 @@ export default async function handler(req, res) {
       postings_count:    postingsCount,
       input_tokens:      usage.input_tokens  || null,
       output_tokens:     usage.output_tokens || null,
-      scout_tokens_used: tier === 'paid' ? 1 : 0,
+      scout_tokens_used: tokenDeducted ? 1 : 0,
     });
   }
 
