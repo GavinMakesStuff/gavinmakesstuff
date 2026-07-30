@@ -60,37 +60,36 @@ function isDisposableEmail(email) {
   });
 })();
 
-// ── Load profile + balance + daily usage ──────────────────────
+// ── Load profile + balance + weekly usage ──────────────────────
 async function loadUserProfile(userId) {
-  // Fetch profile (tier)
+  // Fetch profile (tier). maybeSingle() instead of single() — single()
+  // errors with a 406 if the row doesn't exist yet (e.g. brand new user
+  // whose token_balances/weekly_usage row hasn't been touched), which is
+  // an expected, normal state here, not an error.
   const { data: profile } = await _supa
     .from('profiles')
     .select('id, email, tier')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
   // Fetch token balance
   const { data: balance } = await _supa
     .from('token_balances')
     .select('balance')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
-  // Fetch today's usage (free tier)
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: usage } = await _supa
-    .from('daily_usage')
-    .select('analyses_count')
-    .eq('user_id', userId)
-    .eq('usage_date', today)
-    .single();
+  // Fetch this week's usage (free tier) via the same RPC the server uses,
+  // so the count always matches the server's week boundary exactly.
+  const { data: weeklyUsed } = await _supa
+    .rpc('get_weekly_usage', { p_user_id: userId });
 
   scoutUser = {
     id:         profile?.id         || userId,
     email:      profile?.email      || '',
     tier:       profile?.tier       || 'free',
     balance:    balance?.balance    || 0,
-    dailyUsed:  usage?.analyses_count || 0,
+    weeklyUsed: weeklyUsed || 0,
   };
 }
 
@@ -164,27 +163,26 @@ function updateUserUI() {
   if (emailEl) emailEl.textContent = scoutUser.email;
 
   // Tier badge
+  const tierLabels = { vip: '★ VIP', plus: 'Plus', pro: 'Pro', paid: 'Paid', free: 'Free' };
   const tierEl = document.getElementById('sb-user-tier');
   if (tierEl) {
-    tierEl.textContent = scoutUser.tier === 'vip' ? '★ VIP'
-                       : scoutUser.tier === 'paid' ? 'Paid'
-                       : 'Free';
+    tierEl.textContent = tierLabels[scoutUser.tier] || 'Free';
     tierEl.dataset.tier = scoutUser.tier;
   }
 
-  // Token balance (paid/vip only)
+  // Token balance (paid/plus/pro/vip)
   const balanceEl = document.getElementById('sb-token-balance');
   if (balanceEl) {
     if (scoutUser.tier === 'vip') {
       balanceEl.textContent = '∞ unlimited';
       balanceEl.style.display = 'block';
-    } else if (scoutUser.tier === 'paid') {
+    } else if (scoutUser.tier === 'paid' || scoutUser.tier === 'plus' || scoutUser.tier === 'pro') {
       balanceEl.textContent = `${scoutUser.balance} tokens`;
       balanceEl.style.display = 'block';
     } else {
-      // Free tier: show daily usage
-      const remaining = Math.max(0, 2 - scoutUser.dailyUsed);
-      balanceEl.textContent = `${remaining}/2 free today`;
+      // Free tier: show weekly usage
+      const remaining = Math.max(0, 3 - scoutUser.weeklyUsed);
+      balanceEl.textContent = `${remaining}/3 free this week`;
       balanceEl.style.display = 'block';
     }
   }
@@ -279,20 +277,25 @@ async function openCheckout(bundle) {
   // bundle: 'starter' | 'standard' | 'pro'
   if (!scoutSession) { showAuthScreen('login'); return; }
 
-  const token = await getAuthToken();
-  const res   = await fetch('/api/scout-checkout', {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ bundle }),
-  });
+  try {
+    const token = await getAuthToken();
+    const res   = await fetch('/api/scout-checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ bundle }),
+    });
 
-  const data = await res.json();
-  if (data.url) {
-    window.location.href = data.url;
-  } else {
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast(data.error || 'Checkout failed — please try again.');
+    }
+  } catch (err) {
+    console.error('openCheckout failed:', err);
     showToast('Checkout failed — please try again.');
   }
 }
@@ -301,20 +304,25 @@ async function subscribeToPlan(plan) {
   // plan: 'plus' | 'pro'
   if (!scoutSession) { showAuthScreen('login'); return; }
 
-  const token = await getAuthToken();
-  const res   = await fetch('/api/scout-checkout', {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ plan }),
-  });
+  try {
+    const token = await getAuthToken();
+    const res   = await fetch('/api/scout-checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ plan }),
+    });
 
-  const data = await res.json();
-  if (data.url) {
-    window.location.href = data.url;
-  } else {
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast(data.error || 'Checkout failed — please try again.');
+    }
+  } catch (err) {
+    console.error('subscribeToPlan failed:', err);
     showToast('Checkout failed — please try again.');
   }
 }
