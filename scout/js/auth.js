@@ -16,6 +16,25 @@ let scoutSession  = null;   // Supabase session object
 let scoutUser     = null;   // { id, email, tier, balance, dailyUsed }
 let scoutReady    = false;  // true once session check is complete
 
+// ── Disposable/temp-mail domain block (free-tier abuse deterrent) ─
+// Not a hard security boundary — a determined user can bypass client-side
+// checks. This just raises the bar against the "spin up throwaway inboxes
+// to farm free tokens" pattern without adding backend infrastructure.
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  'mailinator.com','guerrillamail.com','guerrillamail.info','guerrillamail.biz','sharklasers.com',
+  '10minutemail.com','10minutemail.net','temp-mail.org','tempmail.com','tempmail.net',
+  'throwawaymail.com','yopmail.com','getnada.com','trashmail.com','mailnesia.com',
+  'dispostable.com','fakeinbox.com','maildrop.cc','mintemail.com','moakt.com',
+  'spamgourmet.com','mytemp.email','emailondeck.com','mohmal.com','tempinbox.com',
+  'discard.email','mailcatch.com','burnermail.io','emailfake.com','fakemailgenerator.com',
+  'inboxkitten.com','mail-temporaire.fr','temp-mail.io','crazymailing.com','tempr.email',
+]);
+
+function isDisposableEmail(email) {
+  const domain = email.split('@')[1]?.toLowerCase().trim();
+  return domain ? DISPOSABLE_EMAIL_DOMAINS.has(domain) : false;
+}
+
 // ── Init: restore session on page load ───────────────────────
 (async function initAuth() {
   const { data: { session } } = await _supa.auth.getSession();
@@ -86,7 +105,7 @@ async function signUpWithEmail(email) {
   const { error } = await _supa.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/scout/`,
+      emailRedirectTo: `${window.location.origin}/scout/app.html`,
       shouldCreateUser: true,
     },
   });
@@ -98,7 +117,7 @@ async function signInWithEmail(email) {
   const { error } = await _supa.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/scout/`,
+      emailRedirectTo: `${window.location.origin}/scout/app.html`,
       shouldCreateUser: false,
     },
   });
@@ -189,6 +208,11 @@ async function handleSignup() {
     return;
   }
 
+  if (isDisposableEmail(email)) {
+    if (errEl) errEl.textContent = 'Please use a permanent email address — temporary/disposable inboxes aren\'t supported.';
+    return;
+  }
+
   btn.disabled    = true;
   btn.textContent = 'Sending…';
   if (errEl) errEl.textContent = '';
@@ -263,6 +287,28 @@ async function openCheckout(bundle) {
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ bundle }),
+  });
+
+  const data = await res.json();
+  if (data.url) {
+    window.location.href = data.url;
+  } else {
+    showToast('Checkout failed — please try again.');
+  }
+}
+
+async function subscribeToPlan(plan) {
+  // plan: 'plus' | 'pro'
+  if (!scoutSession) { showAuthScreen('login'); return; }
+
+  const token = await getAuthToken();
+  const res   = await fetch('/api/scout-checkout', {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ plan }),
   });
 
   const data = await res.json();
