@@ -479,10 +479,15 @@
                 <div class="profile-status-label">Resume upload</div>
                 <div class="profile-status-value resume-status-el">Not uploaded yet</div>
               </div>
-              <label style="cursor:pointer;flex-shrink:0;">
-                <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
-                <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
-              </label>
+              <div style="display:flex;gap:6px;flex-shrink:0;">
+                <label style="cursor:pointer;">
+                  <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
+                  <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
+                </label>
+                <button class="btn btn-ghost btn-sm resume-remove-btn" onclick="removeResume()" style="display:none;color:var(--red);" title="Remove resume">
+                  <i class="ti ti-trash"></i>
+                </button>
+              </div>
             </div>
 
             <div class="profile-status-row">
