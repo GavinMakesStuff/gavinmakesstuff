@@ -24,11 +24,13 @@ function addJobSlot() {
     <button class="slot-remove" onclick="removeJobSlot('slot-${slotCount}')" title="Remove">✕</button>`;
   container.appendChild(slot);
   renumberSlots();
+  updateAnalyzeCostBadge();
 }
 
 function removeJobSlot(id) {
   document.getElementById(id)?.remove();
   renumberSlots();
+  updateAnalyzeCostBadge();
 }
 
 function renumberSlots() {
@@ -47,7 +49,29 @@ function clearAllSlots() {
   c.innerHTML = '';
   slotCount = 0;
   addJobSlot();
+  updateAnalyzeCostBadge();
 }
+
+// Live token/analysis cost preview on the Analyze button, updated as the
+// user types or adds/removes postings — before anything is actually spent.
+function updateAnalyzeCostBadge() {
+  const badge = document.getElementById('analyze-cost-badge');
+  if (!badge) return;
+  const count = getAllJobText().length;
+  if (count === 0) { badge.textContent = ''; return; }
+
+  const isVip = typeof scoutUser !== 'undefined' && scoutUser?.tier === 'vip';
+  if (isVip) { badge.textContent = ''; return; }
+
+  const isFree = typeof scoutUser === 'undefined' || !scoutUser || scoutUser.tier === 'free';
+  const label  = isFree ? `free analys${count === 1 ? 'is' : 'es'}` : `token${count === 1 ? '' : 's'}`;
+  badge.textContent = ` (${count} ${label})`;
+}
+
+// Delegated so it keeps working even when the paste area is rebuilt/replaced
+document.addEventListener('input', e => {
+  if (e.target.classList && e.target.classList.contains('paste-area')) updateAnalyzeCostBadge();
+});
 
 // ══════════════════════════════════════════
 // ANALYZE
@@ -84,16 +108,24 @@ async function analyzeJobs() {
       <div id="progress-label" class="loading-sub">Starting…</div>
     </div>`;
 
-  const steps = [
-    {pct:8,  label:'Reading job descriptions…'},
-    {pct:20, label:'Matching against your profile…'},
-    {pct:35, label:'Scoring viability…'},
-    {pct:50, label:'Researching companies…'},
-    {pct:63, label:'Checking employee reviews…'},
-    {pct:75, label:'Extracting keywords…'},
-    {pct:85, label:'Compiling benefits…'},
-    {pct:93, label:'Finalizing results…'},
+  // A pool of variants per stage — one is picked at random each run so the
+  // wait doesn't feel identical every time. The last stage stays literal
+  // and clear rather than playful, since that's the one signaling results
+  // are actually about to land.
+  const stagePools = [
+    ['Reading job descriptions…', 'Skimming so you don’t have to…', 'Warming up the Scout brain…'],
+    ['Matching against your profile…', 'Playing matchmaker…', 'Seeing if this job deserves you…'],
+    ['Scoring viability…', 'Crunching the numbers…', 'Doing some very serious math…'],
+    ['Researching companies…', 'Snooping on the company…', 'Googling them so you don’t have to…'],
+    ['Checking employee reviews…', 'Eavesdropping on former employees…', 'Sniffing out red flags…'],
+    ['Extracting keywords…', 'Hunting for buzzwords…', 'Decoding the corporate speak…'],
+    ['Compiling benefits…', 'Tallying up the perks…', 'Counting vacation days…'],
+    ['Finalizing results…'],
   ];
+  const steps = [8, 20, 35, 50, 63, 75, 85, 93].map((pct, i) => ({
+    pct,
+    label: stagePools[i][Math.floor(Math.random() * stagePools[i].length)],
+  }));
   const delays = [600,2500,4000,6000,9000,13000,18000,24000];
   const timers = delays.map((d,i) => setTimeout(() => {
     const bar = document.getElementById('progress-bar');
@@ -737,7 +769,7 @@ function buildInlinePasteHTML() {
     </button>
     <div style="display:flex;gap:10px;align-items:center;">
       <button class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
-        <i class="ti ti-search"></i> Analyze
+        <i class="ti ti-search"></i> Analyze<span id="analyze-cost-badge"></span>
       </button>
       <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">Clear</button>
     </div>
