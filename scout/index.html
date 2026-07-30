@@ -3,633 +3,291 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Scout — Job Intelligence</title>
+  <title>Scout | Stop guessing which jobs are worth your time</title>
+  <meta name="description" content="Scout scores every job posting against your real profile, checking missing keywords, red flags, and company reputation before you spend an hour on an application that was never going to call back."/>
   <link rel="icon" type="image/png" href="media/scoutfavicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
-  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    :root {
+      --bg: #F4F6F8; --surface: #FFFFFF; --surface-2: #F0F4F7;
+      --border: #D0D7DD; --border-dim: #E2E8EC;
+      --teal: #005A7A; --teal-mid: #006E96; --teal-light: #EBF5F9;
+      --gradient-top: #D6ECF4;
+      --sand: #E8A33D; --sand-text: #4A2E00;
+      --text: #1A2B38; --text-body: #2C3E4A; --text-muted: #3A5A6E; --text-dim: #4A6880;
+      --font-ui: 'Nunito', sans-serif; --font-mono: 'DM Mono', monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text-body); font-family: var(--font-ui); margin: 0; line-height: 1.65; }
+    a { color: inherit; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Hero band: solid teal top bar ── */
+    .hero-band { background: var(--teal); }
+
+    /* ── Wave divider: blue bar curves down into white ── */
+    .wave-divider { line-height: 0; }
+    .wave-divider svg { display: block; width: 100%; height: 56px; }
+    .wave-divider path { fill: var(--teal); }
+
+    /* ── Nav (sits on the solid teal part) ── */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px; max-width: 980px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; text-decoration: none; }
+    .brand img { height: 34px; display: block; }
+    .nav-links { display: flex; align-items: center; gap: 22px; font-size: 0.88rem; font-weight: 700; }
+    .nav-links a { text-decoration: none; color: rgba(255,255,255,0.85); }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta { background: #fff; color: var(--teal) !important; padding: 9px 18px; border-radius: 8px; }
+    .nav-cta:hover { filter: brightness(0.96); }
+
+    /* ── Hero ── */
+    .hero { text-align: center; padding: 32px 24px 60px; background: var(--bg); }
+    .eyebrow { display: inline-block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); background: var(--teal-light); padding: 5px 12px; border-radius: 20px; margin-bottom: 20px; }
+    h1 { font-size: 2.6rem; font-weight: 900; color: var(--text); line-height: 1.15; margin: 0 0 18px; letter-spacing: -0.01em; }
+    h1 span { color: var(--teal); }
+    .sub { font-size: 1.1rem; color: var(--text-muted); max-width: 620px; margin: 0 auto 32px; }
+    .cta-row { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .btn-cta { display: inline-flex; align-items: center; gap: 8px; background: var(--teal); color: #fff; font-size: 1.05rem; font-weight: 800; padding: 15px 32px; border-radius: 10px; text-decoration: none; box-shadow: 0 8px 24px rgba(0,90,122,0.25); transition: transform 0.13s, filter 0.13s; }
+    .btn-cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
+    .cta-note { font-size: 0.8rem; color: var(--text-dim); }
+
+    /* ── Positioning ── */
+    .section { padding: 56px 0; }
+    .section-head { text-align: center; max-width: 640px; margin: 0 auto 36px; }
+    .section-head h2 { font-size: 1.7rem; font-weight: 800; color: var(--text); margin: 0 0 12px; }
+    .section-head p { color: var(--text-muted); font-size: 1rem; margin: 0; }
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 20px; }
+    .stat-card i { font-size: 1.4rem; color: var(--sand); margin-bottom: 10px; display: block; }
+    .stat-card p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+    .stat-card strong { color: var(--text); }
+
+    /* ── Features ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 20px; }
+    .feature-card i { font-size: 1.6rem; color: var(--teal); margin-bottom: 12px; display: block; }
+    .feature-card h3 { font-size: 0.98rem; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+    .feature-card p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+    /* ── Story ── */
+    .story { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; }
+    .story-tag { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--teal); margin-bottom: 14px; }
+    .story h2 { font-size: 1.5rem; font-weight: 800; color: var(--text); margin: 0 0 18px; }
+    .story p { font-size: 0.98rem; color: var(--text-body); margin: 0 0 16px; }
+    .story p:last-child { margin-bottom: 0; }
+    .story-sig { margin-top: 24px; font-size: 0.85rem; color: var(--text-muted); }
+    .story-sig strong { color: var(--text); }
+
+    /* ── Pricing ── */
+    .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .price-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px 20px; text-align: center; }
+    .price-card.highlight { border: 2px solid var(--teal); position: relative; background: var(--teal-light); }
+    .price-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--sand); color: var(--sand-text); font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 10px; white-space: nowrap; }
+    .price-card .plan-name { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 10px; }
+    .price-card .plan-price { font-size: 1.8rem; font-weight: 900; color: var(--text); }
+    .price-card .plan-unit { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px; }
+    .price-card ul { list-style: none; padding: 0; margin: 0 0 18px; font-size: 0.83rem; color: var(--text-muted); text-align: left; }
+    .price-card li { padding: 5px 0; display: flex; gap: 8px; }
+    .price-card li i { color: var(--teal); }
+    .price-card .btn-small { display: block; background: var(--teal); color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; }
+    .price-note { text-align: center; font-size: 0.82rem; color: var(--text-dim); margin-top: 18px; }
+
+    /* ── Final CTA ── */
+    .final-cta { text-align: center; padding: 60px 24px; }
+    .final-cta h2 { font-size: 1.9rem; font-weight: 800; color: var(--text); margin: 0 0 14px; }
+    .final-cta p { color: var(--text-muted); margin: 0 0 26px; }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid var(--border); padding: 28px 24px; }
+    .footer-row { max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: var(--text-dim); }
+    .footer-links { display: flex; gap: 18px; }
+    .footer-links a { text-decoration: none; color: var(--text-dim); }
+    .footer-links a:hover { color: var(--teal); }
+
+    @media (max-width: 760px) {
+      h1 { font-size: 1.9rem; }
+      .stat-row, .feature-grid, .price-grid { grid-template-columns: 1fr; }
+      .story { padding: 26px; }
+      .nav-links { gap: 12px; }
+    }
+  </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════
-     AUTH OVERLAY — shown when not logged in
-     ══════════════════════════════════════ -->
-<div id="auth-overlay" class="modal-overlay" style="z-index:10000;background:rgba(0,0,0,0.85);">
-  <div class="modal-box" style="max-width:440px;">
-
-    <!-- Logo -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <img src="media/Scout Logo.png" alt="Scout" style="height:48px;mix-blend-mode:multiply;"
-           onerror="this.style.display='none'"/>
-      <div style="font-size:1.4rem;font-weight:800;color:var(--teal);margin-top:8px;">Scout</div>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-top:4px;">Job search intelligence</div>
-    </div>
-
-    <!-- Tab switcher -->
-    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:22px;">
-      <button onclick="showAuthScreen('signup')"
-              style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:var(--font-ui);background:var(--teal);color:#fff;"
-              id="auth-tab-signup">Create account</button>
-      <button onclick="showAuthScreen('login')"
-              style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:var(--font-ui);background:var(--surface-2);color:var(--text-muted);"
-              id="auth-tab-login">Sign in</button>
-    </div>
-
-    <!-- Signup panel -->
-    <div id="auth-signup-panel">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
-        Create a free account to get started. You'll receive 2 free job analyses per day.
-        No password needed — we'll send a magic link to your email.
-      </div>
-      <label class="field-label" style="margin-bottom:12px;">Email address
-        <input id="auth-email-signup" type="email" class="field-input" placeholder="you@example.com"
-               onkeydown="if(event.key==='Enter')handleSignup()"/>
-      </label>
-      <div id="auth-signup-error" style="font-size:11px;color:var(--red);min-height:16px;margin-bottom:10px;"></div>
-      <button id="auth-signup-btn" onclick="handleSignup()" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;">
-        Create account — it's free
-      </button>
-      <div style="font-size:10px;color:var(--text-dim);text-align:center;margin-top:12px;line-height:1.6;">
-        By creating an account you agree to our terms of service.<br>
-        No credit card required to start.
-      </div>
-    </div>
-
-    <!-- Login panel (hidden by default) -->
-    <div id="auth-login-panel" style="display:none;">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
-        Enter your email and we'll send a magic link — no password needed.
-      </div>
-      <label class="field-label" style="margin-bottom:12px;">Email address
-        <input id="auth-email-login" type="email" class="field-input" placeholder="you@example.com"
-               onkeydown="if(event.key==='Enter')handleLogin()"/>
-      </label>
-      <div id="auth-login-error" style="font-size:11px;color:var(--red);min-height:16px;margin-bottom:10px;"></div>
-      <button id="auth-login-btn" onclick="handleLogin()" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;">
-        Send magic link
-      </button>
-    </div>
-
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════
-     TOKEN SHOP MODAL
-     ══════════════════════════════════════ -->
-<div id="token-shop-modal" class="modal-overlay">
-  <div class="modal-box" style="max-width:560px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-      <div>
-        <div style="font-size:16px;font-weight:800;color:var(--text);">Get more Scout Tokens</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Tokens never expire. Each token = 1 job analysis.</div>
-      </div>
-      <button onclick="document.getElementById('token-shop-modal').classList.remove('open')"
-              style="background:none;border:1px solid var(--border);color:var(--text-muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
-    </div>
-
-    <!-- Current balance -->
-    <div style="background:var(--teal-light);border:1px solid rgba(0,90,122,0.2);border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:1.2rem;">🪙</span>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;">Current balance</div>
-        <div id="shop-balance" style="font-size:15px;font-weight:800;color:var(--teal);font-family:var(--font-mono);">0 tokens</div>
-      </div>
-    </div>
-
-    <!-- Bundle options -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
-      <div style="border:1px solid var(--border);border-radius:10px;padding:16px 14px;text-align:center;cursor:pointer;transition:all 0.13s;"
-           onclick="openCheckout('starter')" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Starter</div>
-        <div style="font-size:22px;font-weight:800;color:var(--teal);font-family:var(--font-mono);margin-bottom:4px;">20</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">analyses</div>
-        <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">$5</div>
-        <div style="font-size:10px;color:var(--text-dim);">$0.25 each</div>
-        <button onclick="openCheckout('starter')" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:14px;">Buy</button>
-      </div>
-      <div style="border:2px solid var(--teal);border-radius:10px;padding:16px 14px;text-align:center;cursor:pointer;position:relative;background:var(--teal-light);"
-           onclick="openCheckout('standard')">
-        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--sand);color:var(--sand-text);font-size:9px;font-weight:800;padding:2px 10px;border-radius:10px;white-space:nowrap;">BEST VALUE</div>
-        <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Standard</div>
-        <div style="font-size:22px;font-weight:800;color:var(--teal);font-family:var(--font-mono);margin-bottom:4px;">45</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">analyses</div>
-        <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">$10</div>
-        <div style="font-size:10px;color:var(--text-dim);">$0.22 each</div>
-        <button onclick="openCheckout('standard')" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:14px;">Buy</button>
-      </div>
-      <div style="border:1px solid var(--border);border-radius:10px;padding:16px 14px;text-align:center;cursor:pointer;transition:all 0.13s;"
-           onclick="openCheckout('pro')" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Pro</div>
-        <div style="font-size:22px;font-weight:800;color:var(--teal);font-family:var(--font-mono);margin-bottom:4px;">120</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">analyses</div>
-        <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">$25</div>
-        <div style="font-size:10px;color:var(--text-dim);">$0.21 each</div>
-        <button onclick="openCheckout('pro')" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:14px;">Buy</button>
-      </div>
-    </div>
-
-    <div style="font-size:11px;color:var(--text-dim);text-align:center;line-height:1.6;">
-      Secure payment via Stripe. Tokens are added instantly on payment confirmation.<br>
-      Tokens never expire. Need a refund? Contact us and we'll make it right.
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════
-     GUIDE BAR — clicks open popup modal
-     ══════════════════════════════════════ -->
-<div class="guide-bar" onclick="toggleGuide()">
-  <span class="guide-bar-icon"><i class="ti ti-bulb"></i></span>
-  <span class="guide-bar-text">How to use Scout</span>
-  <span class="guide-bar-hint">Click to open guide</span>
-</div>
-
-<!-- ══════════════════════════════════════
-     GUIDE POPUP MODAL
-     ══════════════════════════════════════ -->
-<div class="guide-modal-overlay" id="guide-overlay" onclick="closeGuideOnBackdrop(event)">
-  <div class="guide-modal-box">
-    <div class="guide-modal-header">
-      <span style="font-size:1.4rem;color:var(--sand);"><i class="ti ti-bulb"></i></span>
-      <div style="flex:1;">
-        <div class="guide-modal-title">Getting started with Scout</div>
-        <div class="guide-modal-sub">Follow these steps to analyze postings, track applications, and stay organized.</div>
-      </div>
-      <button class="guide-modal-close" onclick="toggleGuide()"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="guide-modal-body">
-      <div class="guide-steps">
-        <div class="guide-step">
-          <div class="guide-step-num">1</div>
-          <div class="guide-step-title">Set up your profile</div>
-          <div class="guide-step-body">Click <b>Edit profile</b> in the sidebar to enter your background, target industry, salary, experience, and certifications. Or <b>Upload resume</b> to auto-fill everything.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">2</div>
-          <div class="guide-step-title">Share your location (optional)</div>
-          <div class="guide-step-body">Click <b>Share location</b> in the sidebar so Scout can calculate driving distance to each job's work address. Entirely optional.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">3</div>
-          <div class="guide-step-title">Paste job descriptions</div>
-          <div class="guide-step-body">Click <b>Analyze posting</b> in the middle column and paste any job description text. Use <b>Add another</b> to analyze several postings at once.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">4</div>
-          <div class="guide-step-title">Review results</div>
-          <div class="guide-step-body">Each posting gets a <b>1–10 score</b> with a written explanation. Click any card in the list to see the full detail on the right. Use the filter pills to focus on High, Partial, or Low matches.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">5</div>
-          <div class="guide-step-title">Star, save, and apply</div>
-          <div class="guide-step-body">Use the quick action buttons at the bottom of each card to <b>Star</b> priority postings, <b>Save</b> to bookmark, or <b>Apply</b> to move it to your application tracker.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">6</div>
-          <div class="guide-step-title">Track applications</div>
-          <div class="guide-step-body">In the <b>Applied</b> view, log date applied, follow up status, contact name, email, LinkedIn, posting URL, and notes for each application.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">7</div>
-          <div class="guide-step-title">Find a contact</div>
-          <div class="guide-step-body">Click <b>Find contact</b> on any saved or applied card to search for a publicly listed HR or hiring manager email. Or enter one manually.</div>
-        </div>
-        <div class="guide-step">
-          <div class="guide-step-num">8</div>
-          <div class="guide-step-title">Copy resume keywords</div>
-          <div class="guide-step-body">Each card shows Hard Skills, Soft Skills, and Industry Terms extracted from the posting. Click any keyword to copy it, or use <b>Copy all</b> for the full list.</div>
-        </div>
-      </div>
-      <div class="guide-tip">
-        <span style="font-size:1.1rem;flex-shrink:0;color:var(--sand-lo);"><i class="ti ti-bulb"></i></span>
-        <div><b>Tips for best results:</b> Paste the complete job description — the more text Scout has, the more accurate the analysis. Fill in your years of experience and certifications in your profile, since these have the biggest effect on match scoring. All data is stored locally in your browser and persists between sessions.</div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
-        <button class="btn btn-ghost" onclick="toggleGuide()"><i class="ti ti-x"></i> Close guide</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════
-     APP SHELL
-     ══════════════════════════════════════ -->
-<div class="app-shell">
-
-  <!-- ══════════════════════════════════════
-       SIDEBAR
-       ══════════════════════════════════════ -->
-  <nav class="sidebar" id="sidebar">
-
-    <!-- Header with logo and collapse button -->
-    <div class="sb-header">
-      <div class="sb-logo-mark">
-        <img src="media/Scout Logo.png" alt="Scout"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-        <span class="sb-logo-fallback" style="display:none;">Scout</span>
-      </div>
-      <button class="sb-collapse-btn" id="collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar">
-        <i class="ti ti-layout-sidebar-left-collapse" id="collapse-icon"></i>
-      </button>
-    </div>
-
-    <!-- Expand button — only shows when collapsed -->
-    <button class="sb-expand-btn" onclick="toggleSidebar()" title="Expand sidebar">
-      <i class="ti ti-layout-sidebar-left-expand"></i>
-    </button>
-
-    <!-- Menu section -->
-    <div class="sb-section-label">Menu</div>
-    <div class="sb-item active" data-view="results" data-label="Results" onclick="switchView('results')">
-      <i class="ti ti-briefcase sb-icon"></i>
-      <span class="sb-label">Results</span>
-    </div>
-    <div class="sb-item" data-view="saved" data-label="Saved" onclick="switchView('saved')">
-      <i class="ti ti-bookmark sb-icon"></i>
-      <span class="sb-label">Saved</span>
-      <span class="sb-badge" id="saved-count" style="display:none;">0</span>
-    </div>
-    <div class="sb-item" data-view="applied" data-label="Applied" onclick="switchView('applied')">
-      <i class="ti ti-send sb-icon"></i>
-      <span class="sb-label">Applied</span>
-      <span class="sb-badge" id="applied-count" style="display:none;">0</span>
-    </div>
-
-    <!-- Profile section -->
-    <div class="sb-section-label">Profile</div>
-    <div class="sb-item" data-view="profile" data-label="Edit profile" onclick="openProfileEditor()">
-      <i class="ti ti-user sb-icon"></i>
-      <span class="sb-label">Edit profile</span>
-    </div>
-
-    <!-- General section -->
-    <div class="sb-section-label">General</div>
-    <div class="sb-item" data-label="Guide" onclick="toggleGuide()">
-      <i class="ti ti-help sb-icon"></i>
-      <span class="sb-label">Guide</span>
-    </div>
-    <div class="sb-item" data-label="Toggle theme" onclick="toggleTheme()">
-      <i class="ti ti-moon sb-icon" id="theme-icon"></i>
-      <span class="sb-label">Toggle theme</span>
-    </div>
-    <div class="sb-item" data-label="Buy tokens" onclick="showTokenShop()" id="sb-buy-tokens-btn">
-      <i class="ti ti-coin sb-icon"></i>
-      <span class="sb-label">Buy tokens</span>
-    </div>
-    <div class="sb-item" data-label="Sign out" onclick="signOut()" style="color:var(--text-dim);">
-      <i class="ti ti-logout sb-icon"></i>
-      <span class="sb-label">Sign out</span>
-    </div>
-
-    <!-- Footer -->
-    <div class="sb-footer">
-      <div class="sb-avatar">G</div>
-      <div class="sb-user">
-        <div class="sb-username" id="sb-user-email">Loading…</div>
-        <div class="sb-role">
-          <span id="sb-user-tier" data-tier="free">Free</span>
-        </div>
-      </div>
+<div class="hero-band">
+  <nav>
+    <a href="index.html" class="brand" aria-label="Scout">
+      <img src="media/Scout Logo.png" alt="Scout" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'Scout',style:'font-size:1.25rem;font-weight:800;color:var(--teal);'}))"/>
+    </a>
+    <div class="nav-links">
+      <a href="contact.html">Contact</a>
+      <a href="app.html">Sign in</a>
+      <a href="app.html" class="nav-cta">Get Started</a>
     </div>
   </nav>
-
-  <!-- Token balance strip (shown below sidebar on mobile, inside footer on desktop) -->
-  <div id="sb-token-balance" style="display:none;"></div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: RESULTS
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="results" style="flex:1;display:flex;overflow:hidden;">
-
-    <!-- Middle column -->
-    <div class="mid-col">
-      <div class="mid-header">
-        <div class="mid-title">Job postings</div>
-        <div class="mid-sub" id="mid-sub">Paste a posting on the right and click Analyze</div>
-      </div>
-
-      <div class="filter-row" id="filter-row">
-        <button class="filter-pill active" onclick="filterResults('all',this)">All</button>
-        <button class="filter-pill" onclick="filterResults('high',this)">High</button>
-        <button class="filter-pill" onclick="filterResults('mid',this)">Partial</button>
-        <button class="filter-pill" onclick="filterResults('low',this)">Low</button>
-        <!-- Count dots — hidden until first analysis -->
-        <div id="status-bar" style="display:none;margin-left:auto;display:none;align-items:center;gap:10px;font-size:10px;font-weight:600;color:var(--text-muted);">
-          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:3px;"></span><span id="count-high">0</span></span>
-          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:3px;"></span><span id="count-mid">0</span></span>
-          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:3px;"></span><span id="count-low">0</span></span>
-          <button class="filter-pill" onclick="clearAll()" style="margin-left:2px;">Clear</button>
-        </div>
-      </div>
-
-      <div class="job-list" id="job-list-inner">
-        <div class="empty-state">
-          <div class="empty-icon"><i class="ti ti-file-text" style="font-size:2.2rem;opacity:0.3;"></i></div>
-          <div class="empty-title">No results yet</div>
-          <div class="empty-sub">
-            Click <strong>Analyze posting</strong> above,<br>paste a job description, and hit Analyze.<br><br>
-            <a href="#" onclick="toggleGuide();return false;" style="color:var(--teal);font-weight:700;font-size:11px;">Open guide ↑</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detail panel — shows paste area when empty, job detail when a card is selected -->
-    <div class="detail-panel" id="detail-content">
-
-      <!-- Inline paste area — shown when no job is selected -->
-      <div id="inline-paste-area" style="display:flex;flex-direction:column;width:100%;height:100%;padding:28px 32px;box-sizing:border-box;">
-        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;">Analyze a job posting</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">
-          Paste the full text of any job posting below. The more complete the text, the more accurate the analysis.
-        </div>
-
-        <div class="job-slots" id="job-slots" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
-
-        <button class="add-slot-btn" onclick="addJobSlot()" style="margin-bottom:24px;max-width:220px;">
-          <i class="ti ti-plus"></i> Add another posting
-        </button>
-
-        <div style="display:flex;gap:10px;align-items:center;">
-          <button class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
-            <i class="ti ti-search"></i> Analyze
-          </button>
-          <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">
-            Clear
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: SAVED
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="saved" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">Saved Jobs</div>
-      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Bookmarked postings you want to revisit</div>
-    </div>
-    <div class="preview-strip-section">
-      <div class="preview-strip-label">Quick scroll</div>
-      <div class="preview-strip" id="saved-preview-strip"></div>
-    </div>
-    <div style="flex:1;overflow-y:auto;" id="saved-panel">
-      <div class="empty-state">
-        <div class="empty-icon"><i class="ti ti-bookmark" style="font-size:2rem;opacity:0.3;"></i></div>
-        <div class="empty-title">No saved jobs yet</div>
-        <div class="empty-sub">Click Save on any result card to bookmark it here.</div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: APPLIED
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="applied" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-    <div style="padding:16px 22px 10px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">Applications</div>
-      <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Track every application with dates, contacts, and follow ups</div>
-    </div>
-    <div class="preview-strip-section">
-      <div class="preview-strip-label">Quick scroll</div>
-      <div class="preview-strip" id="applied-preview-strip"></div>
-    </div>
-    <div style="flex:1;overflow-y:auto;" id="applied-panel">
-      <div class="empty-state">
-        <div class="empty-icon"><i class="ti ti-send" style="font-size:2rem;opacity:0.3;"></i></div>
-        <div class="empty-title">No applications tracked yet</div>
-        <div class="empty-sub">Click Mark Applied on any job card to move it here.</div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       VIEW: PROFILE (full page, not modal)
-       ══════════════════════════════════════ -->
-  <div class="view-panel" data-view="profile" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-    <div class="profile-page">
-
-      <div class="profile-page-header">
-        <div>
-          <div class="profile-page-title">Job Search Profile</div>
-          <div class="profile-page-sub">
-            The more detail you provide here, the more accurate Scout's match scores will be.
-            Years of experience and certifications have the biggest effect on scoring accuracy.
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
-          <button class="btn btn-ghost" onclick="closeProfileEditor()"><i class="ti ti-arrow-left"></i> Back</button>
-        </div>
-      </div>
-
-      <div class="profile-page-body">
-
-        <!-- Resume & Location status -->
-        <div class="profile-card full-width">
-          <div class="profile-card-title"><i class="ti ti-info-circle"></i> Quick Setup</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-
-            <div class="profile-status-row">
-              <div class="profile-status-icon"><i class="ti ti-file-text"></i></div>
-              <div style="flex:1;min-width:0;">
-                <div class="profile-status-label">Resume upload</div>
-                <div class="profile-status-value resume-status-el">Not uploaded yet</div>
-              </div>
-              <label style="cursor:pointer;flex-shrink:0;">
-                <input type="file" accept=".pdf,.docx" style="display:none;" onchange="handleResumeUpload(this)"/>
-                <span class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Upload</span>
-              </label>
-            </div>
-
-            <div class="profile-status-row">
-              <div class="profile-status-icon"><i class="ti ti-map-pin"></i></div>
-              <div style="flex:1;min-width:0;">
-                <div class="profile-status-label">Location sharing</div>
-                <div class="profile-status-value location-badge-el">Not shared</div>
-              </div>
-              <button class="btn btn-ghost btn-sm" onclick="requestUserLocation().then(updateLocationBadge)" style="flex-shrink:0;">
-                <i class="ti ti-map-pin"></i> Share
-              </button>
-            </div>
-
-          </div>
-          <div style="font-size:11px;color:var(--text-dim);padding:8px 12px;background:var(--teal-light);border-radius:var(--radius-xs);border-left:3px solid var(--teal);line-height:1.6;">
-            <i class="ti ti-bulb" style="color:var(--teal);"></i>
-            Upload your resume to auto-fill all fields below. Share your location to see driving distances on job cards.
-          </div>
-        </div>
-
-        <!-- Background card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-user"></i> Background</div>
-          <label class="field-label">Current role and background
-            <input id="p-role" class="field-input"
-                   placeholder="e.g. Mid-level tech employee with 4 years project coordination experience"/>
-          </label>
-          <label class="field-label">Years of experience
-            <input id="p-experience" class="field-input"
-                   placeholder="e.g. 4 years total, 1 year project coordination, no mining experience"/>
-          </label>
-          <label class="field-label">Certifications and qualifications
-            <input id="p-certs" class="field-input"
-                   placeholder="e.g. PMP, First Aid Level 1, WHMIS, Class 5 Driver's Licence"/>
-          </label>
-        </div>
-
-        <!-- Target & Salary card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-target"></i> Target and Compensation</div>
-          <label class="field-label">Target industry
-            <input id="p-industry" class="field-input"
-                   placeholder="e.g. Mining industry preferred, open to oil and gas or construction"/>
-          </label>
-          <label class="field-label">Minimum salary
-            <input id="p-salary" class="field-input"
-                   placeholder="e.g. 70,000/yr or 35/hr minimum"/>
-          </label>
-          <label class="field-label">Currency
-            <select id="p-currency" class="field-input">
-              <option value="USD">USD — US Dollar ($)</option>
-              <option value="CAD">CAD — Canadian Dollar (CA$)</option>
-              <option value="GBP">GBP — British Pound (£)</option>
-              <option value="EUR">EUR — Euro (€)</option>
-              <option value="AUD">AUD — Australian Dollar (AU$)</option>
-              <option value="NZD">NZD — New Zealand Dollar (NZ$)</option>
-              <option value="JPY">JPY — Japanese Yen (¥)</option>
-              <option value="INR">INR — Indian Rupee (₹)</option>
-              <option value="MXN">MXN — Mexican Peso (MX$)</option>
-              <option value="CHF">CHF — Swiss Franc</option>
-              <option value="ZAR">ZAR — South African Rand (R)</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- Preferences card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-adjustments"></i> Work Preferences</div>
-          <label class="field-label">Travel willingness
-            <input id="p-travel" class="field-input"
-                   placeholder="e.g. Willing to travel up to 50%, open to rotational camp-based work"/>
-          </label>
-          <label class="field-label">Other preferences and notes
-            <textarea id="p-notes" class="field-input" style="resize:vertical;min-height:80px;"
-                      placeholder="e.g. Prefer project management roles, open to coordinator or scheduler titles, not interested in purely administrative roles"></textarea>
-          </label>
-        </div>
-
-        <!-- Job goal card -->
-        <div class="profile-card">
-          <div class="profile-card-title"><i class="ti ti-flag"></i> Career Goal</div>
-          <label class="field-label">What kind of work are you looking for?
-            <textarea id="p-jobgoal" class="field-input" style="resize:vertical;min-height:120px;"
-                      placeholder="e.g. Looking for a project management or coordination role in the mining or resources sector. Ideally site-based or hybrid with a clear path to senior leadership. Open to rotational schedules for the right opportunity."></textarea>
-          </label>
-          <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
-            Be specific here. Scout uses this directly when assessing how well a posting fits your goals.
-          </div>
-        </div>
-
-        <!-- Save bar -->
-        <div class="profile-save-bar">
-          <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
-          <button class="btn btn-ghost" onclick="closeProfileEditor()"><i class="ti ti-arrow-left"></i> Back to results</button>
-          <div style="margin-left:auto;font-size:11px;color:var(--text-dim);">
-            Changes are saved to your browser and used in all future analyses.
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-</div><!-- /app-shell -->
-
-
-<!-- ══════════════════════════════════════
-     WELCOME MODAL (first visit only)
-     ══════════════════════════════════════ -->
-<div id="welcome-modal" class="modal-overlay">
-  <div class="modal-box welcome-box">
-    <div class="welcome-icon">👋</div>
-    <div class="welcome-title">Welcome to Scout</div>
-    <div class="welcome-body">
-      Before you analyze your first job posting, it helps to set up your profile so Scout knows
-      your background, salary expectations, and experience.<br><br>
-      You can upload a resume to fill most of this in automatically, or skip ahead and add it
-      later. This is entirely optional — you can run an analysis right away without a profile.
-    </div>
-    <div class="welcome-actions">
-      <button class="btn btn-primary" onclick="welcomeGoToProfile()">
-        <i class="ti ti-user"></i> Set up my profile
-      </button>
-      <button class="btn btn-ghost" onclick="dismissWelcome(true)">Skip for now</button>
-    </div>
-  </div>
 </div>
 
+<!-- Wave divider: blue top bar curves down into the white page below -->
+<div class="wave-divider">
+  <svg viewBox="0 0 1440 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,45 C360,95 1080,0 1440,45 L1440,0 L0,0 Z"></path>
+  </svg>
+</div>
 
-<div id="toast"></div>
+<!-- ══════════════════ HERO ══════════════════ -->
+<section class="hero">
+  <div class="eyebrow">Job search intelligence</div>
+  <h1>Stop wasting time on jobs<br>you were never <span>getting</span> anyway.</h1>
+  <p class="sub">Paste a posting in. Scout scores your actual fit, flags what's missing, and tells you what to lead with, before you spend twenty minutes on a cover letter for a job that was never going to call back.</p>
+  <div class="cta-row">
+    <a href="app.html" class="btn-cta"><i class="ti ti-search"></i> Get Started, it's free</a>
+    <div class="cta-note">3 free analyses every week. No credit card required.</div>
+  </div>
+</section>
 
+<!-- ══════════════════ POSITIONING ══════════════════ -->
+<section class="section wrap">
+  <div class="section-head">
+    <h2>Apply to fewer jobs. Apply to the right ones.</h2>
+    <p>The job search market is full of bots that help you apply to more postings, faster. That's solving the wrong problem, and it's starting to backfire.</p>
+  </div>
+  <div class="stat-row">
+    <div class="stat-card">
+      <i class="ti ti-ban"></i>
+      <p><strong>Mass auto-apply is getting shut down.</strong> LinkedIn and Workday are actively banning automation that floods postings with lookalike applications.</p>
+    </div>
+    <div class="stat-card">
+      <i class="ti ti-target-arrow"></i>
+      <p><strong>Targeted beats volume.</strong> Job seekers who tailor applications to a real fit consistently land more interviews than those blasting the same resume everywhere.</p>
+    </div>
+    <div class="stat-card">
+      <i class="ti ti-clock-hour-4"></i>
+      <p><strong>Your time is the actual cost.</strong> Reading a 700-word posting just to realize you're missing one hard requirement is the real waste. Scout catches that up front.</p>
+    </div>
+  </div>
+</section>
 
-<!-- ══════════════════════════════════════
-     SCRIPTS
-     ══════════════════════════════════════ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<!-- Supabase client -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/jobs.js"></script>
+<!-- ══════════════════ FEATURES ══════════════════ -->
+<section class="section wrap">
+  <div class="section-head">
+    <h2>What Scout actually does</h2>
+    <p>Paste in a posting. Get a straight answer on whether it's worth your time, and exactly how to position yourself if it is.</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <i class="ti ti-gauge"></i>
+      <h3>Viability Score</h3>
+      <p>A blunt 1–100 score for how good a fit you actually are, not just keyword overlap.</p>
+    </div>
+    <div class="feature-card">
+      <i class="ti ti-key"></i>
+      <h3>Missing Keywords</h3>
+      <p>The exact gaps between the posting and your profile, so you know what to address before you apply.</p>
+    </div>
+    <div class="feature-card">
+      <i class="ti ti-star"></i>
+      <h3>Highlight Skills</h3>
+      <p>What to actually lead with in your cover letter, specific to this posting, not a generic list.</p>
+    </div>
+    <div class="feature-card">
+      <i class="ti ti-flag"></i>
+      <h3>Red Flags</h3>
+      <p>What a hiring manager would notice in ten seconds that could cost you the callback.</p>
+    </div>
+    <div class="feature-card">
+      <i class="ti ti-building"></i>
+      <h3>Company Reputation</h3>
+      <p>A quick reality check on the company before you invest more time in the application.</p>
+    </div>
+    <div class="feature-card">
+      <i class="ti ti-list-check"></i>
+      <h3>Application Tracking</h3>
+      <p>Saved, applied, and tracked in one place, no more spreadsheet with a dozen tabs.</p>
+    </div>
+  </div>
+</section>
 
-<script>
-// Token shop balance sync
-document.getElementById('token-shop-modal')?.addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('open');
-});
-document.addEventListener('scout:signed-in', () => {
-  const shopBal = document.getElementById('shop-balance');
-  if (shopBal && scoutUser) {
-    shopBal.textContent = scoutUser.tier === 'vip'
-      ? '∞ unlimited'
-      : `${scoutUser.balance} tokens`;
-  }
-});
+<!-- ══════════════════ FOUNDER STORY ══════════════════ -->
+<section class="section wrap">
+  <div class="story">
+    <div class="story-tag">Why I built this</div>
+    <h2>A resume mistake I didn't even know I was making.</h2>
+    <p>Years ago, I built a resume using my very poorly developed graphic design skills. In my attempt to stand out and be unique, I overdesigned the heck out of it, making it completely unreadable to an ATS. I didn't even know ATS systems existed at the time. I applied to about 50 jobs, some of which I was genuinely qualified for, but heard back from no one.</p>
+    <p>I eventually landed a job at a student job board (how ironic!), which is where I first learned what an ATS actually was. Even after that, knowing better, I still kept running into trouble. I later found out companies like Workday can keep a resume on file for up to three years, so that one bad resume may have quietly been disqualifying me from jobs long after I thought I'd fixed the problem (they're in legal trouble over this now, BIG surprise).</p>
+    <p>That mistake probably cost me some real opportunities early in my career, and frankly, that pissed me off. And I'm petty. So I built Scout.</p>
+    <p>I built Scout to help try to avoid that from happening to others. Scout isn't an ATS checker. That market's already crowded. Instead, I built it during my next job search, when I came across a new problem: reading through long, dense postings only to realize three paragraphs in that I was missing one core requirement. I was also tracking all my applications, or companies I found appealing, in a messy spreadsheet.</p>
+    <p>This app aims to minimize that wasted time and provides tracking for applications so I don't have to rely on spreadsheets. I basically just took everything that was frustrating me about searching for half-decent job postings and threw it all together in one app that made sense for me.</p>
+    <p>I figure if I've had this problem, so do others, and that's why I built Scout.</p>
+    <div class="story-sig"><strong>Gavin</strong>, Creator of Scout</div>
+  </div>
+</section>
 
-// Auth tab switcher highlight
-function showAuthScreen(mode) {
-  const overlay     = document.getElementById('auth-overlay');
-  const loginPanel  = document.getElementById('auth-login-panel');
-  const signupPanel = document.getElementById('auth-signup-panel');
-  const tabLogin    = document.getElementById('auth-tab-login');
-  const tabSignup   = document.getElementById('auth-tab-signup');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  if (loginPanel)  loginPanel.style.display  = mode === 'login'  ? 'block' : 'none';
-  if (signupPanel) signupPanel.style.display = mode === 'signup' ? 'block' : 'none';
-  if (tabLogin)  { tabLogin.style.background  = mode === 'login'  ? 'var(--teal)' : 'var(--surface-2)'; tabLogin.style.color  = mode === 'login'  ? '#fff' : 'var(--text-muted)'; }
-  if (tabSignup) { tabSignup.style.background = mode === 'signup' ? 'var(--teal)' : 'var(--surface-2)'; tabSignup.style.color = mode === 'signup' ? '#fff' : 'var(--text-muted)'; }
-  const focusEl = mode === 'login' ? document.getElementById('auth-email-login') : document.getElementById('auth-email-signup');
-  setTimeout(() => focusEl?.focus(), 80);
-}
-function hideAuthScreen() {
-  document.getElementById('auth-overlay')?.classList.remove('open');
-}
-</script>
+<!-- ══════════════════ PRICING ══════════════════ -->
+<section class="section wrap" id="pricing">
+  <div class="section-head">
+    <h2>Simple pricing</h2>
+    <p>Start free. Upgrade only if you're actually using it.</p>
+  </div>
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0</div>
+      <div class="plan-unit">3 analyses / week</div>
+      <ul>
+        <li><i class="ti ti-check"></i> Full analysis on every posting</li>
+        <li><i class="ti ti-check"></i> Application tracking</li>
+        <li><i class="ti ti-check"></i> No credit card required</li>
+      </ul>
+      <a href="app.html" class="btn-small">Get Started</a>
+    </div>
+    <div class="price-card highlight">
+      <div class="price-badge">BEST VALUE</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$19<span style="font-size:0.9rem;font-weight:700;">/mo</span></div>
+      <div class="plan-unit">100 analyses / month</div>
+      <ul>
+        <li><i class="ti ti-check"></i> Everything in Free</li>
+        <li><i class="ti ti-check"></i> Priced for an active search</li>
+        <li><i class="ti ti-check"></i> Cancel anytime</li>
+      </ul>
+      <a href="app.html" class="btn-small">Get Started</a>
+    </div>
+    <div class="price-card">
+      <div class="plan-name">Plus</div>
+      <div class="plan-price">$9<span style="font-size:0.9rem;font-weight:700;">/mo</span></div>
+      <div class="plan-unit">40 analyses / month</div>
+      <ul>
+        <li><i class="ti ti-check"></i> Everything in Free</li>
+        <li><i class="ti ti-check"></i> Good fit for a steady search</li>
+        <li><i class="ti ti-check"></i> Cancel anytime</li>
+      </ul>
+      <a href="app.html" class="btn-small">Get Started</a>
+    </div>
+  </div>
+  <div class="price-note">Need more? One-time token top-ups are available inside the app on any plan.</div>
+</section>
+
+<!-- ══════════════════ FINAL CTA ══════════════════ -->
+<section class="final-cta wrap">
+  <h2>Read less. Apply smarter.</h2>
+  <p>It takes about thirty seconds to paste in your first posting.</p>
+  <a href="app.html" class="btn-cta"><i class="ti ti-search"></i> Get Started, it's free</a>
+</section>
+
+<footer>
+  <div class="footer-row">
+    <div>© 2026 Scout, built in Vancouver, BC</div>
+    <div class="footer-links">
+      <a href="contact.html">Contact</a>
+      <a href="legal/terms.html">Terms</a>
+      <a href="legal/privacy.html">Privacy</a>
+    </div>
+  </div>
+</footer>
 
 </body>
 </html>
