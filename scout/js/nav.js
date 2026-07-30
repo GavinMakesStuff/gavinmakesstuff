@@ -51,9 +51,14 @@ function switchView(view) {
 }
 
 // ── Profile page ──────────────────────────────────────────────
-function openProfileEditor() {
+// Pushes userProfile into the visible form fields. Called both when the
+// profile page is opened, and any time userProfile changes while it's
+// already open (e.g. right after a resume finishes parsing) — without this
+// second call site, the toast/status line would update but the fields on
+// screen would silently stay stale until the user navigated away and back.
+function populateProfileForm() {
   const f = id => document.getElementById(id);
-  if (f('p-name'))      f('p-name').value       = userProfile.name       || '';
+  if (f('p-name'))       f('p-name').value       = userProfile.name       || '';
   if (f('p-role'))       f('p-role').value       = userProfile.role       || '';
   if (f('p-industry'))   f('p-industry').value   = userProfile.industry   || '';
   if (f('p-salary'))     f('p-salary').value     = userProfile.salary     || '';
@@ -65,6 +70,10 @@ function openProfileEditor() {
   if (f('p-jobgoal'))    f('p-jobgoal').value    = userProfile.jobGoal    || '';
   refreshProfileStatus();
   if (typeof loadSkillsUI === 'function') loadSkillsUI();
+}
+
+function openProfileEditor() {
+  populateProfileForm();
   switchView('profile');
 }
 
