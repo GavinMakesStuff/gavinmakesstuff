@@ -41,76 +41,84 @@ export default async function handler(req, res) {
 
   const { bundle, plan } = req.body;
 
-  // ── Subscription checkout ──────────────────────────────────
-  if (plan) {
-    const selected = PLANS[plan];
-    if (!selected) return res.status(400).json({ error: 'Invalid plan' });
+  const origin = req.headers.origin || `https://${req.headers.host}`;
+
+  try {
+    // ── Subscription checkout ──────────────────────────────────
+    if (plan) {
+      const selected = PLANS[plan];
+      if (!selected) return res.status(400).json({ error: 'Invalid plan' });
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode:                 'subscription',
+        customer_email:       user.email,
+        line_items: [{
+          price_data: {
+            currency:     'usd',
+            unit_amount:  selected.price_cents,
+            recurring:    { interval: 'month' },
+            product_data: {
+              name:        selected.name,
+              description: `${selected.tokens_per_month} Scout Tokens every month`,
+            },
+          },
+          quantity: 1,
+        }],
+        // Metadata on the subscription itself so the webhook can read it from
+        // invoice events (invoices don't carry the checkout session's metadata).
+        subscription_data: {
+          metadata: { user_id: user.id, plan },
+        },
+        metadata: { user_id: user.id, plan },
+        success_url: `${origin}/scout/app.html?subscription=success&plan=${plan}`,
+        cancel_url:  `${origin}/scout/app.html?subscription=cancelled`,
+      });
+
+      return res.status(200).json({ url: session.url });
+    }
+
+    // ── One-time token bundle checkout ─────────────────────────
+    const selected = BUNDLES[bundle];
+    if (!selected) return res.status(400).json({ error: 'Invalid bundle' });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode:                 'subscription',
+      mode:                 'payment',
       customer_email:       user.email,
       line_items: [{
         price_data: {
           currency:     'usd',
           unit_amount:  selected.price_cents,
-          recurring:    { interval: 'month' },
           product_data: {
             name:        selected.name,
-            description: `${selected.tokens_per_month} Scout Tokens every month`,
+            description: `${selected.tokens} Scout Tokens — ${selected.tokens} job analyses`,
           },
         },
         quantity: 1,
       }],
-      // Metadata on the subscription itself so the webhook can read it from
-      // invoice events (invoices don't carry the checkout session's metadata).
-      subscription_data: {
-        metadata: { user_id: user.id, plan },
+      metadata: {
+        user_id:  user.id,
+        bundle:   bundle,
+        tokens:   selected.tokens.toString(),
       },
-      metadata: { user_id: user.id, plan },
-      success_url: `${req.headers.origin}/scout/app.html?subscription=success&plan=${plan}`,
-      cancel_url:  `${req.headers.origin}/scout/app.html?subscription=cancelled`,
+      success_url: `${origin}/scout/app.html?payment=success&tokens=${selected.tokens}`,
+      cancel_url:  `${origin}/scout/app.html?payment=cancelled`,
+    });
+
+    // ── Record pending transaction ────────────────────────────
+    await supabase.from('transactions').insert({
+      user_id:           user.id,
+      amount_usd:        selected.price_cents / 100,
+      tokens_purchased:  selected.tokens,
+      stripe_session_id: session.id,
+      status:            'pending',
     });
 
     return res.status(200).json({ url: session.url });
+
+  } catch (err) {
+    console.error('Checkout error:', err);
+    return res.status(500).json({ error: err.message || 'Checkout failed' });
   }
-
-  // ── One-time token bundle checkout ─────────────────────────
-  const selected = BUNDLES[bundle];
-  if (!selected) return res.status(400).json({ error: 'Invalid bundle' });
-
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    mode:                 'payment',
-    customer_email:       user.email,
-    line_items: [{
-      price_data: {
-        currency:     'usd',
-        unit_amount:  selected.price_cents,
-        product_data: {
-          name:        selected.name,
-          description: `${selected.tokens} Scout Tokens — ${selected.tokens} job analyses`,
-        },
-      },
-      quantity: 1,
-    }],
-    metadata: {
-      user_id:  user.id,
-      bundle:   bundle,
-      tokens:   selected.tokens.toString(),
-    },
-    success_url: `${req.headers.origin}/scout/app.html?payment=success&tokens=${selected.tokens}`,
-    cancel_url:  `${req.headers.origin}/scout/app.html?payment=cancelled`,
-  });
-
-  // ── Record pending transaction ────────────────────────────
-  await supabase.from('transactions').insert({
-    user_id:           user.id,
-    amount_usd:        selected.price_cents / 100,
-    tokens_purchased:  selected.tokens,
-    stripe_session_id: session.id,
-    status:            'pending',
-  });
-
-  return res.status(200).json({ url: session.url });
 }
