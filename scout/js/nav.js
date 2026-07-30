@@ -71,17 +71,26 @@ function openProfileEditor() {
 function closeProfileEditor() { switchView('results'); }
 
 function refreshProfileStatus() {
-  const resumeEl = document.getElementById('profile-resume-status');
-  const locEl    = document.getElementById('profile-location-status');
-  if (resumeEl) {
-    const has = !!(userProfile.role || userProfile.industry || userProfile.certs);
-    resumeEl.textContent = has ? 'Profile data loaded' : 'Not uploaded yet';
-    resumeEl.style.color = has ? 'var(--green)' : 'var(--text-dim)';
-  }
-  if (locEl) {
-    locEl.textContent = userLocation ? 'Location saved' : 'Not shared';
-    locEl.style.color = userLocation ? 'var(--green)' : 'var(--text-dim)';
-  }
+  // Note: these are classes, not IDs — the resume/location status elements
+  // don't have unique IDs, they're queried by class (querySelectorAll)
+  // since there can be more than one on the page.
+  document.querySelectorAll('.resume-status-el').forEach(el => {
+    if (userProfile.resumeFileName) {
+      el.textContent = `📄 ${userProfile.resumeFileName}`;
+      el.style.color = 'var(--green)';
+    } else {
+      el.textContent = 'Not uploaded yet';
+      el.style.color = 'var(--text-dim)';
+    }
+  });
+  document.querySelectorAll('.resume-remove-btn').forEach(btn => {
+    btn.style.display = userProfile.resumeFileName ? 'flex' : 'none';
+  });
+
+  document.querySelectorAll('.location-badge-el').forEach(el => {
+    el.textContent = userLocation ? 'Location saved' : 'Not shared';
+    el.style.color = userLocation ? 'var(--green)' : 'var(--text-dim)';
+  });
 }
 
 // ── Guide popup ───────────────────────────────────────────────
