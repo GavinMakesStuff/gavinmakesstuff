@@ -1218,7 +1218,11 @@ async function analyzeResumeText(text, fileName) {
   if (fileName) userProfile.resumeFileName = fileName;
   localStorage.setItem('scout-profile',JSON.stringify(userProfile));
   showToast(`Profile updated from resume${parsed.name?' for '+parsed.name:''}.`);
-  refreshProfileStatus();
+  // Refresh the visible form fields immediately, not just the status line —
+  // otherwise the toast says "updated" while the fields on screen stay
+  // stale until the user navigates away and back into the profile page.
+  if (typeof populateProfileForm === 'function') populateProfileForm();
+  else refreshProfileStatus();
 }
 
 // ══════════════════════════════════════════
