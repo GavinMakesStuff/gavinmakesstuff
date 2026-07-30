@@ -78,6 +78,10 @@ export default async function handler(req, res) {
   }
 
   // ── 4. Call Anthropic ─────────────────────────────────────
+  // Strip Scout-internal fields (used for our own logging below) before
+  // forwarding — Anthropic's API rejects unrecognized fields outright.
+  const { _postings_count, ...anthropicPayload } = req.body || {};
+
   let anthropicResponse;
   let responseData;
 
@@ -89,7 +93,7 @@ export default async function handler(req, res) {
         'x-api-key':         process.env.SCOUT_ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(anthropicPayload),
     });
 
     responseData = await anthropicResponse.json();
@@ -117,7 +121,7 @@ export default async function handler(req, res) {
   // ── 5. Log the analysis ───────────────────────────────────
   if (anthropicResponse.ok) {
     const usage         = responseData.usage || {};
-    const postingsCount = req.body?._postings_count || 1;
+    const postingsCount = _postings_count || 1;
 
     await supabase.from('analysis_log').insert({
       user_id:           user.id,
