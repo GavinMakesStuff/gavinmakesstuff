@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Privacy Policy | Scout</title>
+  <link rel="icon" type="image/png" href="../media/scoutfavicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #F4F6F8; --surface: #FFFFFF; --border: #D0D7DD;
+      --teal: #005A7A; --text: #1A2B38; --text-body: #2C3E4A; --text-muted: #3A5A6E;
+      --font-ui: 'Nunito', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text-body); font-family: var(--font-ui); margin: 0; line-height: 1.7; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+    a { color: var(--teal); }
+    .logo-row { display:flex; align-items:center; gap:10px; margin-bottom: 32px; }
+    .logo-row .name { font-size: 1.3rem; font-weight: 800; color: var(--teal); }
+    h1 { color: var(--text); font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; }
+    .updated { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 32px; }
+    h2 { color: var(--text); font-size: 1.05rem; font-weight: 800; margin-top: 36px; margin-bottom: 10px; }
+    p, li { font-size: 0.95rem; }
+    ul { padding-left: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--text); font-weight: 700; }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 20px 0; font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-row">
+    <a href="../app.html" class="name">Scout</a>
+  </div>
+
+  <h1>Privacy Policy</h1>
+  <div class="updated">Last updated: July 29, 2026</div>
+
+  <p>This Privacy Policy explains what personal information Scout collects, why, and how it's handled. Scout is operated by Gavin Krohman, an individual sole proprietor based in Vancouver, British Columbia, Canada ("we," "us," "our").</p>
+
+  <h2>1. What We Collect</h2>
+  <table>
+    <tr><th>Category</th><th>Examples</th><th>Why</th></tr>
+    <tr><td>Account info</td><td>Email address, authentication data</td><td>To create and secure your account (via Supabase)</td></tr>
+    <tr><td>Profile info</td><td>Role, target industry, salary expectations, experience, certifications, skills, career notes you enter</td><td>Used to personalize job-posting analysis against your profile</td></tr>
+    <tr><td>Resume content</td><td>Text extracted from a resume you upload</td><td>To build/update your profile, at your request</td></tr>
+    <tr><td>Job posting text</td><td>Text you paste in for analysis</td><td>Sent for AI analysis to generate your results</td></tr>
+    <tr><td>Usage &amp; billing records</td><td>Token balance, analyses run, subscription status, transaction history</td><td>To operate the token/subscription system and provide support</td></tr>
+    <tr><td>Payment info</td><td>Handled entirely by Stripe</td><td>We never receive or store your full card number</td></tr>
+  </table>
+
+  <h2>2. How We Use It</h2>
+  <ul>
+    <li>To provide the core Service: running your analyses and returning results.</li>
+    <li>To operate your account, token balance, and subscription.</li>
+    <li>To respond when you contact us for support.</li>
+    <li>To detect and prevent abuse (e.g., free-tier limit circumvention).</li>
+  </ul>
+  <p>We don't sell your personal information, and we don't use your resume or job-posting content to train any AI model.</p>
+
+  <h2>3. Who We Share It With</h2>
+  <p>We use a small number of service providers ("subprocessors") to run Scout. We don't sell your data to anyone else.</p>
+  <table>
+    <tr><th>Provider</th><th>Purpose</th></tr>
+    <tr><td>Supabase</td><td>Authentication and database hosting (project region: Canada Central)</td></tr>
+    <tr><td>Anthropic</td><td>Processes your job-posting/profile/resume text via the Claude API to generate your analysis, under Anthropic's standard API terms</td></tr>
+    <tr><td>Stripe</td><td>Payment processing for subscriptions and token purchases</td></tr>
+    <tr><td>Vercel</td><td>Application hosting</td></tr>
+  </table>
+  <p>We may also disclose information if required by law, or to protect the rights, safety, or property of Scout or our users.</p>
+
+  <h2>4. Data Retention</h2>
+  <p>We keep your account and profile data for as long as your account is active. If you'd like your account and associated data deleted, email <a href="mailto:gavinmakesstuff@gmail.com">gavinmakesstuff@gmail.com</a> and we'll process the request manually. A self-serve delete option may be added in the future. Some records (e.g., transaction history) may be retained longer where needed for accounting, tax, or legal purposes.</p>
+
+  <h2>5. Cookies &amp; Local Storage</h2>
+  <p>Scout uses your browser's local storage to keep track of things like saved/applied jobs and preferences on your device. We don't currently use third-party advertising or tracking cookies.</p>
+
+  <h2>6. Security</h2>
+  <p>We use reasonable technical and organizational measures to protect your information (e.g., encrypted connections, access-controlled database, no direct browser access to our AI or payment provider keys). No system is 100% secure, and we can't guarantee absolute security.</p>
+
+  <h2>7. Your Rights</h2>
+  <p>Depending on where you live, you may have rights to access, correct, or delete your personal information, or to object to certain processing. To exercise any of these, email <a href="mailto:gavinmakesstuff@gmail.com">gavinmakesstuff@gmail.com</a>.</p>
+
+  <h2>8. International Users</h2>
+  <p>Scout is intended for users in North America. Your information is processed in Canada (Supabase) and may be processed by our other providers (Stripe, Anthropic, Vercel) in the United States or elsewhere they operate.</p>
+
+  <h2>9. Changes to This Policy</h2>
+  <p>We may update this policy from time to time. If we make material changes, we'll make reasonable efforts to let existing users know.</p>
+
+  <h2>10. Contact</h2>
+  <p>Questions about this policy or your data? Email <a href="mailto:gavinmakesstuff@gmail.com">gavinmakesstuff@gmail.com</a>.</p>
+
+  <div class="box">This document is a plain-language starting point and hasn't been reviewed by a lawyer. It's a reasonable baseline for a small, solo-operated tool, but if Scout grows or starts handling more sensitive situations, it's worth having it reviewed by a lawyer familiar with Canadian/BC privacy law (PIPEDA) and any US state privacy laws relevant to your user base.</div>
+</div>
+</body>
+</html>
