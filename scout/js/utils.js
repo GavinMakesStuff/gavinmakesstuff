@@ -6,10 +6,10 @@
 
 // ── Supabase config (public — safe to expose) ─────────────────
 window.SCOUT_SUPABASE_URL      = 'https://danpqkwdttjqwduhhrbp.supabase.co';
-window.SCOUT_SUPABASE_ANON_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
+window.SCOUT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbnBxa3dkdHRqcXdkdWhocmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3Mzk0MTMsImV4cCI6MjA5OTMxNTQxM30.g__YZgpVzlN-Y6hYVREY4yuwlCTiFkYJfrZHH3uzpTQ';
 
 // ── Stripe publishable key (public — safe to expose) ──────────
-window.SCOUT_STRIPE_PK = 'PASTE_YOUR_STRIPE_PUBLISHABLE_KEY_HERE';
+window.SCOUT_STRIPE_PK = 'pk_live_51Trt6C1T31suPcbalBsRvlC67A3yCgYQRXRxnk1R6hBeEuiCiwioEDcuVqD9yX8Gyzx6y8YcxKvVjxAMgmetJk6Z00flJEl0Bt';
 
 // ── Shared State ──────────────────────────────────────────────
 let savedJobs   = JSON.parse(localStorage.getItem('scout-saved')   || '[]');
@@ -20,14 +20,14 @@ let userProfile = JSON.parse(localStorage.getItem('scout-profile') || 'null') ||
   experience:'', travel:'', certs:'', notes:'', jobGoal:''
 };
 
-// ── Currency ──────────────────────────────────────────────────
+// ── Currency ──────────────────────────────
 const CURRENCY_SYMBOLS = {
   USD:'$', CAD:'CA$', EUR:'€', GBP:'£', AUD:'AU$',
   NZD:'NZ$', JPY:'¥', INR:'₹', MXN:'MX$', CHF:'CHF', ZAR:'R'
 };
 function currencySymbol() { return CURRENCY_SYMBOLS[userProfile.currency] || '$'; }
 
-// ── HTML Escaping ─────────────────────────────────────────────
+// ── HTML Escaping ─────────────────────────
 function escHtml(str) {
   if (!str) return '';
   return String(str)
@@ -35,7 +35,17 @@ function escHtml(str) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Toast ─────────────────────────────────────────────────────
+// ── Safe href — only allow http(s) URLs into href attributes ───
+// AI-echoed URLs (companyUrl, postingUrl, etc.) shouldn't be trusted
+// as-is; escHtml alone doesn't block a javascript: scheme.
+function safeHref(url) {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (!/^https?:\/\//i.test(trimmed)) return '';
+  return escHtml(trimmed);
+}
+
+// ── Toast ─────────────────────────────────
 let _toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -46,7 +56,7 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── Theme ─────────────────────────────────────────────────────
+// ── Theme ─────────────────────────────────
 function toggleTheme() {
   const html   = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
@@ -61,7 +71,7 @@ function toggleTheme() {
   if (saved) document.documentElement.setAttribute('data-theme', saved);
 })();
 
-// ── Location ──────────────────────────────────────────────────
+// ── Location ──────────────────────────────
 let userLocation = JSON.parse(localStorage.getItem('scout-location') || 'null');
 
 async function requestUserLocation() {
