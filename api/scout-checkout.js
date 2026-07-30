@@ -49,6 +49,55 @@ export default async function handler(req, res) {
       const selected = PLANS[plan];
       if (!selected) return res.status(400).json({ error: 'Invalid plan' });
 
+      // If the user already has an active Plus/Pro subscription, switch the
+      // price on it in place instead of creating a second, separately-billed
+      // subscription (that used to happen — Subscribe on a second plan just
+      // created a duplicate, silently double-charging the customer).
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier, stripe_subscription_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.stripe_subscription_id && (profile.tier === 'plus' || profile.tier === 'pro')) {
+        if (profile.tier === plan) {
+          return res.status(400).json({ error: `You're already subscribed to ${selected.name}.` });
+        }
+
+        const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+        const itemId = subscription.items.data[0]?.id;
+
+        if (itemId) {
+          await stripe.subscriptions.update(profile.stripe_subscription_id, {
+            items: [{
+              id: itemId,
+              price_data: {
+                currency:     'usd',
+                unit_amount:  selected.price_cents,
+                recurring:    { interval: 'month' },
+                product_data: {
+                  name:        selected.name,
+                  description: `${selected.tokens_per_month} Scout Tokens every month`,
+                },
+              },
+            }],
+            // No immediate prorated charge/credit — the new price and token
+            // amount simply apply going forward, starting next billing cycle.
+            // Keeps this predictable without needing to reason about partial-
+            // cycle token grants.
+            proration_behavior: 'none',
+            metadata: { user_id: user.id, plan },
+          });
+
+          await supabase
+            .from('profiles')
+            .update({ tier: plan })
+            .eq('id', user.id);
+
+          return res.status(200).json({ switched: true, plan });
+        }
+      }
+
       const session = await stripe.checkout.sessions.create({
         // Managed Payments (a newer Stripe default) requires every product
         // to carry a tax code, which we haven't set up (GST/HST status is
