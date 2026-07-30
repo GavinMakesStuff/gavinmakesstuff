@@ -318,6 +318,12 @@ async function subscribeToPlan(plan) {
     const data = await res.json();
     if (data.url) {
       window.location.href = data.url;
+    } else if (data.switched) {
+      const label = data.plan.charAt(0).toUpperCase() + data.plan.slice(1);
+      showToast(`Switched to ${label}! Your new price and token amount apply from your next billing date.`);
+      document.getElementById('token-shop-modal')?.classList.remove('open');
+      await refreshUserData();
+      updateUserUI();
     } else {
       showToast(data.error || 'Checkout failed — please try again.');
     }
