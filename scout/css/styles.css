@@ -320,6 +320,7 @@ a:hover { text-decoration: underline; }
 .sb-user { overflow: hidden; transition: opacity 0.15s, width 0.22s; }
 .sb-username { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; }
 .sb-role { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+.sb-tokens { font-size: 10px; color: var(--teal); font-weight: 700; white-space: nowrap; margin-top: 2px; }
 .sidebar.collapsed .sb-user { opacity: 0; width: 0; overflow: hidden; }
 .sidebar.collapsed .sb-footer { justify-content: center; gap: 0; padding: 10px 6px; }
 .sidebar.collapsed .sb-avatar { display: none; }
