@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title id="page-title">Blog | Scout</title>
+  <meta id="page-description" name="description" content="Job search tips, product updates, and notes from building Scout."/>
+  <meta id="og-title" property="og:title" content="Blog | Scout"/>
+  <meta id="og-description" property="og:description" content=""/>
+  <link rel="icon" type="image/png" href="media/scoutfavicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <style>
+    :root {
+      --bg: #F4F6F8; --surface: #FFFFFF; --surface-2: #F0F4F7;
+      --border: #D0D7DD; --border-dim: #E2E8EC;
+      --teal: #005A7A; --teal-mid: #006E96; --teal-light: #EBF5F9;
+      --sand: #E8A33D; --sand-text: #4A2E00;
+      --text: #1A2B38; --text-body: #2C3E4A; --text-muted: #3A5A6E; --text-dim: #4A6880;
+      --font-ui: 'Nunito', sans-serif; --font-mono: 'DM Mono', monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text-body); font-family: var(--font-ui); margin: 0; line-height: 1.65; }
+    a { color: var(--teal); }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    .hero-band { background: var(--teal); }
+    .wave-divider { line-height: 0; }
+    .wave-divider svg { display: block; width: 100%; height: 56px; }
+    .wave-divider path { fill: var(--teal); }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px; max-width: 980px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; text-decoration: none; }
+    .brand img { height: 34px; display: block; }
+    .nav-links { display: flex; align-items: center; gap: 22px; font-size: 0.88rem; font-weight: 700; }
+    .nav-links a { text-decoration: none; color: rgba(255,255,255,0.85); }
+    .nav-links a:hover, .nav-links a.active { color: #fff; }
+    .nav-cta { background: #fff; color: var(--teal) !important; padding: 9px 18px; border-radius: 8px; }
+    .nav-cta:hover { filter: brightness(0.96); }
+
+    .detail-wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 70px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text-dim); font-size: 0.85rem; font-weight: 700; margin-bottom: 20px; }
+    .back-link:hover { color: var(--teal); }
+    .post-date { font-size: 0.78rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    h1.post-title { font-size: 2rem; font-weight: 900; color: var(--text); line-height: 1.2; margin: 0 0 22px; letter-spacing: -0.01em; }
+    .post-thumb { width: 100%; max-height: 380px; object-fit: cover; border-radius: 12px; margin-bottom: 28px; background: var(--surface-2); }
+
+    .post-body { font-size: 1.02rem; color: var(--text-body); }
+    .post-body h2 { font-size: 1.4rem; font-weight: 800; color: var(--text); margin: 32px 0 14px; }
+    .post-body h3 { font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 26px 0 12px; }
+    .post-body p { margin: 0 0 16px; }
+    .post-body ul, .post-body ol { margin: 0 0 16px; padding-left: 22px; }
+    .post-body li { margin-bottom: 6px; }
+    .post-body a { color: var(--teal); font-weight: 700; }
+    .post-body blockquote { border-left: 3px solid var(--teal); margin: 0 0 16px; padding: 4px 0 4px 16px; color: var(--text-muted); font-style: italic; }
+    .post-body img { max-width: 100%; border-radius: 10px; }
+
+    .video-embed { position: relative; width: 100%; padding-top: 56.25%; margin: 28px 0; border-radius: 12px; overflow: hidden; background: #000; }
+    .video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+    .gallery-heading { font-size: 1.1rem; font-weight: 800; color: var(--text); margin: 36px 0 14px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 10px; }
+    .gallery-item figure { margin: 0; }
+    .gallery-item img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; display: block; cursor: pointer; }
+    .gallery-item figcaption { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+
+    .lightbox { position: fixed; inset: 0; background: rgba(10,20,26,0.9); display: none; align-items: center; justify-content: center; z-index: 999; padding: 24px; cursor: zoom-out; }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
+
+    .empty-state { text-align: center; color: var(--text-muted); padding: 60px 24px; font-size: 0.95rem; }
+
+    footer { border-top: 1px solid var(--border); padding: 28px 24px; }
+    .footer-row { max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: var(--text-dim); }
+    .footer-links { display: flex; gap: 18px; }
+    .footer-links a { text-decoration: none; color: var(--text-dim); }
+    .footer-links a:hover { color: var(--teal); }
+
+    @media (max-width: 600px) {
+      h1.post-title { font-size: 1.6rem; }
+      .gallery-grid { grid-template-columns: 1fr; }
+      .nav-links { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero-band">
+  <nav>
+    <a href="index.html" class="brand" aria-label="Scout">
+      <img src="media/Scout Logo.png" alt="Scout" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'Scout',style:'font-size:1.25rem;font-weight:800;color:var(--teal);'}))"/>
+    </a>
+    <div class="nav-links">
+      <a href="blog.html" class="active">Blog</a>
+      <a href="contact.html">Contact</a>
+      <a href="app.html">Sign in</a>
+      <a href="app.html" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+</div>
+
+<div class="wave-divider">
+  <svg viewBox="0 0 1440 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,45 C360,95 1080,0 1440,45 L1440,0 L0,0 Z"></path>
+  </svg>
+</div>
+
+<div class="detail-wrap">
+  <a class="back-link" href="blog.html"><i class="ti ti-arrow-left"></i> All posts</a>
+  <div id="post-root"><div class="empty-state">Loading…</div></div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightbox-img" src=""/></div>
+
+<footer>
+  <div class="footer-row">
+    <div>© 2026 Scout, built in Vancouver, BC</div>
+    <div class="footer-links">
+      <a href="contact.html#faq">FAQ</a>
+      <a href="contact.html">Contact</a>
+      <a href="legal/terms.html">Terms</a>
+      <a href="legal/privacy.html">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function isPostVisible(p) {
+  if (p.status) {
+    if (p.status === 'published') return true;
+    if (p.status === 'scheduled') return !!p.scheduledAt && new Date(p.scheduledAt).getTime() <= Date.now();
+    return false;
+  }
+  return !p.draft;
+}
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function formatDate(d) {
+  if (!d) return '';
+  var parts = String(d).split('-');
+  if (parts.length !== 3) return d;
+  var dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+function getQueryParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+/* Turns a YouTube/Vimeo URL into a responsive embed iframe. Returns '' for
+   anything else rather than guessing at an unknown provider's embed shape. */
+function videoEmbedHtml(url) {
+  if (!url) return '';
+  var yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{6,})/);
+  if (yt) return '<div class="video-embed"><iframe src="https://www.youtube.com/embed/' + yt[1] + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+  var vim = url.match(/vimeo\.com\/(\d+)/);
+  if (vim) return '<div class="video-embed"><iframe src="https://player.vimeo.com/video/' + vim[1] + '" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>';
+  return '';
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+(async function () {
+  var root = document.getElementById('post-root');
+  var id = getQueryParam('id');
+  try {
+    var res = await fetch('data/sites/scout-blog.json');
+    var data = await res.json();
+    var post = (data.posts || []).find(function (p) { return p.id === id; });
+
+    if (!post || !isPostVisible(post)) {
+      root.innerHTML = '<div class="empty-state">Could not find that post.</div>';
+      return;
+    }
+
+    var seoTitle = (post.seo && post.seo.title) || post.title;
+    var seoDesc = (post.seo && post.seo.metaDescription) || post.summary || '';
+    document.title = seoTitle + ' | Scout Blog';
+    document.getElementById('page-title').textContent = seoTitle + ' | Scout Blog';
+    document.getElementById('page-description').setAttribute('content', seoDesc);
+    document.getElementById('og-title').setAttribute('content', seoTitle);
+    document.getElementById('og-description').setAttribute('content', seoDesc);
+
+    var thumbHtml = post.thumbnail ? '<img class="post-thumb" src="' + esc(post.thumbnail) + '" alt="' + esc(post.title) + '">' : '';
+    var videoHtml = videoEmbedHtml(post.videoEmbed);
+    var galleryHtml = '';
+    if (post.images && post.images.length) {
+      galleryHtml = '<div class="gallery-heading">Gallery</div><div class="gallery-grid">' +
+        post.images.map(function (img) {
+          return '<div class="gallery-item"><figure>' +
+            '<img src="' + esc(img.url) + '" alt="' + esc(img.alt || '') + '" onclick="openLightbox(\'' + esc(img.url) + '\')">' +
+            (img.caption ? '<figcaption>' + esc(img.caption) + '</figcaption>' : '') +
+            '</figure></div>';
+        }).join('') + '</div>';
+    }
+
+    root.innerHTML =
+      '<div class="post-date">' + esc(formatDate(post.date)) + '</div>' +
+      '<h1 class="post-title">' + esc(post.title) + '</h1>' +
+      thumbHtml +
+      '<div class="post-body">' + (post.body || '') + '</div>' +
+      videoHtml +
+      galleryHtml;
+  } catch (e) {
+    root.innerHTML = '<div class="empty-state">Could not load this post right now.</div>';
+    console.error(e);
+  }
+})();
+</script>
+
+</body>
+</html>

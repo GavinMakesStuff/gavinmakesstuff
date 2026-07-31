@@ -122,6 +122,35 @@ function welcomeGoToProfile() {
   dismissWelcome(true);
   openProfileEditor();
 }
+function skipWelcomeAndTour() {
+  dismissWelcome(true);
+  maybeStartTour();
+}
+
+// ── First-time interactive tour ──────────────────────────────
+// Separate from the welcome modal above — runs once per browser via its
+// own localStorage flag, so it also fires for users who already dismissed
+// the welcome modal before this feature existed.
+function maybeStartTour() {
+  if (localStorage.getItem('scout-tour-seen') === 'true') return;
+  if (typeof window.driver === 'undefined') return;
+  localStorage.setItem('scout-tour-seen', 'true');
+  var driver = window.driver.js.driver;
+  var tour = driver({
+    showProgress: true,
+    allowClose: true,
+    steps: [
+      { element: '#sb-item-results', popover: { title: 'Results', description: 'Every posting you analyze shows up here as a scored card, newest first.' } },
+      { element: '#inline-paste-area', popover: { title: 'Paste a posting', description: 'Paste the full text of a job posting here. Use "Add another posting" to batch several at once.' } },
+      { element: '#analyze-btn', popover: { title: 'Analyze', description: 'This shows how many tokens (or free analyses) the current batch will use before you commit to it.' } },
+      { element: '#sb-item-saved', popover: { title: 'Saved', description: 'Bookmark postings here to come back to later.' } },
+      { element: '#sb-item-applied', popover: { title: 'Applied', description: 'Track applications with dates, contacts, and follow-ups once you’ve applied.' } },
+      { element: '#sb-token-balance', popover: { title: 'Your balance', description: 'Your remaining free analyses or token balance for this week/month shows here.' } },
+      { element: '#sb-item-guide', popover: { title: 'Full guide', description: 'You can reopen the full step-by-step guide here any time.' } },
+    ],
+  });
+  tour.drive();
+}
 
 // ── DOMContentLoaded ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -153,6 +182,8 @@ function handleAuthReady() {
     switchView('results');
     if (localStorage.getItem('scout-welcome-seen') !== 'true') {
       openWelcomeModal();
+    } else {
+      maybeStartTour();
     }
     // Handle Stripe return
     checkPaymentReturn();

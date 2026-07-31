@@ -6,6 +6,8 @@
   <title>Manage — Admin</title>
   <meta name="robots" content="noindex, nofollow">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
   <style>
     :root{--ink:#0C0D0E;--ink-r:#131416;--ink-r2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--paper:#F2EFE9;--muted:#6B7075;--radius:10px;}
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -126,6 +128,37 @@
     .creation-pw-hint{background:rgba(217,48,37,.06);border:1px solid rgba(217,48,37,.15);border-radius:6px;padding:8px 12px;font-size:.75rem;color:var(--muted);margin:-4px 0 12px;}
     .creation-pw-hint code{color:var(--paper);background:var(--ink-r2);padding:1px 5px;border-radius:3px;}
     .creation-section-label{font-size:.78rem;font-weight:600;color:var(--paper);margin-bottom:10px;letter-spacing:.02em;}
+
+    /* site selector (blog tab) */
+    .site-select-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+    .site-select-row label{margin:0;}
+    .site-select-row select{width:auto;min-width:220px;}
+
+    /* status badges (blog) */
+    .badge-scheduled{background:rgba(230,170,30,.12);color:#e6aa1e;}
+    .badge-published{background:rgba(34,197,94,.1);color:#16a34a;}
+
+    /* Quill editor — dark theme */
+    #f-body-quill{background:var(--ink);border:1px solid var(--border);border-radius:0 0 6px 6px;color:var(--paper);min-height:280px;}
+    .ql-toolbar.ql-snow{background:var(--ink-r2);border:1px solid var(--border);border-radius:6px 6px 0 0;}
+    .ql-snow .ql-stroke{stroke:var(--muted);}
+    .ql-snow .ql-fill{fill:var(--muted);}
+    .ql-snow .ql-picker{color:var(--muted);}
+    .ql-editor.ql-blank::before{color:var(--muted);}
+
+    /* image gallery widget */
+    .gallery-item{background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;}
+    .gallery-item-row{display:flex;gap:10px;align-items:center;}
+    .gallery-item-row img{width:44px;height:44px;object-fit:cover;border-radius:4px;flex-shrink:0;}
+    .gallery-item-fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .gallery-item-fields input{font-size:.82rem;padding:6px 9px;}
+    .gallery-item-row button{background:none;border:none;color:#e05555;cursor:pointer;font-size:1rem;padding:0 4px;flex-shrink:0;}
+
+    /* confirm modal */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:999;}
+    .confirm-box{background:var(--ink-r);border:1px solid var(--border-h);border-radius:var(--radius);padding:24px;max-width:340px;width:90%;text-align:center;}
+    .confirm-box p{margin-bottom:18px;font-size:.9rem;}
+    .confirm-box .btn-row{justify-content:center;margin-top:0;}
   </style>
 </head>
 <body>
@@ -179,6 +212,10 @@
     <div id="tab-blog" style="display:none;">
       <div id="blog-list-view">
         <div class="card">
+          <div class="site-select-row">
+            <label style="margin-bottom:0;">Site</label>
+            <select id="blog-site-select" onchange="switchBlogSite(this.value)"></select>
+          </div>
           <div class="section-head">
             <h2 style="font-size:1.1rem;">Blog posts</h2>
             <button class="btn btn-primary btn-sm" onclick="newItem('blog')">+ New post</button>
@@ -201,7 +238,8 @@
 /* ── Auth ── */
 var currentToken = sessionStorage.getItem('gh_token');
 var currentUsername = sessionStorage.getItem('gh_username');
-var state = { projects:[], blog:[], settings:{}, activeTab:'projects' };
+var state = { projects:[], blog:[], settings:{}, sites:[], currentSiteId:localStorage.getItem('admin-blog-site')||'studio', activeTab:'projects' };
+var quillEditor=null;
 
 function showLoginGate(){
   document.getElementById('auth-gate').innerHTML =
@@ -274,16 +312,33 @@ function slugify(s){return(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').repla
 async function loadAll(){
   showStatus('Loading…',false);
   try{
-    var data=await callApi({action:'list'});
+    var data=await callApi({action:'list',siteId:state.currentSiteId});
     state.projects=data.projects||[];
     state.blog=data.blog||[];
     state.settings=data.settings||{};
+    state.sites=data.sites&&data.sites.length?data.sites:[{id:'studio',name:'Studio (personal blog)'}];
     renderLists();
     hideStatus();
   }catch(e){showStatus('Could not load: '+e.message,true);}
 }
+function switchBlogSite(id){
+  state.currentSiteId=id;
+  localStorage.setItem('admin-blog-site',id);
+  loadAll();
+}
 
 /* ── List rendering ── */
+function postStatus(item){
+  if(item.status)return item.status;
+  return item.draft?'draft':'published';
+}
+function statusBadgeHtml(item){
+  var st=postStatus(item);
+  if(st==='scheduled')return '<span class="badge badge-scheduled">Scheduled — '+(item.scheduledAt?new Date(item.scheduledAt).toLocaleString():'')+'</span>';
+  if(st==='published')return '<span class="badge badge-published">Published</span>';
+  return '<span class="badge badge-draft">Draft</span>';
+}
+
 function renderLists(){
   var pEl=document.getElementById('projects-list');
   pEl.innerHTML=state.projects.length?state.projects.map(function(p){
@@ -292,26 +347,53 @@ function renderLists(){
       '<div class="item-meta">'+p.id+' · Studio: '+(p.showOnPublic?'yes':'no')+' · Portfolio: '+(p.showOnPortfolio?'yes':'no')+'</div></div>'+
       '<div class="item-actions">'+
         '<button class="btn btn-sm" onclick="editItem(\'project\',\''+p.id+'\')">Edit</button>'+
-        '<button class="btn btn-sm btn-danger" onclick="deleteItem(\'project\',\''+p.id+'\')">Delete</button>'+
+        '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'project\',\''+p.id+'\',\''+esc(p.public.title||p.id)+'\')">Delete</button>'+
       '</div></div>';
   }).join(''):'<p class="hint" style="padding:12px 0;">No projects yet.</p>';
+
+  var siteSelect=document.getElementById('blog-site-select');
+  siteSelect.innerHTML=state.sites.map(function(s){
+    return '<option value="'+s.id+'" '+(s.id===state.currentSiteId?'selected':'')+'>'+esc(s.name||s.id)+'</option>';
+  }).join('');
 
   var bEl=document.getElementById('blog-list');
   bEl.innerHTML=state.blog.length?state.blog.map(function(b){
     return '<div class="item-row"><div><div class="item-title">'+b.title+
-      '<span class="badge '+(b.draft?'badge-draft">Draft':'badge-live">Live')+'</span></div>'+
+      statusBadgeHtml(b)+'</div>'+
       '<div class="item-meta">'+b.id+' · '+b.date+'</div></div>'+
       '<div class="item-actions">'+
         '<button class="btn btn-sm" onclick="editItem(\'blog\',\''+b.id+'\')">Edit</button>'+
-        '<button class="btn btn-sm btn-danger" onclick="deleteItem(\'blog\',\''+b.id+'\')">Delete</button>'+
+        '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'blog\',\''+b.id+'\',\''+esc(b.title)+'\')">Delete</button>'+
       '</div></div>';
   }).join(''):'<p class="hint" style="padding:12px 0;">No posts yet.</p>';
 }
 
+/* ── Delete confirm modal ── */
+function confirmDelete(type,id,label){
+  var overlay=document.createElement('div');
+  overlay.className='confirm-overlay';
+  overlay.innerHTML=
+    '<div class="confirm-box">'+
+      '<p>Delete <strong>'+esc(label||id)+'</strong> permanently? This can\'t be undone.</p>'+
+      '<div class="btn-row">'+
+        '<button class="btn" id="confirm-cancel">Cancel</button>'+
+        '<button class="btn btn-danger" id="confirm-go">Delete</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#confirm-cancel').onclick=function(){overlay.remove();};
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  overlay.querySelector('#confirm-go').onclick=function(){overlay.remove();deleteItem(type,id);};
+}
+
 async function deleteItem(type,id){
-  if(!confirm('Delete this '+type+' permanently?'))return;
   showStatus('Deleting…');
-  try{await callApi({action:'delete',type:type,id:id});await loadAll();}
+  try{
+    var payload={action:'delete',type:type,id:id};
+    if(type==='blog')payload.siteId=state.currentSiteId;
+    await callApi(payload);
+    await loadAll();
+  }
   catch(e){showStatus('Delete failed: '+e.message,true);}
 }
 
@@ -399,7 +481,9 @@ async function handleImageUpload(fieldKey,inputEl,multiple){
       var file=files[i];
       var base64=await fileToBase64(file);
       var path='images/projects/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
-      var result=await callApi({action:'upload',path:path,contentBase64:base64});
+      var uploadPayload={action:'upload',path:path,contentBase64:base64};
+      if(state.editingType==='blog')uploadPayload.siteId=state.currentSiteId;
+      var result=await callApi(uploadPayload);
       if(!multiple)window.__uploads[fieldKey]=[result.path];
       else window.__uploads[fieldKey].push(result.path);
     }
@@ -455,7 +539,9 @@ async function handleFileUpload(fieldKey){
   try{
     var base64=await fileToBase64(file);
     var path='files/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
-    var result=await callApi({action:'upload',path:path,contentBase64:base64});
+    var uploadPayload={action:'upload',path:path,contentBase64:base64};
+    if(state.editingType==='blog')uploadPayload.siteId=state.currentSiteId;
+    var result=await callApi(uploadPayload);
     window.__downloads[fieldKey].push({label:label,file:result.path,meta:meta,buttonText:buttonText});
     document.getElementById('download-list-'+fieldKey).innerHTML=renderDownloadItems(fieldKey);
     labelInput.value='';
@@ -464,6 +550,50 @@ async function handleFileUpload(fieldKey){
     fileInput.value='';
     hideStatus();
   }catch(e){showStatus('Upload failed: '+e.message,true);}
+}
+
+/* ── Blog image gallery widget (url + alt text + caption per image) ── */
+window.__galleries={};
+function galleryWidget(fieldKey,existingImages){
+  window.__galleries[fieldKey]=JSON.parse(JSON.stringify(existingImages||[]));
+  return '<div id="gallery-list-'+fieldKey+'">'+renderGalleryItems(fieldKey)+'</div>'+
+    '<input type="file" accept="image/*" multiple onchange="handleGalleryUpload(\''+fieldKey+'\',this)">';
+}
+function renderGalleryItems(fieldKey){
+  return (window.__galleries[fieldKey]||[]).map(function(img,i){
+    return '<div class="gallery-item"><div class="gallery-item-row">'+
+      '<img src="'+img.url+'" onerror="this.style.display=\'none\'">'+
+      '<div class="gallery-item-fields">'+
+        '<input type="text" placeholder="Alt text (required for SEO/accessibility)" value="'+esc(img.alt||'')+'" onchange="updateGalleryField(\''+fieldKey+'\','+i+',\'alt\',this.value)">'+
+        '<input type="text" placeholder="Caption (optional)" value="'+esc(img.caption||'')+'" onchange="updateGalleryField(\''+fieldKey+'\','+i+',\'caption\',this.value)">'+
+      '</div>'+
+      '<button type="button" onclick="removeGalleryImage(\''+fieldKey+'\','+i+')">&times;</button>'+
+    '</div></div>';
+  }).join('');
+}
+function updateGalleryField(fieldKey,i,key,value){
+  window.__galleries[fieldKey][i][key]=value;
+}
+function removeGalleryImage(fieldKey,i){
+  window.__galleries[fieldKey].splice(i,1);
+  document.getElementById('gallery-list-'+fieldKey).innerHTML=renderGalleryItems(fieldKey);
+}
+async function handleGalleryUpload(fieldKey,inputEl){
+  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'post';
+  var files=Array.from(inputEl.files);
+  showStatus('Uploading '+files.length+' image(s)…');
+  try{
+    for(var i=0;i<files.length;i++){
+      var file=files[i];
+      var base64=await fileToBase64(file);
+      var path='images/blog/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
+      var result=await callApi({action:'upload',path:path,contentBase64:base64,siteId:state.currentSiteId});
+      window.__galleries[fieldKey].push({url:result.path,alt:'',caption:''});
+    }
+    document.getElementById('gallery-list-'+fieldKey).innerHTML=renderGalleryItems(fieldKey);
+    hideStatus();
+  }catch(e){showStatus('Upload failed: '+e.message,true);}
+  inputEl.value='';
 }
 
 /* ── Downloads SECTION widget (heading + enable toggle + file list) —
@@ -504,7 +634,7 @@ function blankProject(){
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'}};
 }
 function blankPost(){
-  return{id:'',draft:true,title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',appUrl:'',appUrlPasswordProtected:false,downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'};
+  return{id:'',status:'draft',scheduledAt:'',title:'',date:new Date().toISOString().slice(0,10),summary:'',thumbnail:'',body:'',images:[],videoEmbed:'',appUrl:'',appUrlPasswordProtected:false,downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'};
 }
 function newItem(type){
   state.editingType=type;
@@ -608,12 +738,23 @@ function renderForm(){
         '<button class="btn" onclick="cancelForm()">Cancel</button>'+
       '</div>';
   } else {
+    var pStatus=postStatus(item);
     fv.innerHTML=
       '<div class="card">'+
-        '<h2 style="font-size:1.1rem;margin-bottom:18px;">'+(isNew?'New Blog Post':'Edit Blog Post')+'</h2>'+
+        '<h2 style="font-size:1.1rem;margin-bottom:6px;">'+(isNew?'New Blog Post':'Edit Blog Post')+'</h2>'+
+        '<p class="hint" style="margin-bottom:16px;">Editing on: <strong style="color:var(--paper);">'+
+          esc((state.sites.find(function(s){return s.id===state.currentSiteId;})||{}).name||state.currentSiteId)+'</strong></p>'+
         '<div class="field"><label>URL slug</label>'+
           '<input type="text" id="f-id" value="'+esc(item.id)+'" placeholder="my-post-title" '+(isNew?'':'disabled')+'></div>'+
-        '<div class="checkbox-row"><label class="check-label"><input type="checkbox" id="f-draft" '+(item.draft?'checked':'')+'>Save as draft</label></div>'+
+        '<div class="field"><label>Status</label>'+
+          '<select id="f-status" onchange="toggleScheduleField()">'+
+            '<option value="draft" '+(pStatus==='draft'?'selected':'')+'>Draft</option>'+
+            '<option value="scheduled" '+(pStatus==='scheduled'?'selected':'')+'>Scheduled</option>'+
+            '<option value="published" '+(pStatus==='published'?'selected':'')+'>Publish now</option>'+
+          '</select></div>'+
+        '<div class="field" id="f-scheduled-field" style="'+(pStatus==='scheduled'?'':'display:none;')+'">'+
+          '<label>Publish at</label><input type="datetime-local" id="f-scheduled-at" value="'+esc(item.scheduledAt?item.scheduledAt.slice(0,16):'')+'">'+
+          '<p class="hint">Post stays hidden from the public blog until this date/time.</p></div>'+
         '<div class="field"><label>Title</label><input type="text" id="f-title" value="'+esc(item.title)+'"></div>'+
         '<div class="field"><label>Date</label><input type="date" id="f-date" value="'+esc(item.date)+'"></div>'+
         '<div class="field"><label>Card summary</label><input type="text" id="f-summary" value="'+esc(item.summary)+'"></div>'+
@@ -625,7 +766,11 @@ function renderForm(){
         '</div>'+
         '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">Uses the single shared <code>TOOL_PASSWORD</code> environment variable in Vercel — the same password protects every protected item site-wide (projects, blog posts, creations, and Scout).</p>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
-        '<div class="field"><label>Post content</label>'+toolbar('f-body')+'<textarea id="f-body" rows="16">'+esc(item.body)+'</textarea></div>'+
+        '<div class="field"><label>Post content</label><div id="f-body-quill"></div></div>'+
+        '<div class="field" style="margin-top:16px;"><label>Image gallery <span style="text-transform:none;letter-spacing:0;font-weight:400;">(shown at the end of the post — alt text recommended for every image)</span></label>'+
+          galleryWidget('post-gallery',item.images||[])+'</div>'+
+        '<div class="field"><label>Video embed URL <span style="text-transform:none;letter-spacing:0;font-weight:400;">(optional — YouTube or Vimeo link)</span></label>'+
+          '<input type="url" id="f-video-embed" value="'+esc(item.videoEmbed||'')+'" placeholder="https://www.youtube.com/watch?v=..."></div>'+
         '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('blog',item)+'</div>'+
       '<details style="margin-top:12px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
         '<div class="section-body">'+
@@ -639,20 +784,29 @@ function renderForm(){
       '</details>'+
       '</div>'+
       '<div class="btn-row">'+
-        '<button class="btn btn-primary" onclick="saveItem(false)">Publish</button>'+
-        '<button class="btn btn-ghost" onclick="saveItem(true)">Save as draft</button>'+
+        '<button class="btn btn-primary" onclick="savePost()">Save</button>'+
         '<button class="btn" onclick="cancelForm()">Cancel</button>'+
       '</div>';
+
+    quillEditor=new Quill('#f-body-quill',{
+      theme:'snow',
+      modules:{toolbar:[['bold','italic'],[{header:2},{header:3}],[{list:'ordered'},{list:'bullet'}],['blockquote','link'],['clean']]}
+    });
+    quillEditor.root.innerHTML=item.body||'';
   }
 }
+function toggleScheduleField(){
+  var status=document.getElementById('f-status').value;
+  document.getElementById('f-scheduled-field').style.display=status==='scheduled'?'block':'none';
+}
 
-/* ── Save item ── */
+/* ── Save item (projects only — blog posts use savePost()) ── */
 async function saveItem(asDraft){
-  var type=state.editingType;
+  var type='project';
   var id=slugify(document.getElementById('f-id').value);
   if(!id){alert('Please set a URL slug.');return;}
   var item;
-  if(type==='project'){
+  {
     var tags=document.getElementById('f-tags').value.split(',').map(function(t){return t.trim();}).filter(Boolean);
     item={
       id:id,draft:asDraft,
@@ -688,25 +842,56 @@ async function saveItem(asDraft){
         },
       },
     };
-  }else{
-    item={id:id,draft:asDraft,title:document.getElementById('f-title').value,date:document.getElementById('f-date').value,summary:document.getElementById('f-summary').value,thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',body:document.getElementById('f-body').value,
-      appUrl:document.getElementById('f-blog-app-url').value.trim(),
-      appUrlPasswordProtected:document.getElementById('f-blog-app-url-pw').checked,
-      downloads:window.__downloads['blog-downloads']||[],
-      downloadsEnabled:document.getElementById('blog-dl-enabled').checked,
-      downloadsShowHeading:document.getElementById('blog-dl-show-heading').checked,
-      downloadsHeading:document.getElementById('blog-dl-heading').value,
-      seo:{
-        title:document.getElementById('f-seo-title')?document.getElementById('f-seo-title').value:'',
-        metaDescription:document.getElementById('f-meta-desc')?document.getElementById('f-meta-desc').value:'',
-        keywords:document.getElementById('f-keywords')?document.getElementById('f-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean):[],
-      }};
   }
   showStatus(asDraft?'Saving draft…':'Publishing…');
   try{
     await callApi({action:'save',type:type,item:item});
     hideStatus();
     showStatus('✓ '+(asDraft?'Draft saved!':'Published! Site updates in ~30s.'),false,true);
+    await loadAll();
+    setTimeout(cancelForm,1200);
+  }catch(e){showStatus('Save failed: '+e.message,true);}
+}
+
+/* ── Save blog post ── */
+async function savePost(){
+  var id=slugify(document.getElementById('f-id').value);
+  if(!id){alert('Please set a URL slug.');return;}
+  var status=document.getElementById('f-status').value;
+  var scheduledAtRaw=document.getElementById('f-scheduled-at').value;
+  if(status==='scheduled'&&!scheduledAtRaw){alert('Set a publish date/time, or change the status.');return;}
+  var images=(window.__galleries['post-gallery']||[]).map(function(img){
+    return {url:img.url,alt:img.alt||'',caption:img.caption||''};
+  });
+  var item={
+    id:id,
+    status:status,
+    draft:status==='draft', // kept for legacy front-end compatibility
+    scheduledAt:status==='scheduled'?new Date(scheduledAtRaw).toISOString():'',
+    title:document.getElementById('f-title').value,
+    date:document.getElementById('f-date').value,
+    summary:document.getElementById('f-summary').value,
+    thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',
+    body:quillEditor?quillEditor.root.innerHTML:'',
+    images:images,
+    videoEmbed:document.getElementById('f-video-embed').value.trim(),
+    appUrl:document.getElementById('f-blog-app-url').value.trim(),
+    appUrlPasswordProtected:document.getElementById('f-blog-app-url-pw').checked,
+    downloads:window.__downloads['blog-downloads']||[],
+    downloadsEnabled:document.getElementById('blog-dl-enabled').checked,
+    downloadsShowHeading:document.getElementById('blog-dl-show-heading').checked,
+    downloadsHeading:document.getElementById('blog-dl-heading').value,
+    seo:{
+      title:document.getElementById('f-seo-title')?document.getElementById('f-seo-title').value:'',
+      metaDescription:document.getElementById('f-meta-desc')?document.getElementById('f-meta-desc').value:'',
+      keywords:document.getElementById('f-keywords')?document.getElementById('f-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean):[],
+    },
+  };
+  showStatus(status==='draft'?'Saving draft…':status==='scheduled'?'Scheduling…':'Publishing…');
+  try{
+    await callApi({action:'save',type:'blog',item:item,siteId:state.currentSiteId});
+    hideStatus();
+    showStatus('✓ '+(status==='draft'?'Draft saved!':status==='scheduled'?'Post scheduled!':'Published! Site updates in ~30s.'),false,true);
     await loadAll();
     setTimeout(cancelForm,1200);
   }catch(e){showStatus('Save failed: '+e.message,true);}

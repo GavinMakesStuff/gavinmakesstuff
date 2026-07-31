@@ -239,11 +239,33 @@ function renderProjectDetail(section) {
   );
 }
 
+/* ---- Blog visibility ----
+   status/scheduledAt is the current schema (draft/scheduled/published); a
+   scheduled post only becomes visible once its scheduledAt time has passed.
+   Falls back to the legacy `draft` boolean for older posts saved before
+   this field existed. */
+function isPostVisible(p) {
+  if (p.status) {
+    if (p.status === 'published') return true;
+    if (p.status === 'scheduled') return !!p.scheduledAt && new Date(p.scheduledAt).getTime() <= Date.now();
+    return false; // draft
+  }
+  return !p.draft;
+}
+
+/* Post bodies are now rich-text HTML from the admin's Quill editor (starts
+   with a tag); older posts were hand-typed lightweight markdown. Detect
+   which and render accordingly instead of double-processing HTML. */
+function renderPostBody(body) {
+  if (!body) return '';
+  return String(body).trim().charAt(0) === '<' ? body : renderMarkdown(body);
+}
+
 /* ---- Blog list ---- */
 function renderBlogCards(containerId, detailPageUrl, limit) {
   var container = document.getElementById(containerId);
   if (!container) return;
-  var posts = (window.BLOG_POSTS || []).filter(function (p) { return !p.draft; });
+  var posts = (window.BLOG_POSTS || []).filter(isPostVisible);
   if (limit) posts = posts.slice(0, limit);
   if (!posts.length) { container.innerHTML = '<div class="empty-state">No posts yet — check back soon.</div>'; return; }
   container.innerHTML = posts.map(function (post) {
@@ -264,7 +286,7 @@ function renderBlogDetail() {
   var post = (window.BLOG_POSTS || []).find(function (p) { return p.id === id; });
   var root = document.getElementById('blog-detail-root');
   if (!root) return;
-  if (!post) { root.innerHTML = '<div class="empty-state">Could not find that post.</div>'; return; }
+  if (!post || !isPostVisible(post)) { root.innerHTML = '<div class="empty-state">Could not find that post.</div>'; return; }
   document.title = (post.seo && post.seo.title) ? post.seo.title : post.title;
   // Inject meta description if SEO data available
   if (post.seo && post.seo.metaDescription) {
@@ -283,7 +305,7 @@ function renderBlogDetail() {
     '<h1>' + post.title + '</h1>' +
     '<img class="detail-thumb" src="' + post.thumbnail + '" alt="' + post.title + '" style="margin-bottom:28px;">' +
     appLinkHtml +
-    '<div class="detail-body">' + renderMarkdown(post.body) + '</div>' +
+    '<div class="detail-body">' + renderPostBody(post.body) + '</div>' +
     downloadsHtml
   );
 }

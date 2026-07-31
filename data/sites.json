@@ -1,0 +1,18 @@
+{
+  "sites": [
+    {
+      "id": "studio",
+      "name": "Studio (personal blog)",
+      "repo": "GavinMakesStuff/gavinmakesstuff",
+      "dataPath": "data/blog.json",
+      "domain": "gavinmakesstuff.com"
+    },
+    {
+      "id": "scout",
+      "name": "Scout",
+      "repo": "GavinMakesStuff/gavinmakesstuff",
+      "dataPath": "data/sites/scout-blog.json",
+      "domain": "gavinmakesstuff.com/scout"
+    }
+  ]
+}

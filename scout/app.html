@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
   <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1/dist/driver.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1/dist/driver.js.iife.js"></script>
 </head>
 <body>
 
@@ -271,16 +273,16 @@
 
     <!-- Menu section -->
     <div class="sb-section-label">Menu</div>
-    <div class="sb-item active" data-view="results" data-label="Results" onclick="switchView('results')">
+    <div class="sb-item active" id="sb-item-results" data-view="results" data-label="Results" onclick="switchView('results')">
       <i class="ti ti-briefcase sb-icon"></i>
       <span class="sb-label">Results</span>
     </div>
-    <div class="sb-item" data-view="saved" data-label="Saved" onclick="switchView('saved')">
+    <div class="sb-item" id="sb-item-saved" data-view="saved" data-label="Saved" onclick="switchView('saved')">
       <i class="ti ti-bookmark sb-icon"></i>
       <span class="sb-label">Saved</span>
       <span class="sb-badge" id="saved-count" style="display:none;">0</span>
     </div>
-    <div class="sb-item" data-view="applied" data-label="Applied" onclick="switchView('applied')">
+    <div class="sb-item" id="sb-item-applied" data-view="applied" data-label="Applied" onclick="switchView('applied')">
       <i class="ti ti-send sb-icon"></i>
       <span class="sb-label">Applied</span>
       <span class="sb-badge" id="applied-count" style="display:none;">0</span>
@@ -295,7 +297,7 @@
 
     <!-- General section -->
     <div class="sb-section-label">General</div>
-    <div class="sb-item" data-label="Guide" onclick="toggleGuide()">
+    <div class="sb-item" id="sb-item-guide" data-label="Guide" onclick="toggleGuide()">
       <i class="ti ti-help sb-icon"></i>
       <span class="sb-label">Guide</span>
     </div>
@@ -388,7 +390,7 @@
         </button>
 
         <div style="display:flex;gap:10px;align-items:center;">
-          <button class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
+          <button id="analyze-btn" class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
             <i class="ti ti-search"></i> Analyze<span id="analyze-cost-badge"></span>
           </button>
           <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">
@@ -639,7 +641,7 @@
       <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px;">FAQ</div>
       <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Billing, tokens, and common questions</div>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:22px;max-width:640px;">
+    <div style="flex:1;overflow-y:auto;padding:22px;">
       <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--teal);margin-bottom:14px;">Billing and tokens</div>
 
       <div style="margin-bottom:20px;">
@@ -706,7 +708,7 @@
       <button class="btn btn-primary" onclick="welcomeGoToProfile()">
         <i class="ti ti-user"></i> Set up my profile
       </button>
-      <button class="btn btn-ghost" onclick="dismissWelcome(true)">Skip for now</button>
+      <button class="btn btn-ghost" onclick="skipWelcomeAndTour()">Skip for now</button>
     </div>
   </div>
 </div>
