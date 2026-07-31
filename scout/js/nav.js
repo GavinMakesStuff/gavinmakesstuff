@@ -134,18 +134,32 @@ function skipWelcomeAndTour() {
 function maybeStartTour() {
   if (localStorage.getItem('scout-tour-seen') === 'true') return;
   if (typeof window.driver === 'undefined') return;
+  if (typeof renderExampleAnalysis !== 'function') return;
   localStorage.setItem('scout-tour-seen', 'true');
   var driver = window.driver.js.driver;
   var tour = driver({
     showProgress: true,
     allowClose: true,
+    // Whichever way the tour ends — finished or closed early — put the
+    // detail panel back to normal instead of leaving the fake example up.
+    onDestroyed: function () { if (typeof showInlinePaste === 'function') showInlinePaste(); },
     steps: [
       { element: '#sb-item-results', popover: { title: 'Results', description: 'Every posting you analyze shows up here as a scored card, newest first.' } },
       { element: '#inline-paste-area', popover: { title: 'Paste a posting', description: 'Paste the full text of a job posting here. Use "Add another posting" to batch several at once.' } },
-      { element: '#analyze-btn', popover: { title: 'Analyze', description: 'This shows how many tokens (or free analyses) the current batch will use before you commit to it.' } },
+      { element: '#analyze-btn', popover: { title: 'Analyze', description: 'This shows exactly how many tokens (or free analyses) the current batch will use before you commit to it — no surprises.' } },
+      {
+        element: '#demo-score-block',
+        onHighlightStarted: function () { renderExampleAnalysis(); },
+        popover: { title: 'A quick example', description: "Here's a made-up analysis so you can see what each part means before you spend a real one. The score is a blunt 1–100 read on how good a fit you actually are, not just keyword overlap." },
+      },
+      { element: '#demo-why-score', popover: { title: 'Why This Score', description: 'A plain-English reason for the number above — what helped it, and what held it back.' } },
+      { element: '#demo-lead-with', popover: { title: 'Lead With These', description: 'Your strongest matches for this specific posting — pull straight from here for a cover letter.' } },
+      { element: '#demo-red-flags', popover: { title: 'Red Flags', description: 'Things a recruiter would notice about the posting itself in seconds — missing salary, a stale listing, and so on.' } },
+      { element: '#demo-keywords', popover: { title: 'Keywords', description: 'Skills and terms pulled from the posting, split into what you already have and what\'s missing from your resume. Click any chip to copy it.' } },
+      { element: '#sb-item-profile', popover: { title: 'Your profile', description: 'All of this — the score, the reasoning, the missing keywords — is only as accurate as your profile. Fill in your background, experience, and skills here (or upload a resume to auto-fill it) before analyzing for real.' } },
+      { element: '#sb-token-balance', popover: { title: 'Free tier & tokens', description: 'Everyone gets 3 free analyses a week, no card required. Need more? Subscribe for a monthly allowance or buy a one-time token pack — this shows your current balance, always visible here.' } },
       { element: '#sb-item-saved', popover: { title: 'Saved', description: 'Bookmark postings here to come back to later.' } },
       { element: '#sb-item-applied', popover: { title: 'Applied', description: 'Track applications with dates, contacts, and follow-ups once you’ve applied.' } },
-      { element: '#sb-token-balance', popover: { title: 'Your balance', description: 'Your remaining free analyses or token balance for this week/month shows here.' } },
       { element: '#sb-item-guide', popover: { title: 'Full guide', description: 'You can reopen the full step-by-step guide here any time.' } },
     ],
   });

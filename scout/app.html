@@ -290,7 +290,7 @@
 
     <!-- Profile section -->
     <div class="sb-section-label">Profile</div>
-    <div class="sb-item" data-view="profile" data-label="Edit profile" onclick="openProfileEditor()">
+    <div class="sb-item" id="sb-item-profile" data-view="profile" data-label="Edit profile" onclick="openProfileEditor()">
       <i class="ti ti-user sb-icon"></i>
       <span class="sb-label">Edit profile</span>
     </div>
@@ -352,12 +352,12 @@
         <button class="filter-pill" onclick="filterResults('high',this)">High</button>
         <button class="filter-pill" onclick="filterResults('mid',this)">Partial</button>
         <button class="filter-pill" onclick="filterResults('low',this)">Low</button>
+        <button class="filter-pill" onclick="filterResults('hidden',this)">Hidden<span id="hidden-count-badge"></span></button>
         <!-- Count dots — hidden until first analysis -->
         <div id="status-bar" style="display:none;margin-left:auto;display:none;align-items:center;gap:10px;font-size:10px;font-weight:600;color:var(--text-muted);">
           <span><span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:3px;"></span><span id="count-high">0</span></span>
           <span><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:3px;"></span><span id="count-mid">0</span></span>
           <span><span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:3px;"></span><span id="count-low">0</span></span>
-          <button class="filter-pill" onclick="clearAll()" style="margin-left:2px;">Clear</button>
         </div>
       </div>
 

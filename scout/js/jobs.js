@@ -6,6 +6,7 @@ let allResults    = [];
 let currentFilter = 'all';
 let slotCount     = 0;
 let selectedIdx   = null;
+let hiddenJobKeys = new Set();
 
 // ══════════════════════════════════════════
 // JOB SLOTS
@@ -388,26 +389,35 @@ function jobKey(j) { return (j.title||'')+'||'+(j.company||''); }
 function renderJobList(jobs) {
   const inner = document.getElementById('job-list-inner');
   if (!inner) return;
-  let filtered = jobs;
-  if (currentFilter!=='all') filtered = jobs.filter(j=>scoreTier(j.viabilityScore)===currentFilter);
+
+  // Carry each job's real index in allResults through filtering, so quick
+  // actions (star/save/apply/hide) always act on the right job even when a
+  // tier or hidden filter has narrowed what's on screen.
+  const indexed = jobs.map((job,idx) => ({job,idx}));
+  let filtered = indexed.filter(({job}) => hiddenJobKeys.has(jobKey(job)) === (currentFilter==='hidden'));
+  if (currentFilter!=='all' && currentFilter!=='hidden') filtered = filtered.filter(({job}) => scoreTier(job.viabilityScore)===currentFilter);
+
   if (!filtered.length) {
-    inner.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No results match this filter</div></div>`;
+    inner.innerHTML = currentFilter==='hidden'
+      ? `<div class="empty-state"><div class="empty-icon"><i class="ti ti-eye-off" style="font-size:2.2rem;opacity:0.3;"></i></div><div class="empty-title">No hidden postings</div><div class="empty-sub">Postings you hide stay here instead of being deleted.</div></div>`
+      : `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No results match this filter</div></div>`;
     return;
   }
 
-  inner.innerHTML = filtered.map((job,i) => {
+  inner.innerHTML = filtered.map(({job,idx}) => {
     const s         = job.viabilityScore||0;
     const key       = jobKey(job);
     const isSaved   = savedJobs.some(x=>jobKey(x)===key);
     const isApplied = appliedJobs.some(x=>jobKey(x)===key);
     const record    = savedJobs.find(x=>jobKey(x)===key) || appliedJobs.find(x=>jobKey(x)===key);
     const isStarred = record?.starred||false;
+    const isHidden  = hiddenJobKeys.has(key);
     const loc       = job.workLocation;
     const locIcon   = loc?.type==='Remote'?'🏠':loc?.type==='Hybrid'?'🔄':loc?.type==='On-site'?'🏢':'';
 
     return `
     <div class="job-list-card ${scoreTier(s) === 'high' ? 'high' : scoreTier(s) === 'mid' ? 'mid' : 'low'}${isStarred?' starred':''}"
-         id="jlc-${i}" onclick="selectJob(${i})">
+         id="jlc-${idx}" onclick="selectJob(${idx})">
       <div class="jlc-top">
         <div class="jlc-icon" style="${iconStyle(s)}">${initials(job.company)}</div>
         <div class="jlc-body">
@@ -425,16 +435,19 @@ function renderJobList(jobs) {
         ${loc?.distanceKm!=null?`<span class="tag tag-dist">~${Math.round(loc.distanceKm)} km</span>`:''}
       </div>
       <div class="card-quick-actions" onclick="event.stopPropagation()">
-        <button class="cqa-btn${isStarred?' star-active':''}" onclick="toggleStarResult(${i})" id="cqa-star-${i}" title="Star">
+        <button class="cqa-btn${isStarred?' star-active':''}" onclick="toggleStarResult(${idx})" id="cqa-star-${idx}" title="Star">
           <i class="ti ti-star${isStarred?'-filled':''}"></i> ${isStarred?'Starred':'Star'}
         </button>
-        <button class="cqa-btn${isSaved?' save-active':''}" onclick="toggleSave(${i})" id="cqa-save-${i}" title="Save">
+        <button class="cqa-btn${isSaved?' save-active':''}" onclick="toggleSave(${idx})" id="cqa-save-${idx}" title="Save">
           <i class="ti ti-bookmark${isSaved?'-filled':''}"></i> ${isSaved?'Saved':'Save'}
         </button>
-        <button class="cqa-btn${isApplied?' apply-active':''}" onclick="markApplied(${i})" id="cqa-apply-${i}" title="Mark Applied">
+        <button class="cqa-btn${isApplied?' apply-active':''}" onclick="markApplied(${idx})" id="cqa-apply-${idx}" title="Mark Applied">
           <i class="ti ti-send"></i> ${isApplied?'Applied':'Apply'}
         </button>
-        ${isSaved||isApplied?`<button class="cqa-btn remove-btn" onclick="removeResult(${i})" title="Remove"><i class="ti ti-trash"></i></button>`:''}
+        <button class="cqa-btn${isHidden?' hide-active':''}" onclick="${isHidden?'unhideResult':'hideResult'}(${idx})" title="${isHidden?'Unhide':'Hide'}">
+          <i class="ti ti-eye${isHidden?'':'-off'}"></i> ${isHidden?'Unhide':'Hide'}
+        </button>
+        ${isSaved||isApplied?`<button class="cqa-btn remove-btn" onclick="removeResult(${idx})" title="Remove"><i class="ti ti-trash"></i></button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -445,7 +458,7 @@ function renderJobList(jobs) {
 // ══════════════════════════════════════════
 function selectJob(idx) {
   selectedIdx = idx;
-  document.querySelectorAll('.job-list-card').forEach((el,i) => el.classList.toggle('selected', i===idx));
+  document.querySelectorAll('.job-list-card').forEach(el => el.classList.toggle('selected', el.id==='jlc-'+idx));
 
   const job = allResults[idx];
   if (!job) return;
@@ -556,9 +569,13 @@ function selectJob(idx) {
       <div class="detail-section">
         <div class="ds-label">About this role</div>
         <div class="ds-body">${escHtml(job.summary)}</div>
-        <div class="viability-note">🤔 ${escHtml(job.viabilityReason||'')}</div>
+      </div>
+      <div class="detail-section" style="border-left:3px solid var(--teal);">
+        <div class="ds-label" style="color:var(--teal);">🎯 Why This Score</div>
+        <div class="ds-body">${escHtml(job.viabilityReason||'')}</div>
       </div>
       ${highlightHtml}
+      ${redFlagsHtml}
       ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
       ${benefits?`<div class="detail-section"><div class="ds-label">Benefits and Compensation</div><div class="chip-row">${benefits}</div></div>`:''}
       ${(kwHard||kwSoft||kwInd)?`<div class="detail-section">
@@ -571,7 +588,6 @@ function selectJob(idx) {
         ${kwInd?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}
         ${kwMissing?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:5px;">⚠ Missing from your resume</div><div class="chip-row">${kwMissing}</div></div>`:''}
       </div>`:''}
-      ${redFlagsHtml}
       ${repHtml}
       ${locHtml}
       <div class="detail-section">
@@ -588,6 +604,72 @@ function selectJob(idx) {
         <i class="ti ti-plus"></i> New analysis
       </button>
       <button class="btn-icon" onclick="copyCard(${idx})" style="margin-left:auto;"><i class="ti ti-copy"></i> Copy full details</button>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// EXAMPLE ANALYSIS (onboarding tour only)
+// ══════════════════════════════════════════
+// A fixed, fake job used purely to illustrate what each part of a real
+// analysis means — never touches allResults, has no working action buttons.
+function renderExampleAnalysis() {
+  const detail = document.getElementById('detail-content');
+  if (!detail) return;
+  detail.innerHTML = `
+    <div class="detail-header">
+      <div class="dh-row">
+        <div class="dh-icon">EX</div>
+        <div class="dh-body">
+          <div class="dh-title">Marketing Coordinator <span style="font-weight:700;color:var(--text-dim);">(Example)</span></div>
+          <div class="dh-company">Example Co.</div>
+        </div>
+        <div class="dh-score" id="demo-score-block">
+          <div class="dh-score-num">78<span style="font-size:13px;opacity:0.5">/100</span></div>
+          <div class="dh-score-lbl">Strong match</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--teal-light);border:1px solid rgba(0,90,122,0.2);border-radius:8px;padding:10px 14px;margin:0 22px 14px;font-size:11px;color:var(--teal);font-weight:700;">
+      <i class="ti ti-info-circle"></i> This is a fake example, not a real analysis — just here to show what each section means.
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="ds-label">About this role</div>
+        <div class="ds-body">A mid-level marketing role at a fictional B2B software company, coordinating campaigns across email, content, and paid channels.</div>
+      </div>
+      <div class="detail-section" id="demo-why-score" style="border-left:3px solid var(--teal);">
+        <div class="ds-label" style="color:var(--teal);">🎯 Why This Score</div>
+        <div class="ds-body">Strong overall fit — you meet nearly every core requirement. This posting asks for hands-on HubSpot experience your profile doesn't mention, which is the main thing holding the score back from higher.</div>
+      </div>
+      <div class="detail-section" id="demo-lead-with" style="border-left:3px solid var(--green);">
+        <div class="ds-label" style="color:var(--green);">✨ Lead With These</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Your strongest assets for this specific role — lead with these in your cover letter and resume:</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+          <li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">1</span>Your B2B marketing background directly matches their top requirement</li>
+          <li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">2</span>Your project coordination experience covers their "cross-functional teamwork" ask</li>
+        </ul>
+      </div>
+      <div class="detail-section" id="demo-red-flags" style="border-left:3px solid var(--red);">
+        <div class="ds-label" style="color:var(--red);">⚡ Hiring Manager Red Flags</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Things a recruiter scanning your profile against this posting would notice in under 10 seconds:</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+          <li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">1</span>Salary range isn't listed — worth asking directly before investing more time</li>
+          <li style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><span style="flex-shrink:0;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px;">2</span>Posting has been live 60+ days, which can signal a hard-to-fill or deprioritized role</li>
+        </ul>
+      </div>
+      <div class="detail-section" id="demo-keywords">
+        <div class="ds-label">Resume and Cover Letter Keywords</div>
+        <div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;">Hard Skills</div><div class="chip-row"><span class="chip chip-hard">Google Analytics</span> <span class="chip chip-hard">Content calendars</span></div></div>
+        <div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:5px;">⚠ Missing from your resume</div><div class="chip-row"><span class="chip" style="background:var(--red-bg);border-color:rgba(164,41,27,0.3);color:var(--red);font-family:var(--font-mono);">HubSpot</span></div></div>
+      </div>
+    </div>
+
+    <div class="detail-footer">
+      <button class="btn btn-primary btn-sm" onclick="showInlinePaste()" style="gap:6px;">
+        <i class="ti ti-plus"></i> Analyze a real posting
+      </button>
     </div>`;
 }
 
@@ -677,12 +759,13 @@ function renderSavedCard(job, idx, isApplied) {
     <div class="meta-item">Industry: <span class="meta-val">${escHtml(job.industry||'—')}</span></div>
   </div>
   <div class="detail-body">
-    <div class="detail-section"><div class="ds-label">About this role</div><div class="ds-body">${escHtml(job.summary)}</div><div class="viability-note">🤔 ${escHtml(job.viabilityReason||'')}</div></div>
+    <div class="detail-section"><div class="ds-label">About this role</div><div class="ds-body">${escHtml(job.summary)}</div></div>
+    <div class="detail-section" style="border-left:3px solid var(--teal);"><div class="ds-label" style="color:var(--teal);">🎯 Why This Score</div><div class="ds-body">${escHtml(job.viabilityReason||'')}</div></div>
     ${highlightScHtml}
+    ${redFlagsScHtml}
     ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
     ${benefits?`<div class="detail-section"><div class="ds-label">Benefits</div><div class="chip-row">${benefits}</div></div>`:''}
     ${(kwHard||kwSoft||kwInd||kwMissingSc)?`<div class="detail-section"><div class="ds-label" style="margin-bottom:10px;">Resume and Cover Letter Keywords</div>${kwHard?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}${kwSoft?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}${kwInd?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}${kwMissingSc?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:4px;">⚠ Missing from your resume</div><div class="chip-row">${kwMissingSc}</div></div>`:''}</div>`:''}
-    ${redFlagsScHtml}
     ${repHtml}
     ${locHtml}
     <div class="detail-section">
@@ -789,34 +872,15 @@ function showInlinePaste() {
   detail.querySelector('.paste-area')?.focus();
 }
 
-function clearAll() {
-  allResults=[]; currentFilter='all'; selectedIdx=null;
-  clearAllSlots();
-  const inner=document.getElementById('job-list-inner');
-  if (inner) inner.innerHTML=`<div class="empty-state"><div class="empty-icon"><i class="ti ti-file-text" style="font-size:2.2rem;opacity:0.3;"></i></div><div class="empty-title">No results yet</div><div class="empty-sub">Paste a job description on the right and hit Analyze.</div></div>`;
-  // Rebuild inline paste area (may have been destroyed by selectJob)
-  const detail2 = document.getElementById('detail-content');
-  if (detail2 && !document.getElementById('inline-paste-area')) {
-    slotCount = 0;
-    detail2.innerHTML = buildInlinePasteHTML();
-    addJobSlot();
-  } else {
-    const pasteArea = document.getElementById('inline-paste-area');
-    if (pasteArea) pasteArea.style.display = 'flex';
-  }
-  const sb=document.getElementById('status-bar');
-  if (sb) sb.style.display='none';
-  // Reset count dots to zero
-  const h=document.getElementById('count-high'),m=document.getElementById('count-mid'),l=document.getElementById('count-low');
-  if(h) h.textContent='0'; if(m) m.textContent='0'; if(l) l.textContent='0';
-  document.querySelectorAll('.filter-pill').forEach((b,i)=>b.classList.toggle('active',i===0));
-}
-
 function updateCounts(jobs) {
+  const visible = jobs.filter(j=>!hiddenJobKeys.has(jobKey(j)));
   const h=document.getElementById('count-high'),m=document.getElementById('count-mid'),l=document.getElementById('count-low');
-  if(h) h.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='high').length;
-  if(m) m.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='mid').length;
-  if(l) l.textContent=jobs.filter(j=>scoreTier(j.viabilityScore)==='low').length;
+  if(h) h.textContent=visible.filter(j=>scoreTier(j.viabilityScore)==='high').length;
+  if(m) m.textContent=visible.filter(j=>scoreTier(j.viabilityScore)==='mid').length;
+  if(l) l.textContent=visible.filter(j=>scoreTier(j.viabilityScore)==='low').length;
+  const hiddenCount = jobs.length - visible.length;
+  const hb=document.getElementById('hidden-count-badge');
+  if(hb) hb.textContent = hiddenCount ? ` (${hiddenCount})` : '';
   // Show the inline status bar
   const sb=document.getElementById('status-bar');
   if(sb){ sb.style.display='flex'; }
@@ -1032,6 +1096,24 @@ function removeResult(idx) {
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx){selectedIdx=null;const d=document.getElementById('detail-content');if(d)d.innerHTML='';}
   showToast('Removed.');
+}
+
+// Hide instead of delete — keeps the analyzed (token-spent) posting around
+// under the Hidden filter rather than losing it outright.
+function hideResult(idx) {
+  const job = allResults[idx];
+  if (!job) return;
+  hiddenJobKeys.add(jobKey(job));
+  if (selectedIdx===idx) { selectedIdx=null; showInlinePaste(); }
+  updateCounts(allResults); renderJobList(allResults);
+  showToast('Hidden — find it under the Hidden filter.');
+}
+function unhideResult(idx) {
+  const job = allResults[idx];
+  if (!job) return;
+  hiddenJobKeys.delete(jobKey(job));
+  updateCounts(allResults); renderJobList(allResults);
+  showToast('Unhidden.');
 }
 
 function toggleStarResult(idx) {

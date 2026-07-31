@@ -380,6 +380,7 @@ a:hover { text-decoration: underline; }
 .cqa-btn.star-active  { border-color: var(--sand-lo); color: var(--sand-text); background: var(--sand-light); }
 .cqa-btn.save-active  { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
 .cqa-btn.apply-active { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+.cqa-btn.hide-active  { border-color: var(--text-dim); color: var(--text-dim); background: var(--surface-2); }
 .cqa-btn.remove-btn   { border-color: rgba(164,41,27,0.30); color: var(--red); margin-left: auto; }
 .cqa-btn.remove-btn:hover { background: var(--red-bg); border-color: var(--red); }
 
