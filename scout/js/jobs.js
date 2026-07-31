@@ -204,12 +204,23 @@ async function analyzeJobs() {
     const jobs = parseJobsFromResponse(fullText);
     if (!jobs||jobs.length===0) throw new Error('No listings extracted. Make sure each posting has a title and company name.');
 
-    allResults = jobs;
-    renderJobList(jobs);
-    updateCounts(jobs);
+    // Merge into existing results rather than replacing them — running a
+    // second analysis shouldn't discard an earlier unsaved batch still sitting
+    // in this session. Re-analyzing the exact same posting (same title +
+    // company) replaces just that one entry with the fresh version.
+    jobs.forEach(newJob => {
+      const key = jobKey(newJob);
+      const existingIdx = allResults.findIndex(j => jobKey(j) === key);
+      if (existingIdx >= 0) allResults[existingIdx] = newJob;
+      else allResults.push(newJob);
+    });
+    renderJobList(allResults);
+    updateCounts(allResults);
     if (sb) sb.style.display = 'flex';
     showToast(`Analyzed ${jobs.length} posting${jobs.length!==1?'s':''}.`);
-    if (jobs.length>0) selectJob(0);
+    // Select the first newly-analyzed job at its real position in allResults.
+    const firstIdx = allResults.findIndex(j => jobKey(j) === jobKey(jobs[0]));
+    if (firstIdx >= 0) selectJob(firstIdx);
 
   } catch(err) {
     (window._progressTimers||[]).forEach(t=>clearTimeout(t));
