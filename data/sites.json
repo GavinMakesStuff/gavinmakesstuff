@@ -5,14 +5,16 @@
       "name": "Studio (personal blog)",
       "repo": "GavinMakesStuff/gavinmakesstuff",
       "dataPath": "data/blog.json",
-      "domain": "gavinmakesstuff.com"
+      "domain": "gavinmakesstuff.com",
+      "ga4MeasurementId": ""
     },
     {
       "id": "scout",
       "name": "Scout",
       "repo": "GavinMakesStuff/gavinmakesstuff",
       "dataPath": "data/sites/scout-blog.json",
-      "domain": "gavinmakesstuff.com/scout"
+      "domain": "gavinmakesstuff.com/scout",
+      "ga4MeasurementId": ""
     }
   ]
 }

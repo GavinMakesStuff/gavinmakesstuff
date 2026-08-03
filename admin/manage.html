@@ -260,6 +260,10 @@
           <div class="site-select-row">
             <label style="margin-bottom:0;">Site</label>
             <select id="blog-site-select" onchange="switchBlogSite(this.value)"></select>
+            <label style="margin-bottom:0;margin-left:16px;">GA4 Measurement ID</label>
+            <input type="text" id="site-ga4-id" placeholder="G-XXXXXXXXXX" style="width:auto;min-width:160px;">
+            <button class="btn btn-sm" onclick="saveSiteGa4Id()">Save</button>
+            <span id="site-ga4-status" class="hint" style="margin:0;"></span>
           </div>
           <div class="section-head">
             <h2 style="font-size:1.1rem;">Blog posts</h2>
@@ -378,6 +382,18 @@ function switchBlogSite(id){
   loadAll();
 }
 
+async function saveSiteGa4Id(){
+  var statusEl=document.getElementById('site-ga4-status');
+  var val=document.getElementById('site-ga4-id').value.trim();
+  statusEl.textContent='Saving…';
+  try{
+    await callApi({action:'save-site',siteId:state.currentSiteId,patch:{ga4MeasurementId:val}});
+    var site=state.sites.find(function(s){return s.id===state.currentSiteId;});
+    if(site) site.ga4MeasurementId=val;
+    statusEl.textContent='✓ Saved. Live on the site in ~30s.';
+  }catch(e){statusEl.textContent='Failed: '+e.message;}
+}
+
 /* ── List rendering ── */
 function postStatus(item){
   if(item.status)return item.status;
@@ -410,6 +426,9 @@ function renderLists(){
   siteSelect.innerHTML=state.sites.map(function(s){
     return '<option value="'+s.id+'" '+(s.id===state.currentSiteId?'selected':'')+'>'+esc(s.name||s.id)+'</option>';
   }).join('');
+  var currentSite=state.sites.find(function(s){return s.id===state.currentSiteId;});
+  var ga4Input=document.getElementById('site-ga4-id');
+  if(ga4Input) ga4Input.value=(currentSite&&currentSite.ga4MeasurementId)||'';
 
   var bQuery=(document.getElementById('blog-search')?.value||'').trim().toLowerCase();
   var filteredBlog=!bQuery?state.blog:state.blog.filter(function(b){

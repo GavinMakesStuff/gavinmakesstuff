@@ -149,6 +149,20 @@ module.exports = async function (req, res) {
       return;
     }
 
+    // ── SAVE SITES REGISTRY (e.g. per-site GA4 Measurement ID) ─────────────────
+    if (action === 'save-site') {
+      const siteId = body.siteId;
+      const patch = body.patch;
+      if (!siteId || !patch) { res.status(400).json({ error: 'Missing siteId or patch.' }); return; }
+      const { parsed, sha } = await readJson(SITES_FILE);
+      const site = (parsed.sites || []).find(s => s.id === siteId);
+      if (!site) { res.status(404).json({ error: 'Unknown siteId: ' + siteId }); return; }
+      Object.assign(site, patch);
+      await writeJson(SITES_FILE, parsed, sha, 'Update site: ' + siteId);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     // ── DELETE ────────────────────────────────────────────────────────────────
     if (action === 'delete') {
       const type = body.type;

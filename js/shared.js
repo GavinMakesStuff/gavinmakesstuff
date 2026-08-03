@@ -84,6 +84,12 @@ function injectAnalytics(settings) {
   }
 }
 
+/* Per-item GA4 events (project/post views) — no-op until injectAnalytics()
+   has actually set up gtag (no ID configured yet, or self-excluded). */
+function trackEvent(name, params) {
+  if (typeof gtag === 'function') gtag('event', name, params || {});
+}
+
 /* ---- Markdown renderer ---- */
 function renderMarkdown(text) {
   if (!text) return '';
@@ -237,6 +243,7 @@ function renderProjectDetail(section) {
     '<div class="detail-body">' + renderMarkdown(content.description) + '</div>' +
     galleryHtml + downloadsHtml
   );
+  trackEvent('view_project', { project_id: project.id, project_title: content.title, section: section });
 }
 
 /* ---- Blog visibility ----
@@ -308,6 +315,7 @@ function renderBlogDetail() {
     '<div class="detail-body">' + renderPostBody(post.body) + '</div>' +
     downloadsHtml
   );
+  trackEvent('view_blog_post', { post_id: post.id, post_title: post.title });
 }
 
 /* ---- Creations section ---- */
