@@ -147,7 +147,7 @@ function formatDate(d) {
 (async function () {
   var listEl = document.getElementById('blog-list');
   try {
-    var res = await fetch('data/sites/scout-blog.json');
+    var res = await fetch('/data/sites/scout-blog.json');
     var data = await res.json();
     var posts = (data.posts || []).filter(isPostVisible).sort(function (a, b) {
       return new Date(b.date) - new Date(a.date);

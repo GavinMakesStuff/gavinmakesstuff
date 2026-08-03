@@ -191,7 +191,7 @@ function closeLightbox() {
   var root = document.getElementById('post-root');
   var id = getQueryParam('id');
   try {
-    var res = await fetch('data/sites/scout-blog.json');
+    var res = await fetch('/data/sites/scout-blog.json');
     var data = await res.json();
     var post = (data.posts || []).find(function (p) { return p.id === id; });
 
