@@ -406,6 +406,15 @@ function iconStyle(s) {
 }
 function jobKey(j) { return (j.title||'')+'||'+(j.company||''); }
 
+// On mobile the job list and the detail panel can't sit side by side, so
+// only one shows at a time — this toggles which. No-op on desktop, where
+// both are always visible regardless of this class (see the max-width:760px
+// rules in styles.css).
+function setMobileView(view) {
+  const vp = document.querySelector('.view-panel[data-view="results"]');
+  if (vp) vp.classList.toggle('mobile-show-list', view === 'list');
+}
+
 // ══════════════════════════════════════════
 // RENDER JOB LIST
 // ══════════════════════════════════════════
@@ -482,6 +491,7 @@ function renderJobList(jobs) {
 function selectJob(idx) {
   selectedIdx = idx;
   document.querySelectorAll('.job-list-card').forEach(el => el.classList.toggle('selected', el.id==='jlc-'+idx));
+  setMobileView('detail');
 
   const job = allResults[idx];
   if (!job) return;
@@ -885,6 +895,7 @@ function buildInlinePasteHTML() {
 function showInlinePaste() {
   const detail = document.getElementById('detail-content');
   if (!detail) return;
+  setMobileView('detail');
   // Clear selected state
   document.querySelectorAll('.job-list-card').forEach(el => el.classList.remove('selected'));
   selectedIdx = null;

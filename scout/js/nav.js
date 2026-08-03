@@ -11,6 +11,25 @@ function initSidebar() {
   if (!sb) return;
   if (sidebarCollapsed) sb.classList.add('collapsed');
   updateCollapseBtn();
+  // Close the mobile drawer automatically whenever a nav item inside it is
+  // tapped, instead of requiring every sb-item onclick to remember to do it.
+  sb.addEventListener('click', (e) => {
+    if (e.target.closest('.sb-item')) closeMobileSidebar();
+  });
+}
+
+// ── Mobile sidebar drawer ────────────────────────────────────
+function toggleMobileSidebar() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  if (!sb || !bd) return;
+  const opening = !sb.classList.contains('mobile-open');
+  sb.classList.toggle('mobile-open', opening);
+  bd.classList.toggle('open', opening);
+}
+function closeMobileSidebar() {
+  document.getElementById('sidebar')?.classList.remove('mobile-open');
+  document.getElementById('sidebar-backdrop')?.classList.remove('open');
 }
 
 function toggleSidebar() {

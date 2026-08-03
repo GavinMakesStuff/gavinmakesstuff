@@ -213,7 +213,7 @@
         <div class="guide-step">
           <div class="guide-step-num">4</div>
           <div class="guide-step-title">Review results</div>
-          <div class="guide-step-body">Each posting gets a <b>1–100 score</b> with a written explanation. Click any card in the list to see the full detail on the right. Use the filter pills to focus on High, Partial, or Low matches.</div>
+          <div class="guide-step-body">Each posting gets a <b>1–100 score</b> with a written explanation. Click any card in the list to see the full detail. Use the filter pills to focus on High, Partial, or Low matches.</div>
         </div>
         <div class="guide-step">
           <div class="guide-step-num">5</div>
@@ -251,6 +251,16 @@
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════
+     MOBILE TOP BAR — hidden on desktop, shows the hamburger
+     that opens the sidebar as an off-canvas drawer on mobile
+     ══════════════════════════════════════ -->
+<div class="mobile-topbar">
+  <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu"><i class="ti ti-menu-2"></i></button>
+  <span class="mobile-topbar-title">Scout</span>
+</div>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
 
 <!-- ══════════════════════════════════════
      APP SHELL
@@ -344,7 +354,7 @@
     <div class="mid-col">
       <div class="mid-header">
         <div class="mid-title">Job postings</div>
-        <div class="mid-sub" id="mid-sub">Paste a posting on the right and click Analyze</div>
+        <div class="mid-sub" id="mid-sub">Paste a posting and click Analyze to get started</div>
       </div>
 
       <div class="filter-row" id="filter-row">
@@ -371,9 +381,14 @@
           </div>
         </div>
       </div>
+      <button class="mobile-new-analysis-fab" onclick="showInlinePaste()" aria-label="Analyze a new posting"><i class="ti ti-plus"></i></button>
     </div>
 
-    <!-- Detail panel — shows paste area when empty, job detail when a card is selected -->
+    <!-- Detail column — on mobile, only one of mid-col / this wrap shows at a
+         time (toggled via setMobileView() in jobs.js); on desktop both show
+         side by side and this bar stays hidden. -->
+    <div class="detail-col-wrap">
+    <button class="mobile-back-btn" onclick="setMobileView('list')"><i class="ti ti-arrow-left"></i> Back to results</button>
     <div class="detail-panel" id="detail-content">
 
       <!-- Inline paste area — shown when no job is selected -->
@@ -399,6 +414,7 @@
         </div>
       </div>
 
+    </div>
     </div>
 
   </div>
