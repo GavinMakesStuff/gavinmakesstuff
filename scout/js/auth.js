@@ -47,12 +47,26 @@ function isDisposableEmail(email) {
 
   // Listen for auth state changes (magic link callback, logout, etc.)
   _supa.auth.onAuthStateChange(async (event, session) => {
+    console.log('[Scout auth]', event, new Date().toISOString());
     if (event === 'SIGNED_IN' && session) {
       scoutSession = session;
       await loadUserProfile(session.user.id);
       document.dispatchEvent(new CustomEvent('scout:signed-in'));
     }
     if (event === 'SIGNED_OUT') {
+      // Supabase can occasionally emit a SIGNED_OUT event around a token
+      // refresh without the session actually being gone (reported: signing
+      // out unexpectedly while just interacting with the UI, e.g. toggling
+      // the sidebar). Double-check with a fresh getSession() before wiping
+      // the in-memory session and kicking the user to the login screen —
+      // costs one extra round trip only on this path, and only matters if
+      // this event turns out to be transient.
+      const { data: { session: recheck } } = await _supa.auth.getSession();
+      if (recheck) {
+        console.warn('[Scout auth] Ignored a SIGNED_OUT event — a valid session still exists.');
+        scoutSession = recheck;
+        return;
+      }
       scoutSession = null;
       scoutUser    = null;
       document.dispatchEvent(new CustomEvent('scout:signed-out'));
