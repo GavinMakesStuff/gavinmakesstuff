@@ -950,7 +950,7 @@ function toggleSave(idx) {
   const ei=savedJobs.findIndex(s=>jobKey(s)===key);
   if(ei>=0){savedJobs.splice(ei,1);showToast('Removed from saved.');}
   else{savedJobs.push({...job,savedAt:new Date().toISOString(),originalText:getAllJobText()[idx]||''});showToast('Job saved!');}
-  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
+  syncSavedJobs();
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx) selectJob(idx);
 }
@@ -965,8 +965,8 @@ function markApplied(idx) {
   // Remove from saved — applied is the source of truth now
   const si=savedJobs.findIndex(s=>jobKey(s)===key);
   if(si>=0) savedJobs.splice(si,1);
-  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
-  localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  syncSavedJobs();
+  syncAppliedJobs();
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx) selectJob(idx);
   showToast('Marked as applied — removed from saved.');
@@ -978,8 +978,8 @@ function markAppliedFromSaved(idx) {
   appliedJobs.push({...job,appliedAt:new Date().toISOString(),dateApplied:job.dateApplied||new Date().toISOString().slice(0,10)});
   // Remove from saved — applied is the source of truth now
   savedJobs.splice(idx,1);
-  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
-  localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  syncSavedJobs();
+  syncAppliedJobs();
   updateBadges(); showToast('Marked as applied — removed from saved.'); renderSaved();
 }
 
@@ -1089,7 +1089,7 @@ ${job.summary || ''}`;
       notes:           job.notes,
       originalText:    postingText,
     };
-    localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
+    syncSavedJobs();
     await refreshUserData?.();
     updateUserUI?.();
     showToast('Re-analysis complete!');
@@ -1106,18 +1106,18 @@ function moveBackToSaved(idx) {
   if(savedJobs.some(s=>jobKey(s)===key)){showToast('Already in saved.');return;}
   savedJobs.push({...job,savedAt:new Date().toISOString()});
   appliedJobs.splice(idx,1);
-  localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
-  localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  syncSavedJobs();
+  syncAppliedJobs();
   updateBadges(); showToast('Moved back to saved.'); renderApplied();
 }
 
 function removeSaved(idx) {
-  savedJobs.splice(idx,1); localStorage.setItem('scout-saved',JSON.stringify(savedJobs));
+  savedJobs.splice(idx,1); syncSavedJobs();
   updateBadges(); renderSaved(); showToast('Removed from saved.');
 }
 
 function removeApplied(idx) {
-  appliedJobs.splice(idx,1); localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));
+  appliedJobs.splice(idx,1); syncAppliedJobs();
   updateBadges(); renderApplied(); showToast('Removed from applied.');
 }
 
@@ -1125,8 +1125,8 @@ function removeResult(idx) {
   const job=allResults[idx]; const key=jobKey(job);
   const si=savedJobs.findIndex(s=>jobKey(s)===key);
   const ai=appliedJobs.findIndex(a=>jobKey(a)===key);
-  if(si>=0){savedJobs.splice(si,1);localStorage.setItem('scout-saved',JSON.stringify(savedJobs));}
-  if(ai>=0){appliedJobs.splice(ai,1);localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));}
+  if(si>=0){savedJobs.splice(si,1);syncSavedJobs();}
+  if(ai>=0){appliedJobs.splice(ai,1);syncAppliedJobs();}
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx){selectedIdx=null;const d=document.getElementById('detail-content');if(d)d.innerHTML='';}
   showToast('Removed.');
@@ -1154,8 +1154,8 @@ function toggleStarResult(idx) {
   const job=allResults[idx]; const key=jobKey(job);
   let touched=false;
   [savedJobs,appliedJobs].forEach(list=>{const i=list.findIndex(x=>jobKey(x)===key);if(i>=0){list[i].starred=!list[i].starred;touched=true;}});
-  if(!touched){job.starred=true;savedJobs.push({...job,savedAt:new Date().toISOString()});localStorage.setItem('scout-saved',JSON.stringify(savedJobs));showToast('Starred and saved!');}
-  else{localStorage.setItem('scout-saved',JSON.stringify(savedJobs));localStorage.setItem('scout-applied',JSON.stringify(appliedJobs));}
+  if(!touched){job.starred=true;savedJobs.push({...job,savedAt:new Date().toISOString()});syncSavedJobs();showToast('Starred and saved!');}
+  else{syncSavedJobs();syncAppliedJobs();}
   updateBadges(); renderJobList(allResults);
   if(selectedIdx===idx) selectJob(idx);
 }
@@ -1163,7 +1163,7 @@ function toggleStarResult(idx) {
 function toggleStarSaved(idx,isApplied) {
   const list=isApplied?appliedJobs:savedJobs;
   list[idx].starred=!list[idx].starred;
-  localStorage.setItem(isApplied?'scout-applied':'scout-saved',JSON.stringify(list));
+  isApplied?syncAppliedJobs():syncSavedJobs();
   updateBadges();
   if(isApplied) renderApplied(); else renderSaved();
 }
@@ -1175,7 +1175,7 @@ function updateTracking(idx,isApplied,field,value) {
   const list=isApplied?appliedJobs:savedJobs;
   if(!list[idx]) return;
   list[idx][field]=value;
-  localStorage.setItem(isApplied?'scout-applied':'scout-saved',JSON.stringify(list));
+  isApplied?syncAppliedJobs():syncSavedJobs();
   if(field==='followUpSent') showToast(value?'Follow up marked as sent.':'Follow up unmarked.');
   else if(field==='dateApplied'||field==='followUpDate') showToast('Date saved.');
 }
@@ -1209,7 +1209,7 @@ async function findContact(idx,isApplied) {
     if(found.email){
       list[idx].contactEmail=found.email;
       if(found.name) list[idx].contactName=found.name;
-      localStorage.setItem(isApplied?'scout-applied':'scout-saved',JSON.stringify(list));
+      isApplied?syncAppliedJobs():syncSavedJobs();
       if(isApplied) renderApplied(); else renderSaved();
       showToast('Contact found and saved.');
     } else {
@@ -1281,7 +1281,7 @@ async function handleResumeUpload(input) {
 // whether they originated from this resume or were typed in by hand.
 function removeResume() {
   delete userProfile.resumeFileName;
-  localStorage.setItem('scout-profile', JSON.stringify(userProfile));
+  syncJobProfile();
   refreshProfileStatus();
   showToast('Resume removed. Your profile fields are unchanged — edit or upload a new resume anytime.');
 }
@@ -1332,7 +1332,7 @@ async function analyzeResumeText(text, fileName) {
     if(parsed.industryTerms?.length) userProfile.skills.industryTerms = [...new Set([...userProfile.skills.industryTerms,...parsed.industryTerms])];
   }
   if (fileName) userProfile.resumeFileName = fileName;
-  localStorage.setItem('scout-profile',JSON.stringify(userProfile));
+  syncJobProfile();
   showToast(`Profile updated from resume${parsed.name?' for '+parsed.name:''}.`);
   // Refresh the visible form fields immediately, not just the status line —
   // otherwise the toast says "updated" while the fields on screen stay
@@ -1357,7 +1357,7 @@ function saveProfile() {
       industryTerms:  getSkillsFromUI('industryTerms'),
     },
   };
-  localStorage.setItem('scout-profile',JSON.stringify(userProfile));
+  syncJobProfile();
   showToast('Profile saved.');
   refreshProfileStatus();
   if(typeof updateSidebarName==='function') updateSidebarName();

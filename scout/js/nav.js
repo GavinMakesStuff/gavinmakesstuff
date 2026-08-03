@@ -218,6 +218,10 @@ function handleAuthReady() {
     } else {
       maybeStartTour();
     }
+    // Load (or one-time-migrate) saved/applied/profile from the account —
+    // fire-and-forget, since savedJobs/appliedJobs/userProfile already have
+    // a usable local-cache value synchronously from utils.js.
+    if (typeof initAccountData === 'function') initAccountData();
     // Handle Stripe return
     checkPaymentReturn();
   }
