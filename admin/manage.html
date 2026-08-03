@@ -61,7 +61,7 @@
     .btn-danger:hover{background:rgba(224,85,85,.1);}
     .btn-sm{padding:5px 11px;font-size:.75rem;}
     .btn:disabled{opacity:.45;cursor:not-allowed;}
-    .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px;}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px;position:sticky;bottom:0;background:var(--ink);padding:14px 0 4px;border-top:1px solid var(--border);z-index:20;}
 
     /* list view */
     .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -202,6 +202,7 @@
             <h2 style="font-size:1.1rem;">Projects</h2>
             <button class="btn btn-primary btn-sm" onclick="newItem('project')">+ New project</button>
           </div>
+          <input type="text" id="projects-search" placeholder="Search projects…" oninput="renderLists()" style="margin-bottom:14px;">
           <div id="projects-list"></div>
         </div>
       </div>
@@ -220,6 +221,7 @@
             <h2 style="font-size:1.1rem;">Blog posts</h2>
             <button class="btn btn-primary btn-sm" onclick="newItem('blog')">+ New post</button>
           </div>
+          <input type="text" id="blog-search" placeholder="Search posts…" oninput="renderLists()" style="margin-bottom:14px;">
           <div id="blog-list"></div>
         </div>
       </div>
@@ -238,7 +240,12 @@
 /* ── Auth ── */
 var currentToken = sessionStorage.getItem('gh_token');
 var currentUsername = sessionStorage.getItem('gh_username');
-var state = { projects:[], blog:[], settings:{}, sites:[], currentSiteId:localStorage.getItem('admin-blog-site')||'studio', activeTab:'projects' };
+var state = { projects:[], blog:[], settings:{}, sites:[], currentSiteId:localStorage.getItem('admin-blog-site')||'studio', activeTab:'projects', formDirty:false };
+window.addEventListener('beforeunload', function(e){
+  if(!state.formDirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 var quillEditor=null;
 
 function showLoginGate(){
@@ -340,8 +347,12 @@ function statusBadgeHtml(item){
 }
 
 function renderLists(){
+  var pQuery=(document.getElementById('projects-search')?.value||'').trim().toLowerCase();
+  var filteredProjects=!pQuery?state.projects:state.projects.filter(function(p){
+    return (p.public.title||p.id).toLowerCase().indexOf(pQuery)!==-1 || p.id.toLowerCase().indexOf(pQuery)!==-1;
+  });
   var pEl=document.getElementById('projects-list');
-  pEl.innerHTML=state.projects.length?state.projects.map(function(p){
+  pEl.innerHTML=filteredProjects.length?filteredProjects.map(function(p){
     return '<div class="item-row"><div><div class="item-title">'+(p.public.title||p.id)+
       '<span class="badge '+(p.draft?'badge-draft">Draft':'badge-live">Live')+'</span></div>'+
       '<div class="item-meta">'+p.id+' · Studio: '+(p.showOnPublic?'yes':'no')+' · Portfolio: '+(p.showOnPortfolio?'yes':'no')+'</div></div>'+
@@ -349,15 +360,19 @@ function renderLists(){
         '<button class="btn btn-sm" onclick="editItem(\'project\',\''+p.id+'\')">Edit</button>'+
         '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'project\',\''+p.id+'\',\''+esc(p.public.title||p.id)+'\')">Delete</button>'+
       '</div></div>';
-  }).join(''):'<p class="hint" style="padding:12px 0;">No projects yet.</p>';
+  }).join(''):'<p class="hint" style="padding:12px 0;">'+(pQuery?'No projects match "'+esc(pQuery)+'".':'No projects yet.')+'</p>';
 
   var siteSelect=document.getElementById('blog-site-select');
   siteSelect.innerHTML=state.sites.map(function(s){
     return '<option value="'+s.id+'" '+(s.id===state.currentSiteId?'selected':'')+'>'+esc(s.name||s.id)+'</option>';
   }).join('');
 
+  var bQuery=(document.getElementById('blog-search')?.value||'').trim().toLowerCase();
+  var filteredBlog=!bQuery?state.blog:state.blog.filter(function(b){
+    return (b.title||'').toLowerCase().indexOf(bQuery)!==-1 || b.id.toLowerCase().indexOf(bQuery)!==-1;
+  });
   var bEl=document.getElementById('blog-list');
-  bEl.innerHTML=state.blog.length?state.blog.map(function(b){
+  bEl.innerHTML=filteredBlog.length?filteredBlog.map(function(b){
     return '<div class="item-row"><div><div class="item-title">'+b.title+
       statusBadgeHtml(b)+'</div>'+
       '<div class="item-meta">'+b.id+' · '+b.date+'</div></div>'+
@@ -365,7 +380,7 @@ function renderLists(){
         '<button class="btn btn-sm" onclick="editItem(\'blog\',\''+b.id+'\')">Edit</button>'+
         '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'blog\',\''+b.id+'\',\''+esc(b.title)+'\')">Delete</button>'+
       '</div></div>';
-  }).join(''):'<p class="hint" style="padding:12px 0;">No posts yet.</p>';
+  }).join(''):'<p class="hint" style="padding:12px 0;">'+(bQuery?'No posts match "'+esc(bQuery)+'".':'No posts yet.')+'</p>';
 }
 
 /* ── Delete confirm modal ── */
@@ -639,6 +654,7 @@ function blankPost(){
 function newItem(type){
   state.editingType=type;
   state.editingItem=type==='project'?blankProject():blankPost();
+  state.formDirty=false;
   renderForm();
 }
 function editItem(type,id){
@@ -646,14 +662,18 @@ function editItem(type,id){
   var item=list.find(function(i){return i.id===id;});
   state.editingType=type;
   state.editingItem=JSON.parse(JSON.stringify(item));
+  state.formDirty=false;
   renderForm();
 }
 function cancelForm(){
+  if(state.formDirty && !confirm('Discard unsaved changes?'))return;
+  state.formDirty=false;
   var type=state.editingType;
   var prefix=formPrefix(type);
   document.getElementById(prefix+'-list-view').style.display='block';
   document.getElementById(prefix+'-form-view').style.display='none';
 }
+function markFormDirty(){ state.formDirty=true; }
 
 function renderForm(){
   var type=state.editingType;
@@ -790,10 +810,14 @@ function renderForm(){
 
     quillEditor=new Quill('#f-body-quill',{
       theme:'snow',
-      modules:{toolbar:[['bold','italic'],[{header:2},{header:3}],[{list:'ordered'},{list:'bullet'}],['blockquote','link'],['clean']]}
+      modules:{toolbar:[[{header:[1,2,3,4,5,6,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['blockquote','code-block','link'],['clean']]}
     });
     quillEditor.root.innerHTML=item.body||'';
+    quillEditor.on('text-change',markFormDirty);
   }
+
+  fv.addEventListener('input',markFormDirty);
+  fv.addEventListener('change',markFormDirty);
 }
 function toggleScheduleField(){
   var status=document.getElementById('f-status').value;
@@ -846,6 +870,7 @@ async function saveItem(asDraft){
   showStatus(asDraft?'Saving draft…':'Publishing…');
   try{
     await callApi({action:'save',type:type,item:item});
+    state.formDirty=false;
     hideStatus();
     showStatus('✓ '+(asDraft?'Draft saved!':'Published! Site updates in ~30s.'),false,true);
     await loadAll();
@@ -890,6 +915,7 @@ async function savePost(){
   showStatus(status==='draft'?'Saving draft…':status==='scheduled'?'Scheduling…':'Publishing…');
   try{
     await callApi({action:'save',type:'blog',item:item,siteId:state.currentSiteId});
+    state.formDirty=false;
     hideStatus();
     showStatus('✓ '+(status==='draft'?'Draft saved!':status==='scheduled'?'Post scheduled!':'Published! Site updates in ~30s.'),false,true);
     await loadAll();
