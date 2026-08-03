@@ -149,16 +149,12 @@ staged and committed deliberately.
   not Portfolio.
 
 ## Outstanding as of this writing
-- Confirm `TOOL_PASSWORD` is set in Vercel (Production) and redeployed
-- Delete old per-item `TOOL_PASSWORD_<ID>` env vars now superseded by the shared one
-- Decide whether to drop the `SCOUT_PASSWORD` fallback in `scout-ai.js`
 - Confirm GA4 ID entered in Admin → Site Settings (main site) and in the Blog
   tab's site GA4 field (Scout, and any future site added to `data/sites.json`)
   — injection code and per-item events (`view_project`/`view_blog_post`) are
   already built (2026-08-03) and wired up site-wide, but produce zero data
   until real GA4 Measurement IDs exist. Creating those GA4 properties is a
   manual step in Gavin's Google Analytics account.
-- Stripe donation Payment Link not yet created/wired in
 - Multi-site analytics dashboard in the GMS admin (aggregate GA4 data across
   Scout + main site + future tools in one view) — needs a GCP service account
   with Analytics Data API access, granted Viewer on each GA4 property. Usage
