@@ -43,6 +43,22 @@
     /* form */
     label{display:block;font-size:.78rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
     .hint{font-size:.75rem;color:var(--muted);margin-top:4px;}
+
+    /* SEO & AEO analysis panel */
+    .seo-analysis-panel{margin-top:14px;background:var(--ink-r2);border:1px solid var(--border);border-radius:8px;padding:16px;}
+    .seo-analysis-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+    .seo-score-badge{font-size:.8rem;font-weight:700;color:var(--paper);background:var(--ink);border:1px solid var(--border-h);border-radius:20px;padding:4px 12px;}
+    .seo-score-badge strong{color:var(--red);}
+    .seo-compare-table{display:flex;flex-direction:column;gap:10px;}
+    .seo-compare-row{display:grid;grid-template-columns:110px 1fr 1fr auto;gap:10px;align-items:start;background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:10px 12px;}
+    .seo-compare-label{font-size:.78rem;font-weight:700;color:var(--paper);padding-top:2px;}
+    .seo-compare-sublabel{font-size:.65rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+    .seo-compare-text{font-size:.82rem;color:var(--paper);line-height:1.5;word-break:break-word;}
+    .seo-compare-text em{color:var(--muted);}
+    .seo-analysis-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+    .seo-analysis-block-title{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+    .seo-analysis-block ul{margin:0;padding-left:18px;font-size:.82rem;color:var(--paper);line-height:1.7;}
+    @media(max-width:640px){.seo-compare-row{grid-template-columns:1fr;}.seo-compare-label{padding-top:0;}}
     input[type=text],input[type=date],input[type=url],textarea,select{width:100%;background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--paper);font-family:'Inter',sans-serif;font-size:.9rem;transition:border-color .15s;}
     input:focus,textarea:focus,select:focus{outline:none;border-color:var(--red);}
     textarea{resize:vertical;}
@@ -787,12 +803,18 @@ function renderForm(){
         '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">Uses the single shared <code>TOOL_PASSWORD</code> environment variable in Vercel — the same password protects every protected item site-wide (projects, blog posts, creations, and Scout).</p>'+
         '<div class="field"><label>Thumbnail</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[],false)+'</div>'+
         '<div class="field"><label>Post content</label><div id="f-body-quill"></div></div>'+
+        '<div class="field" style="margin-top:16px;">'+
+          '<button type="button" class="btn btn-ghost btn-sm" id="seo-generate-btn" onclick="runSeoAnalysis()"><i class="ti ti-sparkles"></i> '+(item.seoAnalysis?'Re-analyze SEO &amp; AEO':'Run SEO &amp; AEO analysis')+'</button>'+
+          '<p class="hint" style="margin-top:6px;">Analyzes what you\'ve written above and suggests Title, URL slug (new posts only), Card summary, and SEO fields, plus an AEO (answer-engine) score. Nothing is applied automatically — review each suggestion and apply the ones you want.</p>'+
+          '<div id="seo-generate-status" class="hint" style="margin-top:4px;"></div>'+
+          '<div id="seo-analysis-panel">'+(item.seoAnalysis?renderSeoAnalysisPanelHtml(item.seoAnalysis):'')+'</div>'+
+        '</div>'+
         '<div class="field" style="margin-top:16px;"><label>Image gallery <span style="text-transform:none;letter-spacing:0;font-weight:400;">(shown at the end of the post — alt text recommended for every image)</span></label>'+
           galleryWidget('post-gallery',item.images||[])+'</div>'+
         '<div class="field"><label>Video embed URL <span style="text-transform:none;letter-spacing:0;font-weight:400;">(optional — YouTube or Vimeo link)</span></label>'+
           '<input type="url" id="f-video-embed" value="'+esc(item.videoEmbed||'')+'" placeholder="https://www.youtube.com/watch?v=..."></div>'+
         '<div class="field"><label>Downloads section</label>'+downloadsSectionWidget('blog',item)+'</div>'+
-      '<details style="margin-top:12px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
+      '<details id="blog-seo-details" style="margin-top:12px;"><summary>SEO settings <span style="font-size:.7rem;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">(optional — improves search visibility)</span></summary>'+
         '<div class="section-body">'+
           '<div class="field"><label>SEO title <span style="text-transform:none;letter-spacing:0;font-weight:400;">(under 60 chars)</span></label>'+
             '<input type="text" id="f-seo-title" value="'+esc((item.seo&&item.seo.title)||item.title||'')+'" placeholder="e.g. How I built a moisture sensor for $15"></div>'+
@@ -878,7 +900,134 @@ async function saveItem(asDraft){
   }catch(e){showStatus('Save failed: '+e.message,true);}
 }
 
-/* ── Save blog post ── */
+/* ── SEO & AEO analysis: generate, compare, apply per field ──
+   Two calls combined into one stored result: ai-blog-seo.js (title/slug/
+   summary/SEO field suggestions) and the existing analytics-insights.js
+   post-analysis (score/improvements/aeoQuestions — same format already
+   used by the site-wide Analytics tool). Nothing is written to the form
+   automatically — each suggestion has its own Apply button so changes are
+   always a deliberate, reviewable choice. Stored on the post itself
+   (state.editingItem.seoAnalysis, included in what savePost() writes) so
+   it's still there — re-viewable, not just re-runnable — next time this
+   post is opened. */
+async function runSeoAnalysis(){
+  var statusEl=document.getElementById('seo-generate-status');
+  var btn=document.getElementById('seo-generate-btn');
+  var bodyHtml=quillEditor?quillEditor.root.innerHTML:'';
+  var plainBody=bodyHtml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  if(!plainBody){
+    statusEl.textContent='Write some post content first — there\'s nothing to analyze yet.';
+    return;
+  }
+  btn.disabled=true;
+  statusEl.textContent='Analyzing…';
+  var title=document.getElementById('f-title').value.trim();
+  var summary=document.getElementById('f-summary').value.trim();
+  try{
+    var results=await Promise.all([
+      fetch('/api/ai-blog-seo',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},body:JSON.stringify({body:bodyHtml,title:title})}),
+      fetch('/api/analytics-insights',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},body:JSON.stringify({analysisType:'post',title:title,summary:summary,description:plainBody,tags:[]})}),
+    ]);
+    var genData=await results[0].json();
+    var aeoData=await results[1].json();
+    if(!results[0].ok||genData.error){statusEl.textContent='Failed: '+(genData.error||'unknown error');btn.disabled=false;return;}
+    var g=genData.generated||{};
+    var aeo=(aeoData&&aeoData.result)||{};
+    var analysis={
+      generatedAt:new Date().toISOString(),
+      score:aeo.score!=null?aeo.score:null,
+      improvements:aeo.improvements||[],
+      aeoQuestions:aeo.aeoQuestions||[],
+      suggested:{
+        title:g.title||'',
+        slug:g.slug||'',
+        summary:g.summary||'',
+        seoTitle:g.seoTitle||aeo.titleSuggestion||'',
+        metaDescription:g.metaDescription||aeo.metaDescription||'',
+        keywords:(g.keywords&&g.keywords.length)?g.keywords:(aeo.keywords||[]),
+      },
+    };
+    state.editingItem.seoAnalysis=analysis;
+    document.getElementById('seo-analysis-panel').innerHTML=renderSeoAnalysisPanelHtml(analysis);
+    markFormDirty();
+    btn.textContent='';
+    btn.innerHTML='<i class="ti ti-sparkles"></i> Re-analyze SEO & AEO';
+    statusEl.textContent='✓ Analysis ready below.';
+  }catch(e){statusEl.textContent='Failed: '+e.message;}
+  btn.disabled=false;
+}
+
+function renderSeoAnalysisPanelHtml(analysis){
+  if(!analysis) return '';
+  var s=analysis.suggested||{};
+  var idEl=document.getElementById('f-id');
+  var current={
+    title:(document.getElementById('f-title')||{}).value||'',
+    slug:(idEl||{}).value||'',
+    summary:(document.getElementById('f-summary')||{}).value||'',
+    seoTitle:(document.getElementById('f-seo-title')||{}).value||'',
+    metaDescription:(document.getElementById('f-meta-desc')||{}).value||'',
+    keywords:(document.getElementById('f-keywords')||{}).value||'',
+  };
+  var slugLocked=idEl&&idEl.disabled;
+  var suggestedKeywordsStr=(s.keywords||[]).join(', ');
+
+  function row(label,field,currentVal,suggestedVal,locked){
+    if(locked||!suggestedVal||suggestedVal===currentVal) return '';
+    return '<div class="seo-compare-row">'+
+      '<div class="seo-compare-label">'+label+'</div>'+
+      '<div class="seo-compare-col"><div class="seo-compare-sublabel">Current</div><div class="seo-compare-text">'+(esc(currentVal)||'<em>empty</em>')+'</div></div>'+
+      '<div class="seo-compare-col"><div class="seo-compare-sublabel">Suggested</div><div class="seo-compare-text">'+esc(suggestedVal)+'</div></div>'+
+      '<button type="button" class="btn btn-sm" onclick="applySeoField(\''+field+'\')">Apply</button>'+
+    '</div>';
+  }
+
+  var rowsHtml=
+    row('Title','title',current.title,s.title,false)+
+    row('URL slug','slug',current.slug,s.slug,slugLocked)+
+    row('Card summary','summary',current.summary,s.summary,false)+
+    row('SEO title','seoTitle',current.seoTitle,s.seoTitle,false)+
+    row('Meta description','metaDescription',current.metaDescription,s.metaDescription,false)+
+    row('Keywords','keywords',current.keywords,suggestedKeywordsStr,false);
+
+  var scoreHtml=analysis.score!=null?'<div class="seo-score-badge">AEO Score: <strong>'+analysis.score+'</strong>/100</div>':'';
+
+  var improvementsHtml=(analysis.improvements&&analysis.improvements.length)?
+    '<div class="seo-analysis-block"><div class="seo-analysis-block-title">Improvements</div><ul>'+
+      analysis.improvements.map(function(imp){return '<li><strong>'+esc(imp.issue||'')+'</strong> — '+esc(imp.suggestion||'')+'</li>';}).join('')+
+    '</ul></div>':'';
+
+  var questionsHtml=(analysis.aeoQuestions&&analysis.aeoQuestions.length)?
+    '<div class="seo-analysis-block"><div class="seo-analysis-block-title">Questions this post should answer (AEO)</div><ul>'+
+      analysis.aeoQuestions.map(function(q){return '<li>'+esc(q)+'</li>';}).join('')+
+    '</ul></div>':'';
+
+  var genDate=analysis.generatedAt?new Date(analysis.generatedAt).toLocaleString():'';
+
+  return '<div class="seo-analysis-panel">'+
+    '<div class="seo-analysis-header"><span class="hint">Last analyzed '+esc(genDate)+'</span>'+scoreHtml+'</div>'+
+    '<div class="seo-compare-table">'+(rowsHtml||'<p class="hint">Current fields already match the suggestions.</p>')+'</div>'+
+    improvementsHtml+
+    questionsHtml+
+  '</div>';
+}
+
+function applySeoField(field){
+  var analysis=state.editingItem&&state.editingItem.seoAnalysis;
+  if(!analysis) return;
+  var s=analysis.suggested||{};
+  if(field==='title'&&document.getElementById('f-title')) document.getElementById('f-title').value=s.title||'';
+  if(field==='slug'){var el=document.getElementById('f-id'); if(el&&!el.disabled) el.value=s.slug||'';}
+  if(field==='summary'&&document.getElementById('f-summary')) document.getElementById('f-summary').value=s.summary||'';
+  if(field==='seoTitle'&&document.getElementById('f-seo-title')) document.getElementById('f-seo-title').value=s.seoTitle||'';
+  if(field==='metaDescription'&&document.getElementById('f-meta-desc')) document.getElementById('f-meta-desc').value=s.metaDescription||'';
+  if(field==='keywords'&&document.getElementById('f-keywords')) document.getElementById('f-keywords').value=(s.keywords||[]).join(', ');
+  markFormDirty();
+  var seoDetails=document.getElementById('blog-seo-details');
+  if(seoDetails&&(field==='seoTitle'||field==='metaDescription'||field==='keywords')) seoDetails.open=true;
+  document.getElementById('seo-analysis-panel').innerHTML=renderSeoAnalysisPanelHtml(analysis);
+}
+
 async function savePost(){
   var id=slugify(document.getElementById('f-id').value);
   if(!id){alert('Please set a URL slug.');return;}
@@ -911,6 +1060,7 @@ async function savePost(){
       metaDescription:document.getElementById('f-meta-desc')?document.getElementById('f-meta-desc').value:'',
       keywords:document.getElementById('f-keywords')?document.getElementById('f-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean):[],
     },
+    seoAnalysis:state.editingItem.seoAnalysis||null,
   };
   showStatus(status==='draft'?'Saving draft…':status==='scheduled'?'Scheduling…':'Publishing…');
   try{
