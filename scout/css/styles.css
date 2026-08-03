@@ -483,7 +483,14 @@ a:hover { text-decoration: underline; }
 .profile-page-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
 .profile-page-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; max-width: 560px; }
 .profile-page-body { padding: 22px 28px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; }
-@media (max-width: 780px) { .profile-page-body { grid-template-columns: 1fr; padding: 16px 18px 28px; } .profile-page-header { padding: 16px 18px; } }
+@media (max-width: 780px) {
+  .profile-page-body { grid-template-columns: 1fr; padding: 16px 18px 28px; }
+  .profile-page-header { padding: 16px 18px; }
+  .quick-setup-grid { grid-template-columns: 1fr !important; }
+  .profile-status-row { flex-wrap: wrap; }
+  .profile-save-bar { flex-wrap: wrap; }
+  .profile-save-bar > div { margin-left: 0 !important; width: 100%; }
+}
 .profile-card { background: var(--surface); border: 1px solid var(--border-dim); border-radius: var(--radius); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
 .profile-card.full-width { grid-column: 1 / -1; }
 .profile-card-title { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); padding-bottom: 10px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; gap: 7px; }
