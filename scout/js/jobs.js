@@ -618,9 +618,9 @@ function selectJob(idx) {
       ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
       ${benefits?`<div class="detail-section"><div class="ds-label">Benefits and Compensation</div><div class="chip-row">${benefits}</div></div>`:''}
       ${(kwHard||kwSoft||kwInd)?`<div class="detail-section">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
           <div class="ds-label" style="margin-bottom:0;">Resume and Cover Letter Keywords</div>
-          <button class="btn-icon btn-sm" onclick="copyAllKeywords(${idx})"><i class="ti ti-copy"></i> Copy all</button>
+          <button class="btn-icon btn-sm" onclick="copyAllKeywords(${idx})" style="flex-shrink:0;white-space:nowrap;"><i class="ti ti-copy"></i> Copy all</button>
         </div>
         ${kwHard?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}
         ${kwSoft?`<div style="margin-bottom:8px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:5px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}
@@ -829,7 +829,7 @@ function renderSavedCard(job, idx, isApplied) {
           </div>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
             <input type="url"  class="tracking-input text" placeholder="LinkedIn profile URL" value="${escHtml(contactLinkedIn)}" onchange="updateTracking(${idx},${isApplied},'contactLinkedIn',this.value)"/>
-            <button class="btn-icon btn-sm" onclick="findContact(${idx},${isApplied})"><i class="ti ti-search"></i> Find contact</button>
+            <button class="btn-icon btn-sm" onclick="findContact(${idx},${isApplied})" style="flex-shrink:0;white-space:nowrap;"><i class="ti ti-search"></i> Find contact</button>
           </div>
           <div class="contact-result" id="cr-${prefix}-${idx}"></div>
         </div>
