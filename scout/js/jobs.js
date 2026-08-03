@@ -101,6 +101,12 @@ async function analyzeJobs() {
   const sb     = document.getElementById('status-bar');
   if (sb) sb.style.display = 'none';
   if (detail) detail.innerHTML = '';
+  // The loading spinner renders into job-list-inner (mid-col) — on mobile
+  // that's only visible in "list" mode, and the user is normally still
+  // looking at the paste form (detail) when they hit Analyze, so switch
+  // views or the loading state silently renders off-screen. No-op on
+  // desktop, where both panes are always visible anyway.
+  setMobileView('list');
   if (list) list.innerHTML = `
     <div class="loading-state">
       <div class="spinner"></div>
