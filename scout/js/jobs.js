@@ -107,6 +107,7 @@ async function analyzeJobs() {
       <div class="loading-text">Analyzing ${texts.length} posting${texts.length>1?'s':''}…</div>
       <div class="progress-bar-wrap"><div id="progress-bar"></div></div>
       <div id="progress-label" class="loading-sub">Starting…</div>
+      <div class="loading-sub" style="margin-top:6px;opacity:0.75;">This can take up to 30 seconds — please don't refresh or close this tab, or the analysis will be lost.</div>
     </div>`;
 
   // A pool of variants per stage — one is picked at random each run so the
@@ -135,6 +136,11 @@ async function analyzeJobs() {
     if (lbl) lbl.textContent = steps[i].label;
   }, d));
   window._progressTimers = timers;
+
+  // Tokens are deducted server-side before the Anthropic call even starts,
+  // so a refresh mid-request burns the token(s) with nothing to show for it —
+  // warn before letting the tab close/reload while a request is in flight.
+  window.addEventListener('beforeunload', warnOnUnloadDuringAnalysis);
 
   try {
     const jwt = await getAuthToken();
@@ -226,7 +232,13 @@ async function analyzeJobs() {
     (window._progressTimers||[]).forEach(t=>clearTimeout(t));
     if (list) list.innerHTML = `<div class="error-state"><strong>Could not analyze</strong>${escHtml(err.message)}<br><br><span style="color:var(--text-muted);font-size:0.82rem;">Make sure each posting includes a job title and company name.</span></div>`;
     console.error(err);
+  } finally {
+    window.removeEventListener('beforeunload', warnOnUnloadDuringAnalysis);
   }
+}
+function warnOnUnloadDuringAnalysis(e) {
+  e.preventDefault();
+  e.returnValue = '';
 }
 
 // ══════════════════════════════════════════
