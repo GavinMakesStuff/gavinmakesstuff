@@ -124,8 +124,14 @@
         <button onclick="subscribeToPlan('pro')" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:14px;">Subscribe</button>
       </div>
     </div>
-    <div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:20px;margin-top:-8px;">
+    <div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;margin-top:-8px;">
       Already on Plus or Pro? Switching plans takes effect immediately at no extra charge — your new price and token amount start on your next billing date. Full details in the <a href="#" onclick="document.getElementById('token-shop-modal').classList.remove('open');switchView('faq');return false;" style="color:var(--teal);font-weight:700;">FAQ</a>.
+    </div>
+
+    <!-- Cancel subscription — shown only when currently on Plus/Pro -->
+    <div id="cancel-sub-row" style="display:none;margin-bottom:20px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="font-size:11px;color:var(--text-muted);">Want to stop your subscription?</div>
+      <button class="btn btn-ghost btn-sm" onclick="cancelSubscription()" style="color:var(--red);border-color:rgba(164,41,27,0.3);">Cancel subscription</button>
     </div>
 
     <!-- One-time bundle options -->
@@ -677,7 +683,7 @@
 
       <div style="margin-bottom:20px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens if I cancel my subscription?</div>
-        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">You keep whatever token balance you have. Cancelling moves you to pay-as-you-go: no more monthly refill, but any tokens already in your balance stay usable for as long as you want, with no expiry.</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Click <b>Cancel subscription</b> in the <b>Buy tokens</b> panel — your plan stays active through the rest of your current billing period (you're not cut off early), then moves you to pay-as-you-go: no more monthly refill, but any tokens already in your balance stay usable for as long as you want, with no expiry.</div>
       </div>
 
       <div style="margin-bottom:28px;">

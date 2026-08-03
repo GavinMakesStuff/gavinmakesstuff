@@ -347,6 +347,32 @@ async function subscribeToPlan(plan) {
   }
 }
 
+async function cancelSubscription() {
+  if (!scoutSession) return;
+  if (!confirm("Cancel your subscription? You'll keep access and your token balance through the end of your current billing period, then move to pay-as-you-go — no more monthly refill, but your tokens never expire.")) return;
+
+  try {
+    const token = await getAuthToken();
+    const res   = await fetch('/api/scout-cancel-subscription', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const endsAtText = data.endsAt ? ` on ${new Date(data.endsAt).toLocaleDateString()}` : '';
+      showToast(`Subscription cancelled — it'll end${endsAtText}, and you'll keep your tokens.`);
+      document.getElementById('token-shop-modal')?.classList.remove('open');
+      await refreshUserData();
+      updateUserUI();
+    } else {
+      showToast(data.error || 'Could not cancel — please try again or email us.');
+    }
+  } catch (err) {
+    console.error('cancelSubscription failed:', err);
+    showToast('Could not cancel — please try again or email us.');
+  }
+}
+
 // ── Listen for auth events ────────────────────────────────────
 document.addEventListener('scout:signed-in', () => {
   hideAuthScreen();

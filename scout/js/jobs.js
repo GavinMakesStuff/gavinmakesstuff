@@ -1411,7 +1411,13 @@ function showTokenShop() {
   if (existing) { existing.classList.add('open'); return; }
 
   const overlay = document.getElementById('token-shop-modal');
-  if (overlay) { overlay.classList.add('open'); return; }
+  if (overlay) overlay.classList.add('open');
+
+  const cancelRow = document.getElementById('cancel-sub-row');
+  if (cancelRow) {
+    const isSubscribed = typeof scoutUser !== 'undefined' && scoutUser && (scoutUser.tier === 'plus' || scoutUser.tier === 'pro');
+    cancelRow.style.display = isSubscribed ? 'flex' : 'none';
+  }
 }
 
 // ── Skill tag input functions ─────────────────────────────────

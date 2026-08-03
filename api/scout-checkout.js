@@ -64,37 +64,52 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: `You're already subscribed to ${selected.name}.` });
         }
 
-        const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
-        const itemId = subscription.items.data[0]?.id;
+        // profiles.stripe_subscription_id can be stale — most notably, a
+        // subscription created while Stripe was still in test mode won't
+        // resolve against the live-mode secret key once that switch happens.
+        // Treat "can't find/update this subscription" as "nothing to switch,
+        // fall through to a normal checkout" rather than failing the whole
+        // request — the alternative is a hard 500 with no way to subscribe.
+        try {
+          const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+          const itemId = subscription.items.data[0]?.id;
 
-        if (itemId) {
-          await stripe.subscriptions.update(profile.stripe_subscription_id, {
-            items: [{
-              id: itemId,
-              price_data: {
-                currency:     'usd',
-                unit_amount:  selected.price_cents,
-                recurring:    { interval: 'month' },
-                product_data: {
-                  name:        selected.name,
-                  description: `${selected.tokens_per_month} Scout Tokens every month`,
+          if (itemId) {
+            await stripe.subscriptions.update(profile.stripe_subscription_id, {
+              items: [{
+                id: itemId,
+                price_data: {
+                  currency:     'usd',
+                  unit_amount:  selected.price_cents,
+                  recurring:    { interval: 'month' },
+                  product_data: {
+                    name:        selected.name,
+                    description: `${selected.tokens_per_month} Scout Tokens every month`,
+                  },
                 },
-              },
-            }],
-            // No immediate prorated charge/credit — the new price and token
-            // amount simply apply going forward, starting next billing cycle.
-            // Keeps this predictable without needing to reason about partial-
-            // cycle token grants.
-            proration_behavior: 'none',
-            metadata: { user_id: user.id, plan },
-          });
+              }],
+              // No immediate prorated charge/credit — the new price and token
+              // amount simply apply going forward, starting next billing cycle.
+              // Keeps this predictable without needing to reason about partial-
+              // cycle token grants.
+              proration_behavior: 'none',
+              metadata: { user_id: user.id, plan },
+            });
 
+            await supabase
+              .from('profiles')
+              .update({ tier: plan })
+              .eq('id', user.id);
+
+            return res.status(200).json({ switched: true, plan });
+          }
+        } catch (switchErr) {
+          console.error('Plan-switch failed, falling back to new checkout session:', switchErr.message);
+          // Clear the stale reference so this doesn't retry-and-fail every time.
           await supabase
             .from('profiles')
-            .update({ tier: plan })
+            .update({ stripe_subscription_id: null })
             .eq('id', user.id);
-
-          return res.status(200).json({ switched: true, plan });
         }
       }
 

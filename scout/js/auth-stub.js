@@ -21,6 +21,7 @@ function handleSignup()           { return; }
 function handleLogin()            { return; }
 async function openCheckout()     { showToast('Payments not available in local mode.'); }
 async function subscribeToPlan()  { showToast('Payments not available in local mode.'); }
+async function cancelSubscription() { showToast('Payments not available in local mode.'); }
 
 // Fire auth-ready immediately so nav.js proceeds
 document.addEventListener('DOMContentLoaded', () => {
