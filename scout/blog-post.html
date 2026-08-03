@@ -40,6 +40,7 @@
     .nav-links a:hover, .nav-links a.active { color: #fff; }
     .nav-cta { background: #fff; color: var(--teal) !important; padding: 9px 18px; border-radius: 8px; }
     .nav-cta:hover { filter: brightness(0.96); }
+    .nav-hamburger { display: none; background: none; border: none; color: #fff; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px; align-items: center; }
 
     .detail-wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 70px; }
     .back-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text-dim); font-size: 0.85rem; font-weight: 700; margin-bottom: 20px; }
@@ -87,7 +88,20 @@
     @media (max-width: 600px) {
       h1.post-title { font-size: 1.6rem; }
       .gallery-grid { grid-template-columns: 1fr; }
-      .nav-links { gap: 12px; }
+    }
+    @media (max-width: 760px) {
+      nav { position: relative; }
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none; position: absolute; top: 100%; left: 0; right: 0;
+        flex-direction: column; align-items: stretch; gap: 0;
+        background: var(--teal); padding: 6px 24px 18px;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.18); z-index: 50;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a { padding: 13px 0; border-top: 1px solid rgba(255,255,255,0.15); }
+      .nav-links a:first-child { border-top: none; }
+      .nav-cta { text-align: center; margin-top: 10px; }
     }
   </style>
 </head>
@@ -98,6 +112,7 @@
     <a href="index.html" class="brand" aria-label="Scout">
       <img src="media/Scout Logo.png" alt="Scout" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'Scout',style:'font-size:1.25rem;font-weight:800;color:var(--teal);'}))"/>
     </a>
+    <button class="nav-hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
     <div class="nav-links">
       <a href="blog.html" class="active">Blog</a>
       <a href="contact.html">Contact</a>
