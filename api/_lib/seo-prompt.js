@@ -1,7 +1,7 @@
 /* ============================================================
    Shared prompt builders for site-wide SEO/AEO analysis. Used by both
    api/analytics-insights.js (on-demand, from the CMS Overview button) and
-   api/seo-report-cron.js (the monthly automated trend snapshot) so the two
+   api/seo-tools.js's cron-report action (the monthly automated trend snapshot) so the two
    can never drift into scoring the same site two different ways.
    ============================================================ */
 
@@ -71,4 +71,47 @@ Respond ONLY with valid JSON (no markdown fences):
 }`;
 }
 
-module.exports = { buildSitePrompt, buildPostPrompt };
+function buildBlogSeoPrompt(body) {
+  const bodyHtml = body.body || '';
+  const existingTitle = body.title || '';
+
+  // Strip tags for a cleaner, cheaper prompt — this is AI-input cleanup only,
+  // not rendered anywhere, so a naive strip is fine.
+  const plainText = bodyHtml
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 6000);
+
+  return `Generate SEO metadata for this blog post. Return ONLY a valid JSON object, no markdown fences, no extra text:
+{
+  "title": "...",
+  "slug": "...",
+  "summary": "...",
+  "seoTitle": "...",
+  "metaDescription": "...",
+  "keywords": ["...", "..."]
+}
+
+Field rules:
+- title: a specific, compelling headline under 60 characters. Not clickbait, not generic.
+- slug: lowercase-hyphenated, 3-6 words, primary keyword near the front, no stop words unless needed for clarity.
+- summary: 1-2 sentence card/preview summary, under 160 characters, gives a real reason to click without overselling.
+- seoTitle: the <title> tag text, under 60 characters — can differ slightly from the headline, keyword-forward.
+- metaDescription: under 155 characters, one or two natural sentences, includes the primary keyword once, ends with a concrete reason to click through.
+- keywords: 5-8 realistic search phrases a real person would type to find this post, ordered by relevance — no keyword stuffing, no generic industry buzzwords unrelated to what this post actually covers.
+
+Writing rules (apply to every field above):
+- Base everything on the actual post content below only — don't invent claims, numbers, or details that aren't in it.
+- Write like a specific person who wrote this post, not generic marketing copy: vary sentence length and structure.
+- Avoid AI-tell phrases and patterns: "dive into", "unlock", "delve", "in today's world", "game-changer", "unleash", "elevate", "whether you're X or Y", excessive em dashes, stacked adjectives, rhetorical questions used as a hook.
+- Match the tone/voice already present in the post content — don't impose a generic upbeat marketing voice if the post isn't written that way.
+${existingTitle ? `\nExisting draft title (keep if it's already good, improve if not): ${existingTitle}` : ''}
+
+POST CONTENT:
+${plainText}`;
+}
+
+module.exports = { buildSitePrompt, buildPostPrompt, buildBlogSeoPrompt };

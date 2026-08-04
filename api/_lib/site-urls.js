@@ -1,7 +1,7 @@
 /* ============================================================
    Shared helper: the list of currently publicly-reachable GMS main-site
    URLs, derived from the same live data every visitor/crawler sees.
-   Used by api/sitemap.js and api/request-indexing.js so the two can't
+   Used by api/seo-tools.js's sitemap and index actions so the two can't
    drift out of sync with each other. Scout is intentionally excluded for
    now — add a second loop here over data/sites.json entries when it's
    ready to be indexed too.

@@ -20,7 +20,7 @@ const TONE_LIBRARY = {
 };
 
 // Applied when the caller opts in via avoidAiTells — same rule set already
-// used by /api/ai-blog-seo for metadata generation, reused here so drafted
+// used by api/analytics-insights.js's blog-seo mode for metadata generation, reused here so drafted
 // body copy and generated metadata read consistently.
 const AI_TELL_RULES = 'Avoid AI-tell phrases and patterns: "dive into", "unlock", "delve", "in today\'s world", "game-changer", "unleash", "elevate", "whether you\'re X or Y", excessive em dashes, stacked adjectives, rhetorical questions used as a hook. Vary sentence length and structure. Write like a specific person, not generic marketing copy.';
 

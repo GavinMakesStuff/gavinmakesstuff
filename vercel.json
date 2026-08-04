@@ -2,10 +2,10 @@
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+    { "source": "/sitemap.xml", "destination": "/api/seo-tools?action=sitemap" }
   ],
   "crons": [
-    { "path": "/api/seo-report-cron", "schedule": "0 9 1 * *" }
+    { "path": "/api/seo-tools?action=cron-report", "schedule": "0 9 1 * *" }
   ],
   "headers": [
     {

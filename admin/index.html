@@ -1352,7 +1352,7 @@ async function runSeoAnalysis(){
   var summary=document.getElementById('f-summary').value.trim();
   try{
     var results=await Promise.all([
-      fetch('/api/ai-blog-seo',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},body:JSON.stringify({body:bodyHtml,title:title})}),
+      fetch('/api/analytics-insights',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},body:JSON.stringify({analysisType:'blog-seo',body:bodyHtml,title:title})}),
       fetch('/api/analytics-insights',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},body:JSON.stringify({analysisType:'post',title:title,summary:summary,description:plainBody,tags:[]})}),
     ]);
     var genData=await results[0].json();
@@ -1588,7 +1588,7 @@ async function requestIndexing(){
   btn.disabled=true;
   statusEl.textContent='Notifying search engines…';
   try{
-    var res=await fetch('/api/request-indexing',{method:'POST',headers:{'Authorization':'Bearer '+currentToken}});
+    var res=await fetch('/api/seo-tools?action=index',{method:'POST',headers:{'Authorization':'Bearer '+currentToken}});
     var data=await res.json();
     if(!res.ok){statusEl.textContent='Failed: '+(data.error||'unknown error');btn.disabled=false;return;}
     var bits=[];
