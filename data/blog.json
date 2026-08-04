@@ -1,6 +1,100 @@
 {
   "posts": [
     {
+      "id": "concert-scrapbook-app",
+      "status": "draft",
+      "draft": true,
+      "scheduledAt": "",
+      "title": "Building a Concert Scrapbook App",
+      "date": "2026-08-04",
+      "summary": "Why a spreadsheet wasn't enough to track concert memories, and how building a personal app changed the way I document live music.",
+      "thumbnail": "",
+      "body": "<p>I go to a lot of concerts. A few years back, when my attendance really picked up, I realized I was losing track of who I'd seen. So I did what made sense at the time: I started a spreadsheet.</p><p>It worked, technically. But something felt off about it. Music isn't a line item. It's a feeling, a moment, something that stays with you. Using a black-and-white spreadsheet to document these experiences felt wrong.</p><p>That's when I decided to build something better.</p><h2>From Spreadsheet to App</h2><p>The idea was simple: create a way to track concerts that actually matched how I experience them. Not just data, but memories. A personal scrapbook of the shows I've been to, the artists I've seen, the moments that stuck with me.</p><p>I started building. The app is still in development, and honestly, I'm still figuring out what it should be.</p><h2>The Direction Question</h2><p>Part of me sees it becoming a social platform where people share their concert history with others. That's a natural extension. But we already have plenty of those, and I worry it would pull me away from what I actually want to build.</p><p>My original vision was more personal than that. Less about showing off and more about remembering. A space that's mine, filled with the concerts and artists that shaped my taste.</p><p>So that's where I'm heading. Back to that idea.</p><h2>Still Building</h2><p>This project will probably take a long time to become what I really envision. But it's working now for what I needed in the first place—keeping track of the shows I've seen. That's the foundation. The rest will follow.</p>",
+      "images": [],
+      "videoEmbed": "",
+      "appUrl": "",
+      "appUrlPasswordProtected": false,
+      "downloads": [],
+      "downloadsEnabled": true,
+      "downloadsShowHeading": true,
+      "downloadsHeading": "Downloads",
+      "seo": {
+        "title": "Concert Scrapbook App | Tracking Live Music Memories",
+        "metaDescription": "A developer built a concert scrapbook app to replace spreadsheets and capture the real story behind each show they attended.",
+        "keywords": [
+          "concert tracking app",
+          "music memory app",
+          "personal concert scrapbook",
+          "concert history tracker",
+          "building a concert app",
+          "concert attendance app",
+          "music documentation"
+        ]
+      },
+      "seoAnalysis": {
+        "generatedAt": "2026-08-04T02:55:44.993Z",
+        "score": 72,
+        "improvements": [
+          {
+            "issue": "Title is generic and doesn't highlight unique angle or personal value proposition",
+            "suggestion": "Add context about transformation or emotional benefit, e.g., 'From Spreadsheet to Song' or include 'Memory Tracker'"
+          },
+          {
+            "issue": "Missing clear problem statement in preview that could be indexed",
+            "suggestion": "Lead with specific pain point: 'Forgot who I'd seen live' or 'Losing track of concert memories' in first 20 words"
+          },
+          {
+            "issue": "No featured image or visual described for AEO rich snippets",
+            "suggestion": "Add alt text description of app interface, concert photos, or data visualization"
+          },
+          {
+            "issue": "Tags field is empty - missed clustering opportunity",
+            "suggestion": "Add tags: 'side-project', 'web-development', 'music', 'react' (or framework used), 'personal-tools'"
+          },
+          {
+            "issue": "No clear user intent keywords for voice search",
+            "suggestion": "Include conversational phrases: 'how to build concert app', 'best way to track concerts', 'music experience documentation'"
+          },
+          {
+            "issue": "Preview lacks specific tech stack mentioned for technical audience",
+            "suggestion": "Early mention of stack (React, Node, etc.) helps with discoverability among developer makers"
+          },
+          {
+            "issue": "No call-to-action or outcome teased",
+            "suggestion": "End preview with question or promise: 'Here's what I learned building it' or 'The solution surprised me'"
+          },
+          {
+            "issue": "Missing schema markup opportunity",
+            "suggestion": "Structure content with CreativeWork schema including dateCreated, author, and mainEntity (the app)"
+          }
+        ],
+        "aeoQuestions": [
+          "How do I track concerts I've attended?",
+          "How do I build a personal project app?",
+          "How do I turn a spreadsheet into a web app?",
+          "What's the best way to log music memories?",
+          "Can I make an app to organize my hobbies?",
+          "How do I document live music experiences?"
+        ],
+        "suggested": {
+          "title": "Building a Concert Scrapbook App",
+          "slug": "concert-scrapbook-app",
+          "summary": "Why a spreadsheet wasn't enough to track concert memories, and how building a personal app changed the way I document live music.",
+          "seoTitle": "Concert Scrapbook App | Tracking Live Music Memories",
+          "metaDescription": "A developer built a concert scrapbook app to replace spreadsheets and capture the real story behind each show they attended.",
+          "keywords": [
+            "concert tracking app",
+            "music memory app",
+            "personal concert scrapbook",
+            "concert history tracker",
+            "building a concert app",
+            "concert attendance app",
+            "music documentation"
+          ]
+        }
+      }
+    },
+    {
       "id": "jorgen-and-his-times-post",
       "draft": false,
       "title": "How I Turned My Great-Great-Grandfather's Immigration Story Into a Real Book",
