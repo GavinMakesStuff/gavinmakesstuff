@@ -1,3 +1,35 @@
 {
-  "reports": []
+  "reports": [
+    {
+      "date": "2026-08-04",
+      "overallScore": 72,
+      "summary": "Gavin Makes Stuff has a strong foundation: genuine voice, clear project differentiation, and a portfolio that actually reflects the creator's blend of technical and creative work. The site avoids the trap of overselling or keyword-stuffing, which is its biggest strength for AEO. Main gaps are structural clarity (what Scout actually does isn't immediately obvious to first-time visitors), missing schema markup that would help AI engines understand project types and outcomes, and limited internal linking that could help people discover related work. The blog posts are well-titled but lack metadata that would help search and answer engines surface them. Technical SEO is mostly solid, but there's room to make projects more discoverable and to help AI understand context and relationships between your work.",
+      "topPriorities": [
+        {
+          "title": "Add JSON-LD schema for projects and blog posts",
+          "impact": "high",
+          "description": "Answer engines (Claude, ChatGPT, Perplexity, etc.) rely heavily on structured data to understand what something is, what problem it solves, and whether it's relevant to a user's question. Right now, your projects are described naturally in text, which is good for humans but invisible to schema parsers. Scout especially needs this—it's a tool/app, but an AI reading the page might not immediately understand it's a working application you built for a specific problem.",
+          "action": "Add Project schema (or SoftwareApplication schema for Scout) and BlogPosting schema to each project and blog post. Include: name, description, datePublished, author, what problem it solves, and a clear 'url' field. This helps Claude and other engines recommend your work when someone asks 'Show me personal projects about job searching' or 'How do I document memories digitally.'"
+        },
+        {
+          "title": "Clarify Scout's status and accessibility on first glance",
+          "impact": "high",
+          "description": "Scout is your most technically interesting project and most likely to answer specific user questions (job search tools, AI scoring, career change resources). But right now it's unclear: Is it live? Can someone use it? Is it just a writeup? This confusion means people might not engage with it, and search engines can't confidently index it as a working tool. The copy 'locally hosted job search dashboard' is honest but vague.",
+          "action": "On the Scout project page and in any listing, be explicit: 'You can use Scout right now at [link] / It's open source at [link] / It's a documented case study of how I built [this].' Add clear CTAs. If it's something visitors can interact with, make that impossible to miss. This helps both humans and AI engines understand what Scout actually is."
+        },
+        {
+          "title": "Build internal linking across projects and blog posts",
+          "impact": "medium",
+          "description": "Your blog post about the job search tool should link to Scout. Your about/bio should link to relevant projects. Someone reading the concert scrapbook post might find Scout relevant (both are personal tools that solve a specific problem). Right now these connections are invisible, which means readers miss related content and search engines don't see the topical clusters that prove you're knowledgeable.",
+          "action": "Map connections between projects: which blog posts explain which projects? Which projects share similar themes or techniques? Add 2-3 contextual links per post/project page using natural language ('I applied a similar approach when building Scout' or 'This is the job search tool I describe in detail here'). This helps both humans browse your work more deeply and helps AI understand your expertise areas."
+        },
+        {
+          "title": "Add metadata and summaries to blog posts",
+          "impact": "medium",
+          "description": "Your blog post titles are great and specific, but they lack descriptions, publication dates, or category tags visible in listings. When an AI engine is deciding whether to recommend or cite one of your posts, it's looking for: When was this written? Who wrote it? What's the core insight? Is it still relevant? Without this data, your posts are less discoverable.",
+          "action": "On each blog post: add a visible publication date, a 1-2 sentence summary/lede that captures the core value (not a teaser—the actual takeaway), and optional tags (career, personal tools, documentation, family projects, etc.). Make sure this metadata is in both the page HTML and in schema markup. This helps AI engines understand and surface your posts in relevant contexts."
+        }
+      ]
+    }
+  ]
 }
