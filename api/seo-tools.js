@@ -137,7 +137,10 @@ async function handleSearchConsole(req, res) {
   if (!(await requireAdmin(req, res))) return;
 
   try {
-    const perf = await getSearchConsolePerformance('https://www.gavinmakesstuff.com/');
+    // Domain property (sc-domain:), not URL-prefix — Gavin's service
+    // account has Full access there (also covers www/non-www + http/https
+    // variants in one property, which URL-prefix doesn't).
+    const perf = await getSearchConsolePerformance('sc-domain:gavinmakesstuff.com');
     res.status(200).json({ connected: true, ...perf });
   } catch (e) {
     if (e.message === 'not_configured') {
