@@ -14,8 +14,8 @@
     "headshot": "/images/site/headshot-placeholder.svg",
     "name": "Gavin Krohman",
     "location": "Vancouver, BC",
-    "portfolioSummary": "Replace this with a short professional summary — your background, the kind of work you're looking for, and the skills you most want to highlight. Two to three sentences is plenty.",
-    "studioSummary": ""
+    "portfolioSummary": "My background splits pretty evenly between tech and creative work, and most of what I do sits somewhere in between the two. I think that's the more honest way to describe it, not a technologist who dabbles in creative projects, or the other way around, but someone who's never really separated the two.\n\nEverything on this site started as something I wanted to build, not a brief I was given. I hope you enjoy my creations.",
+    "studioSummary": "This is where I keep the stuff I build just because I want to. I've got a technical background and a creative streak, and most of what's here comes from letting those two run into each other.\n\nSome of it's useful. Some of it's just me seeing if I can pull something off. I don't always know which until it's done, and honestly that's part of the fun."
   },
   "contact": {
     "email": "gavinmakesstuff@gmail.com",
@@ -29,7 +29,7 @@
   "pages": {
     "home": {
       "metaTitle": "Gavin Makes Stuff",
-      "metaDescription": "UI/UX design, hardware builds, and maker projects by Gavin Krohman. Based in Vancouver, BC."
+      "metaDescription": "UI/UX design, hardware builds, and maker projects by me, Gavin Krohman. Based in Vancouver, BC."
     },
     "studio": {
       "metaTitle": "The Studio — Gavin Makes Stuff",
@@ -37,19 +37,19 @@
     },
     "studioProjects": {
       "metaTitle": "Projects — The Studio",
-      "metaDescription": "All projects built and shared by Gavin Krohman — with files to download and steps to follow."
+      "metaDescription": "All projects built and shared by Gavin Krohman - with files to download and steps to follow."
     },
     "studioBlog": {
       "metaTitle": "Blog — The Studio",
-      "metaDescription": "Stories behind the builds, lessons learned, and whatever else is on Gavin's mind."
+      "metaDescription": "Stories behind the builds, lessons learned, and whatever else is on my mind."
     },
     "portfolio": {
-      "metaTitle": "Gavin Krohman — Portfolio",
+      "metaTitle": "Gavin Krohman - Portfolio",
       "metaDescription": "Professional portfolio of UI/UX design and maker projects by Gavin Krohman, based in Vancouver, BC."
     },
     "contact": {
-      "metaTitle": "Contact — Gavin Makes Stuff",
-      "metaDescription": "Get in touch with Gavin Krohman — designer, maker, and builder based in Vancouver, BC."
+      "metaTitle": "Contact - Gavin Makes Stuff",
+      "metaDescription": "Get in touch with Gavin Krohman - designer, maker, and builder based in Vancouver, BC."
     }
   },
   "creations": [
@@ -62,7 +62,7 @@
       "statusLabel": "",
       "thumbnail": "/images/projects/site/1783609612608-scoutfaviconsquare.webp",
       "showOnHome": true,
-      "useLabel": "Use It",
+      "useLabel": "Try It",
       "passwordProtected": true,
       "downloadEnabled": false,
       "downloadLabel": "Download",
