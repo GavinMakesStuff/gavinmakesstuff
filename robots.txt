@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scout/admin/
+Disallow: /scout/app.html
+
+Sitemap: https://www.gavinmakesstuff.com/sitemap.xml

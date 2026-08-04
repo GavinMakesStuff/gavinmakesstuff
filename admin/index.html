@@ -338,6 +338,17 @@
           </div>
           <p class="hint" style="margin:-2px 0 20px;">Live traffic will appear here once a GA4 property is connected. This row previews the layout ahead of that.</p>
 
+          <div class="card" id="index-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px;">
+              <div>
+                <h2 style="font-size:1.1rem;margin-bottom:4px;">Search engine indexing</h2>
+                <p class="hint" id="index-card-hint">Pushes the current live page list to Bing/Yandex instantly (IndexNow) and asks Google to recrawl the sitemap. Google has no public "index this now" API for ordinary pages, so this is the real ceiling of what's automatable — not a guarantee of instant Google indexing.</p>
+              </div>
+              <button class="btn btn-primary" id="index-btn" onclick="requestIndexing()">🔍 Notify search engines</button>
+            </div>
+            <div id="index-status" class="hint"></div>
+          </div>
+
           <div class="card">
             <h2 style="font-size:1.1rem;margin-bottom:14px;">Google Analytics 4</h2>
             <div class="ga-status" id="ga-status">
@@ -410,6 +421,12 @@
               <button class="btn btn-primary" id="seo-btn" onclick="getSeoRecommendations()">Analyse this site</button>
             </div>
             <div id="seo-results"><p style="color:var(--muted);font-size:.85rem;">Click "Analyse this site" for tailored recommendations based on current content.</p></div>
+          </div>
+
+          <div class="card" id="seo-trend-card">
+            <h2 style="font-size:1.1rem;margin-bottom:4px;">SEO score trend</h2>
+            <p class="hint" style="margin-bottom:14px;">Auto-updated on the 1st of each month by re-running the same analysis above — a passive record of how the site's standing changes over time, so effort goes where it actually moves the needle.</p>
+            <div id="seo-trend-list"><p style="color:var(--muted);font-size:.85rem;">Loading…</p></div>
           </div>
 
           <div class="card">
@@ -1036,7 +1053,12 @@ function renderForm(){
         '<p class="hint" style="margin-bottom:12px;">Describe the project in plain language — AI drafts the Title, Card summary, and Full description below for whichever sections are enabled above. Nothing saves until you publish or save as draft.</p>'+
         '<div class="field"><textarea id="ai-project-notes" rows="5" placeholder="What did you build? How did it work? What went wrong? What are you proud of?"></textarea></div>'+
         '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">'+
-          '<div style="flex:1;min-width:160px;"><label>Tone</label><select id="ai-project-tone"><option value="casual-studio">Casual (Studio voice)</option></select></div>'+
+          '<div style="flex:1;min-width:160px;"><label>Tone</label><select id="ai-project-tone">'+
+            '<option value="casual-studio">Casual (Studio voice)</option>'+
+            '<option value="professional-portfolio">Professional (Portfolio voice)</option>'+
+            '<option value="professional-casual">Gavin\'s voice (professional-casual)</option>'+
+            '<option value="narrative-blog">Narrative</option>'+
+          '</select></div>'+
           '<label class="check-label" style="padding-bottom:9px;"><input type="checkbox" id="ai-project-avoid-tells" checked> Avoid AI-sounding phrasing</label>'+
           '<button type="button" class="btn btn-ghost btn-sm" onclick="draftProjectWithAi()">Generate draft</button>'+
         '</div>'+
@@ -1124,7 +1146,12 @@ function renderForm(){
           '<p class="hint" style="margin-bottom:10px;">Notes on what this post should cover — AI drafts the Title, Summary, and Post content below. Nothing saves until you save this post.</p>'+
           '<div class="field"><textarea id="ai-blog-notes" rows="4" placeholder="What should this post cover? Rough notes are fine — the AI will structure it."></textarea></div>'+
           '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">'+
-            '<div style="flex:1;min-width:160px;"><label>Tone</label><select id="ai-blog-tone"><option value="casual-studio">Casual (Studio voice)</option></select></div>'+
+            '<div style="flex:1;min-width:160px;"><label>Tone</label><select id="ai-blog-tone">'+
+              '<option value="narrative-blog">Narrative (default blog voice)</option>'+
+              '<option value="casual-studio">Casual (Studio voice)</option>'+
+              '<option value="professional-portfolio">Professional</option>'+
+              '<option value="professional-casual">Gavin\'s voice (professional-casual)</option>'+
+            '</select></div>'+
             '<label class="check-label" style="padding-bottom:9px;"><input type="checkbox" id="ai-blog-avoid-tells" checked> Avoid AI-sounding phrasing</label>'+
             '<button type="button" class="btn btn-ghost btn-sm" onclick="draftBlogWithAi()">Generate draft</button>'+
           '</div>'+
@@ -1542,9 +1569,54 @@ function renderOverview(){
     'Scores come from the SEO & AEO analysis already run per post in the Blog editor.';
   document.getElementById('seo-results').innerHTML='<p style="color:var(--muted);font-size:.85rem;">Click "Analyse this site" for tailored recommendations based on current content.</p>';
 
+  // Indexing (sitemap/IndexNow) and the SEO trend report are main-site-only
+  // for now — Scout isn't in the sitemap yet, see api/_lib/site-urls.js.
+  document.getElementById('index-card').style.display=isStudio?'block':'none';
+  document.getElementById('seo-trend-card').style.display=isStudio?'block':'none';
+  document.getElementById('index-status').textContent='';
+
   initGaStatusOverview(site);
   initSelfExclude();
   renderPerfList();
+  if(isStudio)renderSeoTrend();
+}
+
+/* ── Search engine indexing (IndexNow + Google sitemap ping) ── */
+async function requestIndexing(){
+  var btn=document.getElementById('index-btn');
+  var statusEl=document.getElementById('index-status');
+  btn.disabled=true;
+  statusEl.textContent='Notifying search engines…';
+  try{
+    var res=await fetch('/api/request-indexing',{method:'POST',headers:{'Authorization':'Bearer '+currentToken}});
+    var data=await res.json();
+    if(!res.ok){statusEl.textContent='Failed: '+(data.error||'unknown error');btn.disabled=false;return;}
+    var bits=[];
+    bits.push('IndexNow (Bing/Yandex): '+(data.indexNow&&data.indexNow.ok?'✓ sent':'✗ '+((data.indexNow&&(data.indexNow.error||('HTTP '+data.indexNow.status)))||'failed')));
+    bits.push('Google sitemap ping: '+(data.googlePing&&data.googlePing.ok?'✓ sent':'✗ '+((data.googlePing&&(data.googlePing.error||('HTTP '+data.googlePing.status)))||'failed')));
+    statusEl.innerHTML='Notified for '+data.urlCount+' URLs — '+bits.join(' · ');
+  }catch(e){statusEl.textContent='Network error — try again.';}
+  btn.disabled=false;
+}
+
+/* ── SEO score trend (monthly cron snapshots, data/seo-reports.json) ── */
+async function renderSeoTrend(){
+  var el=document.getElementById('seo-trend-list');
+  try{
+    var res=await fetch('/data/seo-reports.json?t='+Date.now());
+    if(!res.ok){el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">No reports yet — the first automated run happens on the 1st of next month.</p>';return;}
+    var data=await res.json();
+    var reports=(data.reports||[]).slice(-6).reverse();
+    if(!reports.length){el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">No reports yet — the first automated run happens on the 1st of next month.</p>';return;}
+    el.innerHTML=reports.map(function(r,i){
+      var score=r.overallScore;
+      var scoreClass=score==null?'':(score>=80?'score-high':score>=50?'score-mid':'score-low');
+      return '<div class="perf-item">'+
+        '<div class="perf-title">'+esc(r.date)+(i===0?' <span style="font-size:.7rem;color:var(--muted);">(latest)</span>':'')+'</div>'+
+        '<div class="seo-score '+scoreClass+'">'+(score==null?'—':score)+'</div>'+
+      '</div>';
+    }).join('');
+  }catch(e){el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">Could not load report history.</p>';}
 }
 
 /* ── GA4 status (per-site) ── */

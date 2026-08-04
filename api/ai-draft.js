@@ -7,12 +7,16 @@
    ============================================================ */
 
 // Selectable writing-tone presets for the inline "Draft with AI" widgets in
-// the Blog and Project editors. Only one preset exists today (it matches the
-// tone already baked into the public/Studio section below) — this map is the
-// extension point for adding more later (e.g. a "professional-casual" or
-// "narrative" preset) without changing the calling code, just adding an entry.
+// the Blog and Project editors. Add more entries here any time — the
+// frontend <select> options and this map are the only two places a new tone
+// needs to be wired in. Applied to the public/Studio section and to
+// standalone blog posts; the Portfolio section always stays in its fixed
+// professional Problem/Approach/Outcome register regardless of tone choice.
 const TONE_LIBRARY = {
-  'casual-studio': 'casual, first-person, fun tone',
+  'casual-studio': 'casual, first-person, fun tone — like talking to a friend about a project you just finished',
+  'professional-portfolio': 'professional, confident, achievement-forward tone, without corporate jargon or buzzwords',
+  'professional-casual': 'Gavin\'s personal voice: plain, first-person, concrete. Each idea lands in two beats — a concrete fact, then a plain observation about what it means, no embellishment. Short declarative sentences, natural contractions ("I\'ve", "it\'s"), name real specifics instead of vague claims ("passionate about" is the wrong register — name the actual thing). No corporate or resume jargon ("leverage", "synergy", "proven track record"). Mild hedging is fine and reads as genuine ("I think", "it seems like").',
+  'narrative-blog': 'narrative, first-person storytelling tone — walk through what happened roughly as it happened',
 };
 
 // Applied when the caller opts in via avoidAiTells — same rule set already
@@ -92,6 +96,7 @@ module.exports = async function (req, res) {
     if (generateBlogPost) sectionsNeeded.push('BLOG');
 
     const publicTone = (tone && TONE_LIBRARY[tone]) || TONE_LIBRARY['casual-studio'];
+    const blogTone = (tone && TONE_LIBRARY[tone]) || TONE_LIBRARY['narrative-blog'];
     const bodyFormat = format === 'html'
       ? 'simple semantic HTML (use <p>, <h2>, <h3>, <ul>/<li>, <strong>/<em> only — no inline styles, no <html>/<body> wrapper)'
       : 'markdown';
@@ -104,7 +109,7 @@ module.exports = async function (req, res) {
       '"portfolio": { "title": "...", "summary": "...", "description": "..." } — professional, use ## Problem / ## Approach / ## Outcome structure'
     );
     if (generateBlogPost) sectionInstructions.push(
-      `"blog": { "title": "...", "summary": "...", "body": "...", "seoTitle": "...", "metaDescription": "...", "keywords": ["..."] } — narrative first-person blog post, body in ${bodyFormat}. seoTitle is the optimised meta title (under 60 chars). metaDescription is the meta description (under 155 chars). keywords is an array of 5–8 target terms for SEO/AEO.`
+      `"blog": { "title": "...", "summary": "...", "body": "...", "seoTitle": "...", "metaDescription": "...", "keywords": ["..."] } — ${blogTone}, body in ${bodyFormat}. seoTitle is the optimised meta title (under 60 chars). metaDescription is the meta description (under 155 chars). keywords is an array of 5–8 target terms for SEO/AEO.`
     );
 
     const prompt = `You are writing content for a personal maker/builder website called "Gavin Makes Stuff".
