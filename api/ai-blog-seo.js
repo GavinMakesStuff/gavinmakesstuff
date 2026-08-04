@@ -1,8 +1,8 @@
 /* ============================================================
    VERCEL FUNCTION: /api/ai-blog-seo
    Generates title/slug/summary/SEO metadata for a blog post from
-   its body content — used by the "Auto-generate" button in
-   admin/manage.html's blog editor. Same GitHub-OAuth gate as
+   its body content — used by the SEO & AEO analysis button in
+   admin/index.html's Blog section. Same GitHub-OAuth gate as
    ai-draft.js. Stateless: takes body text in, returns generated
    fields out — doesn't touch GitHub or any site's data files.
    ============================================================ */

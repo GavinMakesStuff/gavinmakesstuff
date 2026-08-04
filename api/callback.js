@@ -37,7 +37,7 @@ module.exports = async function (req, res) {
       return;
     }
 
-    // The object Decap CMS (and our own admin/ai-draft.html) expect to
+    // The object Decap CMS (and our own admin/index.html) expect to
     // receive, serialized once here on the server.
     const payloadJson = JSON.stringify({ token: tokenData.access_token, provider: 'github' });
 

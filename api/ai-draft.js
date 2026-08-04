@@ -6,6 +6,20 @@
    - Commits updated projects.json and/or blog.json to GitHub
    ============================================================ */
 
+// Selectable writing-tone presets for the inline "Draft with AI" widgets in
+// the Blog and Project editors. Only one preset exists today (it matches the
+// tone already baked into the public/Studio section below) — this map is the
+// extension point for adding more later (e.g. a "professional-casual" or
+// "narrative" preset) without changing the calling code, just adding an entry.
+const TONE_LIBRARY = {
+  'casual-studio': 'casual, first-person, fun tone',
+};
+
+// Applied when the caller opts in via avoidAiTells — same rule set already
+// used by /api/ai-blog-seo for metadata generation, reused here so drafted
+// body copy and generated metadata read consistently.
+const AI_TELL_RULES = 'Avoid AI-tell phrases and patterns: "dive into", "unlock", "delve", "in today\'s world", "game-changer", "unleash", "elevate", "whether you\'re X or Y", excessive em dashes, stacked adjectives, rhetorical questions used as a hook. Vary sentence length and structure. Write like a specific person, not generic marketing copy.';
+
 module.exports = async function (req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -48,6 +62,8 @@ module.exports = async function (req, res) {
     generateBlogPost = false,
     saveDraft = false, saveToSite = false,
     generated: userEdited,
+    tone, avoidAiTells = false,
+    format, // 'html' for the Quill-based Blog editor's inline draft widget; default 'markdown'
   } = body;
 
   if (!projectName) {
@@ -75,15 +91,20 @@ module.exports = async function (req, res) {
     if (showOnPortfolio) sectionsNeeded.push('PORTFOLIO');
     if (generateBlogPost) sectionsNeeded.push('BLOG');
 
+    const publicTone = (tone && TONE_LIBRARY[tone]) || TONE_LIBRARY['casual-studio'];
+    const bodyFormat = format === 'html'
+      ? 'simple semantic HTML (use <p>, <h2>, <h3>, <ul>/<li>, <strong>/<em> only — no inline styles, no <html>/<body> wrapper)'
+      : 'markdown';
+
     const sectionInstructions = [];
     if (showOnPublic) sectionInstructions.push(
-      '"public": { "title": "...", "summary": "...", "description": "..." } — casual, first-person, fun tone'
+      `"public": { "title": "...", "summary": "...", "description": "..." } — ${publicTone}`
     );
     if (showOnPortfolio) sectionInstructions.push(
       '"portfolio": { "title": "...", "summary": "...", "description": "..." } — professional, use ## Problem / ## Approach / ## Outcome structure'
     );
     if (generateBlogPost) sectionInstructions.push(
-      '"blog": { "title": "...", "summary": "...", "body": "...", "seoTitle": "...", "metaDescription": "...", "keywords": ["..."] } — narrative first-person blog post, body in markdown. seoTitle is the optimised meta title (under 60 chars). metaDescription is the meta description (under 155 chars). keywords is an array of 5–8 target terms for SEO/AEO.'
+      `"blog": { "title": "...", "summary": "...", "body": "...", "seoTitle": "...", "metaDescription": "...", "keywords": ["..."] } — narrative first-person blog post, body in ${bodyFormat}. seoTitle is the optimised meta title (under 60 chars). metaDescription is the meta description (under 155 chars). keywords is an array of 5–8 target terms for SEO/AEO.`
     );
 
     const prompt = `You are writing content for a personal maker/builder website called "Gavin Makes Stuff".
@@ -93,7 +114,7 @@ Generate ONLY these sections (do not add extras): ${sectionsNeeded.join(', ')}
 Project name: ${projectName}
 Skills/tags: ${tags || 'not specified'}
 Raw notes: ${summary}
-
+${avoidAiTells ? '\nWriting rules (apply to every section above): ' + AI_TELL_RULES + '\n' : ''}
 Respond ONLY with a valid JSON object (no markdown fences, no extra text):
 {
   ${sectionInstructions.join(',\n  ')}
