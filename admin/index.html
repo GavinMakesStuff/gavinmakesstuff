@@ -396,8 +396,8 @@
               <div class="step">
                 <div class="step-num" id="step3-num">3</div>
                 <div class="step-body">
-                  <h4>Add the tracking script to this site's pages</h4>
-                  <p>Once saved, copy the code block below and add it to the <code style="background:var(--border);padding:2px 6px;border-radius:4px;">&lt;head&gt;</code> of every page on <strong id="ov-domain-2">this site</strong>.</p>
+                  <h4>Nothing to do here — the tracking script installs itself</h4>
+                  <p>Every page on <strong id="ov-domain-2">this site</strong> loads a shared script (<code style="background:var(--border);padding:2px 6px;border-radius:4px;">js/shared.js</code>) that reads the Measurement ID you just saved and injects the tracking snippet automatically — no manual copy-pasting into each page's <code style="background:var(--border);padding:2px 6px;border-radius:4px;">&lt;head&gt;</code> needed. The exact snippet it injects is shown below for reference (useful mainly if you ever add a page that doesn't load the shared script).</p>
                   <div style="background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:10px;font-size:.78rem;font-family:monospace;white-space:pre-wrap;color:var(--paper);" id="ga-snippet">Enter your Measurement ID above to see the code snippet.</div>
                   <button class="btn" style="margin-top:8px;font-size:.78rem;" onclick="copySnippet()">Copy snippet</button>
                 </div>
@@ -406,7 +406,7 @@
                 <div class="step-num" id="step4-num">4</div>
                 <div class="step-body">
                   <h4>Verify data is coming in</h4>
-                  <p>After adding the script, visit the site, then check GA4 → Reports → Realtime. You should see yourself appear. It can take 24 to 48 hours for full historical data to populate. Enable "Exclude my own visits" above first so your setup visits do not skew the data.</p>
+                  <p>Visit the site, then check GA4 → Reports → Realtime — you should see yourself appear within a minute or two, since the script is already live. It can take 24 to 48 hours for full historical data to populate. Enable "Exclude my own visits" above first so your own visits do not skew the data. This step can't be auto-verified from here — check GA4 directly.</p>
                 </div>
               </div>
             </div>
@@ -1628,7 +1628,11 @@ function initGaStatusOverview(site){
     document.getElementById('ga-status-text').textContent='Connected — '+id;
     document.getElementById('ga-open-btn').style.display='inline-flex';
     updateSnippet(id);
-    markStep(1,true);markStep(2,true);markStep(3,false);markStep(4,false);
+    // Step 3 (installing the tracking script) is automatic — js/shared.js
+    // injects it on every page once an ID is saved, no manual step exists
+    // to wait on. Step 4 (confirming real traffic in GA4) genuinely can't
+    // be checked from here without the GA4 Data API, so it stays open.
+    markStep(1,true);markStep(2,true);markStep(3,true);markStep(4,false);
   } else {
     document.getElementById('ga-dot').className='ga-dot disconnected';
     document.getElementById('ga-status-text').textContent='Not connected — enter your Measurement ID below or follow the setup guide.';
