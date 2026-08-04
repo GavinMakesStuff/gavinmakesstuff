@@ -349,6 +349,12 @@
             <div id="index-status" class="hint"></div>
           </div>
 
+          <div class="card" id="gsc-card">
+            <h2 style="font-size:1.1rem;margin-bottom:4px;">Search performance</h2>
+            <p class="hint" style="margin-bottom:14px;">Live from Google Search Console — what people are actually finding this site through, last 28 days.</p>
+            <div id="gsc-body"><p style="color:var(--muted);font-size:.85rem;">Loading…</p></div>
+          </div>
+
           <div class="card">
             <h2 style="font-size:1.1rem;margin-bottom:14px;">Google Analytics 4</h2>
             <div class="ga-status" id="ga-status">
@@ -1569,15 +1575,18 @@ function renderOverview(){
     'Scores come from the SEO & AEO analysis already run per post in the Blog editor.';
   document.getElementById('seo-results').innerHTML='<p style="color:var(--muted);font-size:.85rem;">Click "Analyse this site" for tailored recommendations based on current content.</p>';
 
-  // Indexing (sitemap/IndexNow) and the SEO trend report are main-site-only
-  // for now — Scout isn't in the sitemap yet, see api/_lib/site-urls.js.
+  // Indexing (sitemap/IndexNow), the SEO trend report, and Search Console
+  // performance are main-site-only for now — only gavinmakesstuff.com is
+  // verified in Search Console and in the sitemap (see api/_lib/site-urls.js).
   document.getElementById('index-card').style.display=isStudio?'block':'none';
   document.getElementById('seo-trend-card').style.display=isStudio?'block':'none';
+  document.getElementById('gsc-card').style.display=isStudio?'block':'none';
   document.getElementById('index-status').textContent='';
 
   initGaStatusOverview(site);
   initSelfExclude();
   renderPerfList();
+  if(isStudio)renderSearchConsole();
   if(isStudio)renderSeoTrend();
 }
 
@@ -1718,6 +1727,37 @@ function renderPerfList(){
       '</div>';
     }).join('');
   }
+}
+
+/* ── Search Console performance (live, no LLM cost — fetched fresh every load) ── */
+async function renderSearchConsole(){
+  var el=document.getElementById('gsc-body');
+  try{
+    var res=await fetch('/api/seo-tools?action=search-console',{headers:{'Authorization':'Bearer '+currentToken}});
+    var data=await res.json();
+    if(!res.ok){el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">Could not load: '+esc(data.error||'unknown error')+'</p>';return;}
+    if(!data.connected){
+      el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">Not connected yet — add a Search Console service account (GSC_SERVICE_ACCOUNT_EMAIL / GSC_SERVICE_ACCOUNT_PRIVATE_KEY env vars) to see real query and page performance here.</p>';
+      return;
+    }
+    var t=data.totals||{};
+    var statsHtml='<div class="stat-grid" style="margin-bottom:16px;">'+
+      '<div class="stat-tile"><div class="stat-tile-label">Clicks</div><div class="stat-tile-value" style="color:var(--paper);">'+(t.clicks||0)+'</div></div>'+
+      '<div class="stat-tile"><div class="stat-tile-label">Impressions</div><div class="stat-tile-value" style="color:var(--paper);">'+(t.impressions||0)+'</div></div>'+
+      '<div class="stat-tile"><div class="stat-tile-label">Avg. position</div><div class="stat-tile-value" style="color:var(--paper);">'+(t.position?t.position.toFixed(1):'—')+'</div></div>'+
+    '</div>';
+
+    function list(title,rows,labelKey){
+      if(!rows||!rows.length)return '<p class="hint" style="margin-bottom:14px;">'+title+': no data yet.</p>';
+      return '<div style="margin-bottom:16px;"><div class="stat-tile-label" style="margin-bottom:8px;">'+title+'</div>'+
+        rows.map(function(r){
+          return '<div class="perf-item"><div class="perf-title">'+esc(r[labelKey])+'</div><div class="seo-score" style="font-size:.85rem;">'+r.clicks+' clicks</div></div>';
+        }).join('')+
+      '</div>';
+    }
+
+    el.innerHTML=statsHtml+list('Top queries',data.topQueries,'query')+list('Top pages',data.topPages,'page');
+  }catch(e){el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">Could not load Search Console data.</p>';}
 }
 
 async function analyseProject(id){

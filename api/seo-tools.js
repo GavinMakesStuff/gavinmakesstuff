@@ -20,10 +20,16 @@
                    SEO/AEO prompt the CMS's on-demand "Analyse this site"
                    button uses (api/_lib/seo-prompt.js) and appends a
                    dated score snapshot to data/seo-reports.json.
+   - search-console (GET, GitHub-OAuth admin gate) — the CMS Overview's
+                   "Search performance" card. Live, on-demand read from
+                   Google Search Console (api/_lib/search-console.js) —
+                   free API, no LLM cost, so unlike cron-report this isn't
+                   cached/scheduled, just fetched fresh each time.
    ============================================================ */
 
 const { getSiteUrls } = require('./_lib/site-urls');
 const { buildSitePrompt } = require('./_lib/seo-prompt');
+const { getSearchConsolePerformance } = require('./_lib/search-console');
 
 // Published alongside <this value>.txt at the repo root — IndexNow proves
 // domain ownership by requiring that file to be reachable, not by keeping
@@ -125,6 +131,21 @@ async function handleIndex(req, res) {
   }
 
   res.status(200).json({ urlCount: urls.length, ...result });
+}
+
+async function handleSearchConsole(req, res) {
+  if (!(await requireAdmin(req, res))) return;
+
+  try {
+    const perf = await getSearchConsolePerformance('https://www.gavinmakesstuff.com/');
+    res.status(200).json({ connected: true, ...perf });
+  } catch (e) {
+    if (e.message === 'not_configured') {
+      res.status(200).json({ connected: false });
+      return;
+    }
+    res.status(502).json({ connected: false, error: e.message });
+  }
 }
 
 async function handleCronReport(req, res) {
@@ -233,5 +254,6 @@ module.exports = async function (req, res) {
   if (action === 'sitemap') return handleSitemap(req, res);
   if (action === 'index') return handleIndex(req, res);
   if (action === 'cron-report') return handleCronReport(req, res);
+  if (action === 'search-console') return handleSearchConsole(req, res);
   res.status(400).json({ error: 'Unknown or missing action.' });
 };
