@@ -164,14 +164,19 @@ async function handleCronReport(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: buildSitePrompt(projects, posts, settings) }],
       }),
     });
     const aiData = await aiRes.json();
     if (!aiRes.ok) { res.status(502).json({ error: 'AI error: ' + (aiData.error?.message || 'unknown') }); return; }
     const raw = aiData.content[0].text.replace(/```json|```/g, '').trim();
-    result = JSON.parse(raw);
+    try {
+      result = JSON.parse(raw);
+    } catch (parseErr) {
+      const hint = aiData.stop_reason === 'max_tokens' ? ' (response was cut off at max_tokens — raise it further)' : '';
+      throw new Error('Could not parse AI response' + hint + ': ' + parseErr.message);
+    }
   } catch (e) {
     res.status(502).json({ error: 'Analysis failed: ' + e.message });
     return;
