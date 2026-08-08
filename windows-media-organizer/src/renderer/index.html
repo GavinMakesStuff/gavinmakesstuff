@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Media Organizer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Media Organizer</h1>
+    <nav>
+      <button class="tab-btn active" data-tab="duplicates">Find Duplicates</button>
+      <button class="tab-btn" data-tab="photography">Photography Naming</button>
+      <button class="tab-btn" data-tab="memories">Memories Naming</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-duplicates" class="tab active">
+      <p class="hint">
+        Scans a folder for exact byte-for-byte duplicates and near-duplicate images (same photo,
+        re-compressed/edited). Nothing is ever deleted - discarded copies are <strong>moved to a
+        review folder</strong> so you can double-check before permanently removing them yourself.
+      </p>
+
+      <div class="row">
+        <label>Folder to scan</label>
+        <input type="text" id="scan-folder" readonly placeholder="Choose a folder..." />
+        <button id="pick-scan-folder">Choose...</button>
+      </div>
+      <div class="row">
+        <label>Review folder (discards go here)</label>
+        <input type="text" id="quarantine-folder" readonly placeholder="Choose a folder..." />
+        <button id="pick-quarantine-folder">Choose...</button>
+      </div>
+      <div class="row">
+        <button id="start-scan" disabled>Scan for Duplicates</button>
+        <button id="undo-last" disabled>Undo Last Move</button>
+      </div>
+
+      <div id="scan-status" class="status"></div>
+      <div id="duplicate-results"></div>
+
+      <div class="row" id="apply-row" style="display:none">
+        <button id="preview-plan">Preview Plan (dry run)</button>
+        <button id="apply-plan" class="danger">Move Selected Discards to Review Folder</button>
+      </div>
+      <pre id="plan-output"></pre>
+    </section>
+
+    <section id="tab-photography" class="tab">
+      <p class="hint">
+        Checks files against the convention:
+        <code>[Location/Trip] - [Description] - [001][edit letter]</code>. Flags files that don't
+        match yet and suggests the next free sequence number for their folder.
+      </p>
+      <div class="row">
+        <label>Photography folder</label>
+        <input type="text" id="photo-folder" readonly placeholder="Choose a folder..." />
+        <button id="pick-photo-folder">Choose...</button>
+      </div>
+      <div class="row"><button id="start-photo-scan" disabled>Scan Naming</button></div>
+      <div id="photo-results"></div>
+    </section>
+
+    <section id="tab-memories" class="tab">
+      <p class="hint">
+        Checks files are filed as <code>&lt;Year&gt;/&lt;Group or Trip&gt;/&lt;description&gt;</code>,
+        flags year-folder mismatches against the file's actual date, and flags files that still
+        have a camera-generated name instead of a real description.
+      </p>
+      <div class="row">
+        <label>Memories folder</label>
+        <input type="text" id="memories-folder" readonly placeholder="Choose a folder..." />
+        <button id="pick-memories-folder">Choose...</button>
+      </div>
+      <div class="row"><button id="start-memories-scan" disabled>Scan Naming</button></div>
+      <div id="memories-results"></div>
+    </section>
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
