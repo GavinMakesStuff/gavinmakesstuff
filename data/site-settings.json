@@ -67,6 +67,21 @@
       "downloadEnabled": false,
       "downloadLabel": "Download",
       "downloadFile": null
+    },
+    {
+      "id": "new-creation-1786649113288",
+      "name": "TerraLens",
+      "description": "A self-serve ESG data tracker built for junior mining companies",
+      "url": "/terralens",
+      "status": "open",
+      "statusLabel": "",
+      "thumbnail": "",
+      "showOnHome": true,
+      "useLabel": "Try It",
+      "passwordProtected": false,
+      "downloadEnabled": false,
+      "downloadLabel": "Download",
+      "downloadFile": null
     }
   ]
 }
