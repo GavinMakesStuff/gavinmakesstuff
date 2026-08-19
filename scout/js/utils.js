@@ -133,6 +133,17 @@ function safeHref(url) {
   return escHtml(trimmed);
 }
 
+// ── Safe single-quoted JS-string literal for inline onclick handlers ───
+// escHtml() alone isn't enough when the escaped value also has to sit
+// inside a single-quoted JS string in an onclick="..." attribute (e.g.
+// onclick="copyKw('...')") — escHtml doesn't touch backslashes, so a value
+// ending in an odd number of them can "eat" the closing quote we add and
+// break the string. Backslashes must be escaped BEFORE quotes, or escaping
+// the quotes first re-introduces the exact bug this exists to prevent.
+function jsStringEscape(str) {
+  return escHtml(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
 // ── Toast ─────────────────────────────────
 let _toastTimer;
 function showToast(msg) {

@@ -1,18 +1,25 @@
 // api/scout-ai.js
-// Secure Anthropic proxy.
+// Job-posting analysis. Accepts { texts: string[], location?: {lat,lng} } —
+// never a raw `messages`/`model`/`max_tokens` payload. The server builds
+// the actual Anthropic prompt itself from validated texts plus the user's
+// own saved profile (read server-side, not trusted from the client), so an
+// authenticated caller can no longer use this endpoint as a generic proxy
+// for arbitrary prompts on the site's Anthropic key.
 // Vercel env vars required:
 //   SCOUT_ANTHROPIC_API_KEY   — Anthropic API key
 //   SUPABASE_URL              — Supabase project URL
 //   SUPABASE_SERVICE_ROLE_KEY — Supabase service role key (bypasses RLS)
 
 import { createClient } from '@supabase/supabase-js';
+import {
+  SCOUT_MODEL, computeMaxTokens, buildAnalysisPrompt, validatePostingTexts,
+  applyTierGate, refundTokens, verifyUser, parseJobsFromModelText, logAnalyzedJobs,
+} from './_lib/scout-shared.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-const FREE_WEEKLY_LIMIT = 3;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,71 +27,46 @@ export default async function handler(req, res) {
   }
 
   // ── 1. Verify JWT ─────────────────────────────────────────
-  const authHeader = req.headers['authorization'] || '';
-  const token      = authHeader.replace('Bearer ', '').trim();
-
-  if (!token) {
+  const user = await verifyUser(supabase, req);
+  if (!user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return res.status(401).json({ error: 'Invalid or expired session' });
+  // ── 2. Validate input ──────────────────────────────────────
+  const validation = validatePostingTexts(req.body?.texts);
+  if (!validation.ok) {
+    return res.status(validation.status).json({ error: validation.error });
   }
+  const texts = validation.texts;
+  const location = req.body?.location && typeof req.body.location.lat === 'number' && typeof req.body.location.lng === 'number'
+    ? { lat: req.body.location.lat, lng: req.body.location.lng }
+    : null;
+  const postingsCount = texts.length; // server truth — never client-supplied
 
-  // ── 2. Fetch profile + tier ───────────────────────────────
+  // ── 3. Fetch profile + tier (server's own copy — never trust the client's) ──
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tier')
+    .select('tier, job_profile')
     .eq('id', user.id)
     .single();
 
   const tier = profile?.tier || 'free';
 
-  // ── 3. Tier gate ─────────────────────────────────────────
-  // One token / one weekly-count consumed per posting in the batch, not per
-  // request — a submission of 5 postings costs 5, same as 5 separate
-  // submissions of 1 would.
-  const resumeOnly    = req.headers['x-scout-resume-only'] === 'true';
-  const postingsCount = Math.max(1, parseInt(req.body?._postings_count, 10) || 1);
-  let tokensDeducted  = 0;
-
-  if (resumeOnly || tier === 'vip') {
-    // No gate — free pass
-  } else if (tier === 'paid' || tier === 'plus' || tier === 'pro') {
-    // Subscribers (plus/pro) and pay-as-you-go users spend from their Scout Token balance
-    const { data: canDeduct } = await supabase
-      .rpc('deduct_tokens', { p_user_id: user.id, p_amount: postingsCount });
-
-    if (!canDeduct) {
-      return res.status(402).json({
-        error:   'insufficient_tokens',
-        message: `This submission needs ${postingsCount} token${postingsCount === 1 ? '' : 's'} (1 per posting). Please top up to continue.`,
-      });
-    }
-    tokensDeducted = postingsCount;
-
-  } else {
-    // Free tier: 3 analyses per week, no ad required
-    const { data: weeklyCount } = await supabase
-      .rpc('get_weekly_usage', { p_user_id: user.id });
-
-    if ((weeklyCount || 0) + postingsCount > FREE_WEEKLY_LIMIT) {
-      const remaining = Math.max(0, FREE_WEEKLY_LIMIT - (weeklyCount || 0));
-      return res.status(402).json({
-        error:   'weekly_limit_reached',
-        message: `You have ${remaining} free analys${remaining === 1 ? 'is' : 'es'} left this week, but this submission has ${postingsCount} posting${postingsCount === 1 ? '' : 's'}. Upgrade, top up, or submit fewer at once.`,
-      });
-    }
-
-    // Increment weekly counter by the number of postings in this batch
-    await supabase.rpc('increment_weekly_usage', { p_user_id: user.id, p_amount: postingsCount });
+  // ── 4. Tier gate ─────────────────────────────────────────
+  // One token / one weekly-count consumed per posting in the batch.
+  const gate = await applyTierGate(supabase, user.id, tier, postingsCount);
+  if (!gate.ok) {
+    return res.status(gate.status).json(gate.body);
   }
+  const tokensDeducted = gate.tokensDeducted;
 
-  // ── 4. Call Anthropic ─────────────────────────────────────
-  // Strip Scout-internal fields (used for our own logging below) before
-  // forwarding — Anthropic's API rejects unrecognized fields outright.
-  const { _postings_count, ...anthropicPayload } = req.body || {};
+  // ── 5. Call Anthropic with a server-built prompt ──────────
+  const maxTokens = computeMaxTokens(postingsCount);
+  const anthropicPayload = {
+    model:      SCOUT_MODEL,
+    max_tokens: maxTokens,
+    messages:   [{ role: 'user', content: buildAnalysisPrompt(texts, profile?.job_profile, location) }],
+  };
 
   let anthropicResponse;
   let responseData;
@@ -102,27 +84,15 @@ export default async function handler(req, res) {
 
     responseData = await anthropicResponse.json();
   } catch (err) {
-    // If Anthropic call fails after tokens were deducted, refund them all
-    if (tokensDeducted > 0) {
-      await supabase.rpc('credit_tokens', {
-        p_user_id: user.id,
-        p_amount:  tokensDeducted,
-        p_reason:  'refund_api_error',
-      });
-    }
+    await refundTokens(supabase, user.id, tokensDeducted, 'refund_api_error');
     return res.status(500).json({ error: 'Upstream API error: ' + err.message });
   }
 
-  // If Anthropic returned an error after tokens were deducted, refund them all
-  if (!anthropicResponse.ok && tokensDeducted > 0) {
-    await supabase.rpc('credit_tokens', {
-      p_user_id: user.id,
-      p_amount:  tokensDeducted,
-      p_reason:  'refund_anthropic_error',
-    });
+  if (!anthropicResponse.ok) {
+    await refundTokens(supabase, user.id, tokensDeducted, 'refund_anthropic_error');
   }
 
-  // ── 5. Log the analysis ───────────────────────────────────
+  // ── 6. Log the analysis ───────────────────────────────────
   if (anthropicResponse.ok) {
     const usage = responseData.usage || {};
 
@@ -134,6 +104,22 @@ export default async function handler(req, res) {
       output_tokens:     usage.output_tokens || null,
       scout_tokens_used: tokensDeducted,
     });
+
+    // Full per-job logging for the admin analytics dashboard — every
+    // analysis, not just ones the user later saves/applies to. Best-effort
+    // (see logAnalyzedJobs) and never awaited into the response path in a
+    // way that could fail the request — it only runs after we already know
+    // the analysis itself succeeded.
+    const fullText = (responseData.content || []).map(c => c.type === 'text' ? c.text : '').join('\n');
+    const parsedJobs = parseJobsFromModelText(fullText);
+    if (parsedJobs) {
+      await logAnalyzedJobs(supabase, {
+        userId: user.id,
+        texts,
+        jobs: parsedJobs,
+        userExperience: profile?.job_profile?.experience || null,
+      });
+    }
   }
 
   return res.status(anthropicResponse.status).json(responseData);

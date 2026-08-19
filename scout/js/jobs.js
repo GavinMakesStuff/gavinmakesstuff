@@ -7,13 +7,21 @@ let currentFilter = 'all';
 let slotCount     = 0;
 let selectedIdx   = null;
 let hiddenJobKeys = new Set();
+let isAnalyzing   = false;
+let queuedBatches = []; // arrays of texts, queued while a batch is in flight
 
 // ══════════════════════════════════════════
 // JOB SLOTS
 // ══════════════════════════════════════════
+const MAX_JOB_SLOTS = 10;
+
 function addJobSlot() {
-  slotCount++;
   const container = document.getElementById('job-slots');
+  if (container.children.length >= MAX_JOB_SLOTS) {
+    showToast(`You can analyze up to ${MAX_JOB_SLOTS} postings at once.`);
+    return;
+  }
+  slotCount++;
   const n = container.children.length + 1;
   const slot = document.createElement('div');
   slot.className = 'job-slot';
@@ -26,12 +34,30 @@ function addJobSlot() {
   container.appendChild(slot);
   renumberSlots();
   updateAnalyzeCostBadge();
+  updateAddSlotButtonState();
 }
 
 function removeJobSlot(id) {
   document.getElementById(id)?.remove();
   renumberSlots();
   updateAnalyzeCostBadge();
+  updateAddSlotButtonState();
+}
+
+// Disables + relabels the "Add another posting" button once the slot cap is
+// hit, instead of letting clicks silently no-op (handled in addJobSlot too,
+// as a fallback for any stale button state).
+function updateAddSlotButtonState() {
+  const container = document.getElementById('job-slots');
+  const btn = document.getElementById('add-slot-btn');
+  if (!container || !btn) return;
+  const atCap = container.children.length >= MAX_JOB_SLOTS;
+  btn.disabled = atCap;
+  btn.style.opacity = atCap ? '0.5' : '';
+  btn.style.cursor = atCap ? 'not-allowed' : '';
+  btn.innerHTML = atCap
+    ? `<i class="ti ti-lock"></i> Max ${MAX_JOB_SLOTS} postings`
+    : `<i class="ti ti-plus"></i> Add another posting`;
 }
 
 function renumberSlots() {
@@ -75,32 +101,193 @@ document.addEventListener('input', e => {
 });
 
 // ══════════════════════════════════════════
+// MULTI-POSTING GUARD
+// ══════════════════════════════════════════
+// One textarea is supposed to hold exactly one posting — buildPrompt() wraps
+// each textarea's text in a single "JOB POSTING N" header, and the server
+// bills per textarea sent (texts.length), not per posting actually
+// described. If someone pastes two+ postings into one box (e.g. a whole
+// job-board results page), the model has no reliable way to split them
+// back apart — it either merges them into one garbled result or arbitrarily
+// returns however many entries it feels like, undercharging for what ran.
+// Heuristic, not a proof: look for structural labels/markers that repeat,
+// which plain single postings essentially never do.
+function detectMultiplePostings(text) {
+  const titleMatches   = text.match(/(^|\n)\s*(job\s*title|position\s*title|position|role)\s*:/gi) || [];
+  const companyMatches = text.match(/(^|\n)\s*(company|employer|organi[sz]ation)\s*:/gi) || [];
+  const applyMatches   = text.match(/\bapply\s*(now|here|today)\b/gi) || [];
+  const postedMatches  = text.match(/\bposted\s+\d+\+?\s*(day|hour|week|month)s?\s+ago\b/gi) || [];
+
+  const weakSignals = [
+    titleMatches.length   >= 2,
+    companyMatches.length >= 2,
+    applyMatches.length   >= 2,
+    postedMatches.length  >= 2,
+  ].filter(Boolean).length;
+
+  // Two independent weak signals together, or 3+ explicit "Job Title:" /
+  // "Company:" labels on their own, is treated as confident enough to block.
+  return weakSignals >= 2 || titleMatches.length >= 3 || companyMatches.length >= 3;
+}
+
+// Second, slower pass via a cheap model call (see /api/scout-detect-multi) —
+// catches multi-posting pastes that don't use the structural labels the
+// regex above looks for (e.g. a job-board page with no "Job Title:" text at
+// all). Auth-gated but free — does not touch the user's Scout token balance
+// or weekly limit. Fails OPEN: any error here just lets the real analysis
+// proceed, so a flaky safety net never blocks legitimate use.
+async function checkForMultiplePostings(texts) {
+  const jwt = await getAuthToken();
+  const isLocal = (typeof ANTHROPIC_API_KEY !== 'undefined' && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'null');
+
+  let flags;
+  if (isLocal) {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: buildMultiPostingCheckPrompt(texts) }],
+      }),
+    });
+    if (!response.ok) throw new Error('Detection API error ' + response.status);
+    const data = await response.json();
+    const raw = (data.content || []).map(c => c.type === 'text' ? c.text : '').join('');
+    flags = parseFlagsArray(raw, texts.length);
+  } else {
+    const response = await fetch('/api/scout-detect-multi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({ texts }),
+    });
+    if (!response.ok) throw new Error('Detection API error ' + response.status);
+    const data = await response.json();
+    flags = Array.isArray(data.flags) ? data.flags : texts.map(() => false);
+  }
+
+  return flags.findIndex(Boolean);
+}
+
+function buildMultiPostingCheckPrompt(texts) {
+  return `You will be shown ${texts.length} block(s) of pasted text. Each block is SUPPOSED to be exactly one job posting, but sometimes a user accidentally pastes multiple different job postings concatenated together into one block (e.g. copied straight from a job board's search results page).
+
+For each block, decide: does it contain more than one distinct job posting (different title/company/requirements repeated), or is it a single posting?
+
+Return ONLY a JSON array of exactly ${texts.length} booleans, in order — true if that block contains multiple postings, false if it's a single posting. No markdown, no backticks, no explanation.
+
+${texts.map((t,i)=>`--- BLOCK ${i+1} ---\n${String(t).slice(0,4000)}`).join('\n\n')}`;
+}
+
+function parseFlagsArray(raw, expectedLen) {
+  const clean = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const start = clean.indexOf('[');
+  const end   = clean.lastIndexOf(']');
+  if (start===-1||end===-1) return new Array(expectedLen).fill(false);
+  try {
+    const parsed = JSON.parse(clean.slice(start,end+1));
+    return Array.isArray(parsed) ? Array.from({length:expectedLen}, (_,i) => Boolean(parsed[i])) : new Array(expectedLen).fill(false);
+  } catch { return new Array(expectedLen).fill(false); }
+}
+
+// ══════════════════════════════════════════
 // ANALYZE
 // ══════════════════════════════════════════
-async function analyzeJobs() {
-  const texts = getAllJobText();
+// Must match MAX_POSTING_CHARS in api/_lib/scout-shared.js — this is only
+// a client-side courtesy check (instant feedback); the server enforces the
+// real cap since a client check alone is trivially bypassed.
+const MAX_POSTING_CHARS = 20000;
+
+async function analyzeJobs(overrideTexts, btnEl) {
+  const texts = overrideTexts || getAllJobText();
   if (!texts.length) { showToast('Please paste at least one job description.'); return; }
 
-  const { hasAny, missing } = getProfileCompleteness();
-  if (!hasAny) {
-    showEmptyProfileGate();
+  const tooLongIdx = texts.findIndex(t => t.length > MAX_POSTING_CHARS);
+  if (tooLongIdx !== -1) {
+    showToast(`Posting ${tooLongIdx + 1} is too long (max ${MAX_POSTING_CHARS.toLocaleString()} characters) — trim it down before analyzing.`);
     return;
   }
-  if (missing.length >= 2) {
-    const proceed = await showWeakProfileWarning(missing);
-    if (!proceed) return;
+
+  // Pass 1 — instant, no network. Hard reject on confident matches so no
+  // tokens are ever spent on an obviously-concatenated paste.
+  const regexIdx = texts.findIndex(detectMultiplePostings);
+  if (regexIdx !== -1) {
+    showToast(`Posting ${regexIdx + 1} looks like it has more than one job pasted together — split each posting into its own box before analyzing.`);
+    return;
   }
+
+  // Pass 2 — cheap model check for multi-posting pastes the regex missed.
+  // Skipped for queued auto-continuations (already checked when the user
+  // submitted them) and for anything already flagged/blocked above.
+  if (!overrideTexts) {
+    if (btnEl) { btnEl.disabled = true; btnEl.dataset.origHtml = btnEl.innerHTML; btnEl.innerHTML = '<i class="ti ti-loader-2"></i> Checking…'; }
+    try {
+      const flaggedIdx = await checkForMultiplePostings(texts);
+      if (flaggedIdx !== -1) {
+        showToast(`Posting ${flaggedIdx + 1} looks like it has more than one job — split each posting into its own box before analyzing.`);
+        return;
+      }
+    } catch (err) {
+      console.warn('[Scout] multi-posting pre-check failed, proceeding anyway:', err);
+    } finally {
+      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = btnEl.dataset.origHtml || btnEl.innerHTML; }
+    }
+  }
+
+  // A batch is already in flight — queue this one instead of blocking.
+  // (overrideTexts calls are the queue draining itself, so they skip this.)
+  if (isAnalyzing && !overrideTexts) {
+    queuedBatches.push(texts);
+    clearAllSlots();
+    showToast(`Queued ${texts.length} posting${texts.length>1?'s':''} — will start once the current batch finishes.`);
+    return;
+  }
+
+  if (!overrideTexts) {
+    const { hasAny, missing } = getProfileCompleteness();
+    if (!hasAny) {
+      showEmptyProfileGate();
+      return;
+    }
+    if (missing.length >= 2) {
+      const proceed = await showWeakProfileWarning(missing);
+      if (!proceed) return;
+    }
+    if (texts.length >= LARGE_BATCH_THRESHOLD) {
+      const proceed = await showLargeBatchWarning(texts.length, estimateAnalysisSeconds(texts.length));
+      if (!proceed) return;
+    }
+  }
+
+  const estSeconds = estimateAnalysisSeconds(texts.length);
+  // Each posting's response schema (reputation, keywords, red flags, etc.)
+  // runs a few thousand tokens — a fixed 8000-token cap truncated the JSON
+  // mid-response once batches got past ~3 postings. Scale with batch size,
+  // capped conservatively below the model's actual output ceiling since
+  // that ceiling isn't confirmed for this model alias.
+  const maxTokens = Math.min(32000, Math.max(8000, texts.length * 3500));
+
+  isAnalyzing = true;
 
   switchView('results');
   selectedIdx = null;
-
-  // Paste area will be replaced by detail.innerHTML — no explicit hide needed
 
   const detail = document.getElementById('detail-content');
   const list   = document.getElementById('job-list-inner');
   const sb     = document.getElementById('status-bar');
   if (sb) sb.style.display = 'none';
-  if (detail) detail.innerHTML = '';
+  // Rebuild the paste form (instead of blanking it) so the user can keep
+  // composing — and queue — another batch while this one is in flight.
+  if (detail) {
+    slotCount = 0;
+    detail.innerHTML = buildInlinePasteHTML();
+    addJobSlot();
+  }
   // The loading spinner renders into job-list-inner (mid-col) — on mobile
   // that's only visible in "list" mode, and the user is normally still
   // looking at the paste form (detail) when they hit Analyze, so switch
@@ -113,7 +300,7 @@ async function analyzeJobs() {
       <div class="loading-text">Analyzing ${texts.length} posting${texts.length>1?'s':''}…</div>
       <div class="progress-bar-wrap"><div id="progress-bar"></div></div>
       <div id="progress-label" class="loading-sub">Starting…</div>
-      <div class="loading-sub" style="margin-top:6px;opacity:0.75;">This can take up to 30 seconds — please don't refresh or close this tab, or the analysis will be lost.</div>
+      <div class="loading-sub" style="margin-top:6px;opacity:0.75;">This can take up to ${formatDuration(estSeconds)} — please don't refresh or close this tab, or the analysis will be lost.</div>
     </div>`;
 
   // A pool of variants per stage — one is picked at random each run so the
@@ -134,7 +321,11 @@ async function analyzeJobs() {
     pct,
     label: stagePools[i][Math.floor(Math.random() * stagePools[i].length)],
   }));
-  const delays = [600,2500,4000,6000,9000,13000,18000,24000];
+  // Spread over a fraction of the estimated total wait instead of fixed ms —
+  // a 1-posting batch and a 10-posting batch shouldn't both hit "Finalizing…"
+  // at the 24s mark when only one of them is actually close to done.
+  const stepFractions = [0.03, 0.10, 0.18, 0.28, 0.40, 0.55, 0.72, 0.90];
+  const delays = stepFractions.map(f => Math.round(estSeconds * 1000 * f));
   const timers = delays.map((d,i) => setTimeout(() => {
     const bar = document.getElementById('progress-bar');
     const lbl = document.getElementById('progress-label');
@@ -162,7 +353,7 @@ async function analyzeJobs() {
           },
           body: JSON.stringify({
             model:'claude-sonnet-4-6',
-            max_tokens:8000,
+            max_tokens:maxTokens,
             messages:[{role:'user', content:buildPrompt(texts)}],
           })
         })
@@ -172,11 +363,11 @@ async function analyzeJobs() {
             'Content-Type':       'application/json',
             'Authorization':      `Bearer ${jwt}`,
           },
+          // Server builds the actual prompt itself from these — it never
+          // accepts a client-supplied model/max_tokens/messages payload.
           body: JSON.stringify({
-            model:'claude-sonnet-4-6',
-            max_tokens:8000,
-            messages:[{role:'user', content:buildPrompt(texts)}],
-            _postings_count: texts.length,
+            texts,
+            location: userLocation || null,
           })
         });
 
@@ -205,6 +396,12 @@ async function analyzeJobs() {
     console.log('[Scout] content blocks:', data?.content?.length);
     console.log('[Scout] first block type:', data?.content?.[0]?.type);
     console.log('[Scout] text preview:', data?.content?.map(c=>c.type==='text'?c.text:'').join('').slice(0,200));
+
+    // If the model ran out of room, the JSON got cut off mid-response —
+    // that's a clean, actionable error instead of a cryptic parse failure.
+    if (data.stop_reason === 'max_tokens') {
+      throw new Error(`The response was cut off because this batch was too large for one request (${texts.length} postings). Try analyzing fewer at once.`);
+    }
 
     const fullText = data.content.map(c=>c.type==='text'?c.text:'').join('\n');
     const bar=document.getElementById('progress-bar');
@@ -240,6 +437,11 @@ async function analyzeJobs() {
     console.error(err);
   } finally {
     window.removeEventListener('beforeunload', warnOnUnloadDuringAnalysis);
+    isAnalyzing = false;
+    if (queuedBatches.length) {
+      const next = queuedBatches.shift();
+      analyzeJobs(next);
+    }
   }
 }
 function warnOnUnloadDuringAnalysis(e) {
@@ -324,6 +526,54 @@ function showWeakProfileWarning(missing) {
 }
 
 // ══════════════════════════════════════════
+// TIME ESTIMATION
+// ══════════════════════════════════════════
+const LARGE_BATCH_THRESHOLD = 5; // postings at which we warn before starting
+
+// Rough estimate — company research + reputation lookups dominate per-posting
+// cost, so wait time scales close to linearly with batch size rather than
+// being a fixed ~30s no matter how many postings are in flight.
+function estimateAnalysisSeconds(n) {
+  return 15 + n * 10;
+}
+function formatDuration(seconds) {
+  if (seconds < 60) return `${Math.ceil(seconds / 5) * 5} seconds`;
+  const mins = Math.ceil(seconds / 30) / 2;
+  return `${mins} minute${mins === 1 ? '' : 's'}`;
+}
+
+// Non-blocking heads-up before committing to a big, slow, token-costly batch.
+// Returns a Promise that resolves true if the user chooses to proceed.
+function showLargeBatchWarning(n, estSeconds) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 30px;max-width:400px;width:90%;text-align:center;box-shadow:var(--shadow-lg);">
+        <div style="font-size:1.3rem;margin-bottom:12px;">⏱️</div>
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">Analyzing ${n} postings at once</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">
+          This is a big batch — it can take around <strong>${formatDuration(estSeconds)}</strong>. You can keep pasting more while it runs; new batches queue and start automatically.
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="large-batch-cancel" class="btn btn-ghost" style="flex:1;justify-content:center;">Cancel</button>
+          <button id="large-batch-continue" class="btn btn-primary" style="flex:1;justify-content:center;">Analyze anyway</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#large-batch-cancel').addEventListener('click', () => {
+      overlay.remove();
+      resolve(false);
+    });
+    overlay.querySelector('#large-batch-continue').addEventListener('click', () => {
+      overlay.remove();
+      resolve(true);
+    });
+  });
+}
+
+// ══════════════════════════════════════════
 // PROMPT
 // ══════════════════════════════════════════
 function buildPrompt(texts) {
@@ -357,6 +607,10 @@ SCORING (viabilityScore 1-100):
 85-100: Near-perfect match. 70-84: Strong, minor gaps. 40-69: Partial, missing 1-2 requirements. 20-39: Weak, significant gaps. 1-19: Poor fit.
 RULES: Cap at 40 if requires 5+ years in an industry the user hasn't worked in. Cap at 50 if requires a professional designation the user doesn't hold. Reduce by 20 if salary is clearly below user minimum. Be specific and direct in viabilityReason.
 
+SCORE CAP REASONS: In addition to the freeform viabilityReason, classify which of these fixed reasons actually reduced the score below what a perfect match would get. Use ONLY these exact codes, as many as apply, or ["none"] if nothing reduced it: "below_min_salary", "missing_years_experience", "missing_certification", "industry_mismatch", "missing_hard_skill", "missing_soft_skill", "location_mismatch", "overqualified".
+
+POSTED DATE: If the posting states how long it's been live (e.g. "Posted 3 days ago", "Posted today", a specific date), set postedDaysAgo to that many whole days as an integer (0 for "today"). If not stated anywhere, set postedDaysAgo to null. Never guess.
+
 MISSING KEYWORDS: Identify the top 5 keywords from the job posting that are absent from the user's profile/resume. These are the most important gaps to address before applying.
 
 HIGHLIGHT SKILLS: Identify the top 5 skills or experiences the user already has that are most relevant and impressive for this specific posting. These are what they should lead with in their cover letter and emphasize in their resume. Be specific — name the actual skill and briefly say why it matters for this role.
@@ -370,7 +624,8 @@ For EACH job:
   "title":"Job title","company":"Company name","companyUrl":"URL or empty","companyCareersUrl":"URL or empty","postingUrl":"URL or empty",
   "salary":"As stated with currency or Not listed","level":"Entry/Mid-level/Senior/Manager/Director/Executive/Not specified",
   "industry":"Industry","summary":"2-3 sentence summary","requirements":["req1","req2"],
-  "viabilityScore":72,"viabilityReason":"Specific explanation of score",
+  "viabilityScore":72,"viabilityReason":"Specific explanation of score","scoreCapReasons":["below_min_salary"],
+  "postedDaysAgo":3,
   "benefits":["benefit1"],
   "companyReputation":{"rating":"X.X / 5 or Not available","summary":"2-3 sentences","pros":["pro1"],"cons":["con1"],"source":"Glassdoor/Indeed Reviews/Limited public data/Unknown"},
   "workLocation":{"type":"Remote|On-site|Hybrid|Not specified","address":"full address or empty","city":"city/province or empty","distanceKm":null},
@@ -516,10 +771,10 @@ function selectJob(idx) {
   const rep       = job.companyReputation;
   const loc       = job.workLocation;
 
-  const kwHard = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
-  const kwSoft = (kw.softSkills||[]).map(k=>`<span class="chip chip-soft" onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
-  const kwInd  = (kw.industryTerms||[]).map(k=>`<span class="chip chip-ind"  onclick="copyKw('${escHtml(k).replace(/'/g,"\\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
-  const kwMissing = (kw.missingFromResume||[]).map(k=>`<span class="chip" style="background:var(--red-bg);border-color:rgba(164,41,27,0.3);color:var(--red);font-family:var(--font-mono);" onclick="copyKw('${escHtml(k).replace(/'/g,"\'")}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwHard = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard" onclick="copyKw('${jsStringEscape(k)}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwSoft = (kw.softSkills||[]).map(k=>`<span class="chip chip-soft" onclick="copyKw('${jsStringEscape(k)}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwInd  = (kw.industryTerms||[]).map(k=>`<span class="chip chip-ind"  onclick="copyKw('${jsStringEscape(k)}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
+  const kwMissing = (kw.missingFromResume||[]).map(k=>`<span class="chip" style="background:var(--red-bg);border-color:rgba(164,41,27,0.3);color:var(--red);font-family:var(--font-mono);" onclick="copyKw('${jsStringEscape(k)}')"><i class="ti ti-copy" style="font-size:9px;"></i> ${escHtml(k)}</span>`).join(' ');
   const highlightSkills = job.highlightSkills||[];
   const highlightHtml = highlightSkills.length ? `<div class="detail-section" style="border-left:3px solid var(--green);">
     <div class="ds-label" style="color:var(--green);">✨ Lead With These</div>
@@ -886,11 +1141,11 @@ function buildInlinePasteHTML() {
       Paste the full text of any job posting below. The more complete the text, the more accurate the analysis.
     </div>
     <div class="job-slots" id="job-slots" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
-    <button class="add-slot-btn" onclick="addJobSlot()" style="margin-bottom:24px;max-width:220px;">
+    <button id="add-slot-btn" class="add-slot-btn" onclick="addJobSlot()" style="margin-bottom:24px;max-width:220px;">
       <i class="ti ti-plus"></i> Add another posting
     </button>
     <div style="display:flex;gap:10px;align-items:center;">
-      <button class="btn btn-primary" onclick="analyzeJobs()" style="padding:12px 28px;font-size:14px;">
+      <button class="btn btn-primary" onclick="analyzeJobs(null, this)" style="padding:12px 28px;font-size:14px;">
         <i class="ti ti-search"></i> Analyze<span id="analyze-cost-badge"></span>
       </button>
       <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">Clear</button>
@@ -1062,7 +1317,7 @@ ${job.summary || ''}`;
       : await fetch('/api/scout-ai', {
           method: 'POST',
           headers: { 'Content-Type':'application/json','Authorization':`Bearer ${jwt}` },
-          body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:8000, messages:[{role:'user', content:buildPrompt([postingText])}], _postings_count:1 })
+          body: JSON.stringify({ texts:[postingText], location: userLocation || null })
         });
 
     if (response.status === 402) {
@@ -1198,16 +1453,21 @@ async function findContact(idx,isApplied) {
   try {
     const _jwt2=await getAuthToken();
     const _isLocal2=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
-    const _url2=_isLocal2?'https://api.anthropic.com/v1/messages':'/api/scout-ai';
-    const _hdrs2=_isLocal2
-      ?{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}
-      :{'Content-Type':'application/json','Authorization':`Bearer ${_jwt2}`};
-    const response=await fetch(_url2,{
-      method:'POST',
-      headers:_hdrs2,
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,tools:[{type:'web_search_20250305',name:'web_search'}],
-        messages:[{role:'user',content:`Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.\nCompany: ${job.company}\nJob title: ${job.title}\nWebsite: ${job.companyUrl||'unknown'}\nReturn ONLY a JSON object, no markdown:\n{"name":"name or empty","email":"email or empty","note":"one short sentence"}`}]})
-    });
+    // Served by its own dedicated endpoint in prod (api/scout-find-contact.js)
+    // rather than the shared analysis proxy, so this can't be reused to
+    // send arbitrary prompts/tools through /api/scout-ai.
+    const response = _isLocal2
+      ? await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,tools:[{type:'web_search_20250305',name:'web_search'}],
+            messages:[{role:'user',content:`Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.\nCompany: ${job.company}\nJob title: ${job.title}\nWebsite: ${job.companyUrl||'unknown'}\nReturn ONLY a JSON object, no markdown:\n{"name":"name or empty","email":"email or empty","note":"one short sentence"}`}]})
+        })
+      : await fetch('/api/scout-find-contact',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt2}`},
+          body:JSON.stringify({company:job.company,title:job.title,companyUrl:job.companyUrl||''})
+        });
     const data=await response.json();
     const raw=data.content.map(c=>c.type==='text'?c.text:'').join('');
     const clean=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
@@ -1304,18 +1564,23 @@ async function extractTextFromDocx(file) {
 }
 
 async function analyzeResumeText(text, fileName) {
-  // Resume analysis is always free — uses a special header so proxy skips token deduction
+  // Resume analysis is always free — served by its own dedicated endpoint
+  // (api/scout-parse-resume.js) rather than a bypass header on the shared
+  // proxy, so there's nothing here a caller could reuse to skip billing on
+  // an unrelated request.
   const _jwt3=await getAuthToken();
   const _isLocal3=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
-  const _url3=_isLocal3?'https://api.anthropic.com/v1/messages':'/api/scout-ai';
-  const _hdrs3=_isLocal3
-    ?{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}
-    :{'Content-Type':'application/json','Authorization':`Bearer ${_jwt3}`,'x-scout-resume-only':'true'};
-  const response=await fetch(_url3,{
-    method:'POST',
-    headers:_hdrs3,
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":"","hardSkills":[],"softSkills":[],"industryTerms":[]}\nRESUME: ${text.slice(0,6000)}`}]})
-  });
+  const response = _isLocal3
+    ? await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":"","hardSkills":[],"softSkills":[],"industryTerms":[]}\nRESUME: ${text.slice(0,6000)}`}]})
+      })
+    : await fetch('/api/scout-parse-resume',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt3}`},
+        body:JSON.stringify({text})
+      });
   if(!response.ok){const e=await response.json();throw new Error(e.error?.message||'API error');}
   const data=await response.json();
   const raw=data.content.map(c=>c.type==='text'?c.text:'').join('');
