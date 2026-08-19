@@ -1,6 +1,6 @@
--- Scout: rate-limit table for the "free" AI endpoints (no token/weekly-limit
--- deduction) — scout-detect-multi (multi-posting pre-check) and
--- scout-parse-resume (resume import). Without this, either endpoint could
+-- Scout: rate-limit table for the "free" AI actions (no token/weekly-limit
+-- deduction) — api/scout-ai.js's 'detect-multi' (multi-posting pre-check)
+-- and 'parse-resume' (resume import) actions. Without this, either could
 -- be called in a tight loop indefinitely on the site's Anthropic key, since
 -- neither one bills against a user's usage by design.
 -- Run this once in the Supabase SQL editor (project: scout).

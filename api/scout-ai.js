@@ -1,10 +1,21 @@
 // api/scout-ai.js
-// Job-posting analysis. Accepts { texts: string[], location?: {lat,lng} } —
-// never a raw `messages`/`model`/`max_tokens` payload. The server builds
-// the actual Anthropic prompt itself from validated texts plus the user's
-// own saved profile (read server-side, not trusted from the client), so an
-// authenticated caller can no longer use this endpoint as a generic proxy
-// for arbitrary prompts on the site's Anthropic key.
+// All of Scout's AI features live in this one file, dispatched by
+// req.body.action — Vercel's Hobby plan caps a deployment at 12 Serverless
+// Functions, and this project sits right at that ceiling, so new AI
+// features get folded in here (same multiplexing pattern api/seo-tools.js
+// already uses via ?action=) instead of becoming their own route file.
+//
+// Every action builds its own fixed-shape Anthropic prompt server-side —
+// never a client-supplied `messages`/`model`/`max_tokens` payload — so an
+// authenticated caller can't use this endpoint as a generic proxy for
+// arbitrary prompts on the site's Anthropic key.
+//
+// Actions:
+//   'analyze'      (default) — job-posting analysis. Tier-gated.
+//   'detect-multi'           — is this box actually multiple postings? Free, rate-limited.
+//   'find-contact'           — HR/recruiting contact lookup via web_search. Tier-gated (1 unit).
+//   'parse-resume'           — extract profile fields from a resume. Free, rate-limited.
+//
 // Vercel env vars required:
 //   SCOUT_ANTHROPIC_API_KEY   — Anthropic API key
 //   SUPABASE_URL              — Supabase project URL
@@ -14,6 +25,7 @@ import { createClient } from '@supabase/supabase-js';
 import {
   SCOUT_MODEL, computeMaxTokens, buildAnalysisPrompt, validatePostingTexts,
   applyTierGate, refundTokens, verifyUser, parseJobsFromModelText, logAnalyzedJobs,
+  checkFreeEndpointRateLimit,
 } from './_lib/scout-shared.js';
 
 const supabase = createClient(
@@ -21,18 +33,42 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+function callAnthropic(payload) {
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type':      'application/json',
+      'x-api-key':         process.env.SCOUT_ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ── 1. Verify JWT ─────────────────────────────────────────
+  const action = req.body?.action || 'analyze';
+  switch (action) {
+    case 'analyze':      return handleAnalyze(req, res);
+    case 'detect-multi': return handleDetectMulti(req, res);
+    case 'find-contact': return handleFindContact(req, res);
+    case 'parse-resume': return handleParseResume(req, res);
+    default:              return res.status(400).json({ error: 'Unknown action: ' + action });
+  }
+}
+
+// ══════════════════════════════════════════
+// ANALYZE — { texts: string[], location?: {lat,lng} }
+// ══════════════════════════════════════════
+async function handleAnalyze(req, res) {
   const user = await verifyUser(supabase, req);
   if (!user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  // ── 2. Validate input ──────────────────────────────────────
   const validation = validatePostingTexts(req.body?.texts);
   if (!validation.ok) {
     return res.status(validation.status).json({ error: validation.error });
@@ -43,7 +79,6 @@ export default async function handler(req, res) {
     : null;
   const postingsCount = texts.length; // server truth — never client-supplied
 
-  // ── 3. Fetch profile + tier (server's own copy — never trust the client's) ──
   const { data: profile } = await supabase
     .from('profiles')
     .select('tier, job_profile')
@@ -52,7 +87,6 @@ export default async function handler(req, res) {
 
   const tier = profile?.tier || 'free';
 
-  // ── 4. Tier gate ─────────────────────────────────────────
   // One token / one weekly-count consumed per posting in the batch.
   const gate = await applyTierGate(supabase, user.id, tier, postingsCount);
   if (!gate.ok) {
@@ -60,7 +94,6 @@ export default async function handler(req, res) {
   }
   const tokensDeducted = gate.tokensDeducted;
 
-  // ── 5. Call Anthropic with a server-built prompt ──────────
   const maxTokens = computeMaxTokens(postingsCount);
   const anthropicPayload = {
     model:      SCOUT_MODEL,
@@ -72,16 +105,7 @@ export default async function handler(req, res) {
   let responseData;
 
   try {
-    anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         process.env.SCOUT_ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(anthropicPayload),
-    });
-
+    anthropicResponse = await callAnthropic(anthropicPayload);
     responseData = await anthropicResponse.json();
   } catch (err) {
     await refundTokens(supabase, user.id, tokensDeducted, 'refund_api_error');
@@ -92,7 +116,6 @@ export default async function handler(req, res) {
     await refundTokens(supabase, user.id, tokensDeducted, 'refund_anthropic_error');
   }
 
-  // ── 6. Log the analysis ───────────────────────────────────
   if (anthropicResponse.ok) {
     const usage = responseData.usage || {};
 
@@ -107,9 +130,8 @@ export default async function handler(req, res) {
 
     // Full per-job logging for the admin analytics dashboard — every
     // analysis, not just ones the user later saves/applies to. Best-effort
-    // (see logAnalyzedJobs) and never awaited into the response path in a
-    // way that could fail the request — it only runs after we already know
-    // the analysis itself succeeded.
+    // (see logAnalyzedJobs) — only runs after we already know the analysis
+    // itself succeeded.
     const fullText = (responseData.content || []).map(c => c.type === 'text' ? c.text : '').join('\n');
     const parsedJobs = parseJobsFromModelText(fullText);
     if (parsedJobs) {
@@ -123,4 +145,167 @@ export default async function handler(req, res) {
   }
 
   return res.status(anthropicResponse.status).json(responseData);
+}
+
+// ══════════════════════════════════════════
+// DETECT-MULTI — { texts: string[] }
+// Cheap pre-check: does a pasted box actually contain more than one job
+// posting concatenated together? Free (no token/weekly deduction) but
+// rate-limited — see checkFreeEndpointRateLimit.
+// ══════════════════════════════════════════
+const DETECT_MAX_BLOCKS = 10; // matches MAX_JOB_SLOTS in scout/js/jobs.js
+const DETECT_MAX_CHARS  = 4000; // per block — only need enough to judge, not the full posting
+
+async function handleDetectMulti(req, res) {
+  const user = await verifyUser(supabase, req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const texts = Array.isArray(req.body?.texts) ? req.body.texts.slice(0, DETECT_MAX_BLOCKS) : [];
+  if (!texts.length) {
+    return res.status(400).json({ error: 'No texts provided' });
+  }
+
+  const { limited } = await checkFreeEndpointRateLimit(supabase, user.id, 'detect-multi');
+  if (limited) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a few minutes and try again.' });
+  }
+
+  const prompt = `You will be shown ${texts.length} block(s) of pasted text. Each block is SUPPOSED to be exactly one job posting, but sometimes a user accidentally pastes multiple different job postings concatenated together into one block (e.g. copied straight from a job board's search results page).
+
+For each block, decide: does it contain more than one distinct job posting (different title/company/requirements repeated), or is it a single posting?
+
+Return ONLY a JSON array of exactly ${texts.length} booleans, in order — true if that block contains multiple postings, false if it's a single posting. No markdown, no backticks, no explanation.
+
+${texts.map((t, i) => `--- BLOCK ${i + 1} ---\n${String(t).slice(0, DETECT_MAX_CHARS)}`).join('\n\n')}`;
+
+  try {
+    const anthropicResponse = await callAnthropic({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      messages:   [{ role: 'user', content: prompt }],
+    });
+
+    if (!anthropicResponse.ok) {
+      const e = await anthropicResponse.json().catch(() => ({}));
+      return res.status(502).json({ error: 'Upstream error: ' + (e.error?.message || anthropicResponse.status) });
+    }
+
+    const data = await anthropicResponse.json();
+    const raw  = (data.content || []).map(c => (c.type === 'text' ? c.text : '')).join('');
+
+    const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const start = clean.indexOf('[');
+    const end   = clean.lastIndexOf(']');
+
+    let flags;
+    try {
+      const parsed = start !== -1 && end !== -1 ? JSON.parse(clean.slice(start, end + 1)) : null;
+      flags = Array.isArray(parsed) ? texts.map((_, i) => Boolean(parsed[i])) : texts.map(() => false);
+    } catch {
+      // Fail open — an unparseable response blocks nothing rather than
+      // wrongly blocking a legitimate single posting.
+      flags = texts.map(() => false);
+    }
+
+    return res.status(200).json({ flags });
+  } catch (err) {
+    return res.status(500).json({ error: 'Detection failed: ' + err.message });
+  }
+}
+
+// ══════════════════════════════════════════
+// FIND-CONTACT — { company, title, companyUrl? }
+// HR/recruiting contact lookup via web_search. Tier-gated, 1 unit.
+// ══════════════════════════════════════════
+function cap(str, max) {
+  return String(str ?? '').trim().slice(0, max);
+}
+
+async function handleFindContact(req, res) {
+  const user = await verifyUser(supabase, req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const company    = cap(req.body?.company, 200);
+  const title      = cap(req.body?.title, 200);
+  const companyUrl = cap(req.body?.companyUrl, 500);
+  if (!company || !title) {
+    return res.status(400).json({ error: 'Company and title are required' });
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
+  const tier = profile?.tier || 'free';
+
+  const gate = await applyTierGate(supabase, user.id, tier, 1);
+  if (!gate.ok) {
+    return res.status(gate.status).json(gate.body);
+  }
+
+  const prompt = `Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.
+Company: ${company}
+Job title: ${title}
+Website: ${companyUrl || 'unknown'}
+Return ONLY a JSON object, no markdown:
+{"name":"name or empty","email":"email or empty","note":"one short sentence"}`;
+
+  try {
+    const anthropicResponse = await callAnthropic({
+      model:      SCOUT_MODEL,
+      max_tokens: 600,
+      tools:      [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages:   [{ role: 'user', content: prompt }],
+    });
+
+    const responseData = await anthropicResponse.json();
+    if (!anthropicResponse.ok) {
+      await refundTokens(supabase, user.id, gate.tokensDeducted, 'refund_anthropic_error');
+    }
+    return res.status(anthropicResponse.status).json(responseData);
+  } catch (err) {
+    await refundTokens(supabase, user.id, gate.tokensDeducted, 'refund_api_error');
+    return res.status(500).json({ error: 'Upstream API error: ' + err.message });
+  }
+}
+
+// ══════════════════════════════════════════
+// PARSE-RESUME — { text }
+// Extracts profile fields from a pasted resume. Free but rate-limited.
+// ══════════════════════════════════════════
+const RESUME_MAX_CHARS = 15000;
+
+async function handleParseResume(req, res) {
+  const user = await verifyUser(supabase, req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const text = String(req.body?.text ?? '').trim();
+  if (!text) {
+    return res.status(400).json({ error: 'No resume text provided' });
+  }
+
+  const { limited } = await checkFreeEndpointRateLimit(supabase, user.id, 'parse-resume');
+  if (limited) {
+    return res.status(429).json({ error: 'Too many resume uploads in a short time. Please wait a few minutes and try again.' });
+  }
+
+  const prompt = `Extract career profile from this resume. Return ONLY JSON, no markdown:
+{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":"","hardSkills":[],"softSkills":[],"industryTerms":[]}
+RESUME: ${text.slice(0, RESUME_MAX_CHARS)}`;
+
+  try {
+    const anthropicResponse = await callAnthropic({
+      model:      SCOUT_MODEL,
+      max_tokens: 1000,
+      messages:   [{ role: 'user', content: prompt }],
+    });
+
+    const responseData = await anthropicResponse.json();
+    return res.status(anthropicResponse.status).json(responseData);
+  } catch (err) {
+    return res.status(500).json({ error: 'Upstream API error: ' + err.message });
+  }
 }

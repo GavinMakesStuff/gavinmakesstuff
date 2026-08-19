@@ -10,9 +10,9 @@
 -- user does with it afterward — written by api/scout-ai.js via
 -- logAnalyzedJobs() in api/_lib/scout-shared.js.
 --
--- Aggregate-only by design: the admin API (api/scout-admin-analytics.js)
--- never returns a row from this table verbatim, only counts/sums/averages
--- computed across it.
+-- Aggregate-only by design: the admin API (api/scout-admin.js's 'analytics'
+-- action) never returns a row from this table verbatim, only counts/sums/
+-- averages computed across it.
 --
 -- Only ever written/read via the service-role key — RLS is enabled with no
 -- policies, so the anon/authenticated roles get zero access by default.

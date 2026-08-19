@@ -283,8 +283,10 @@ async function loadDashboard() {
   if (!session) { renderLogin(); return; }
 
   try {
-    var res = await fetch('/api/scout-admin-analytics', {
-      headers: { 'Authorization': 'Bearer ' + session.access_token },
+    var res = await fetch('/api/scout-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ action: 'analytics' }),
     });
     if (res.status === 403 || res.status === 401) { renderDenied(); return; }
     if (!res.ok) throw new Error('Request failed (' + res.status + ')');

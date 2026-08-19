@@ -1,6 +1,8 @@
 // api/_lib/scout-shared.js
-// Shared server-side logic for Scout's AI endpoints (scout-ai.js,
-// scout-parse-resume.js, scout-find-contact.js, scout-detect-multi.js).
+// Shared server-side logic for Scout's AI endpoints — scout-ai.js (whose
+// 'analyze'/'detect-multi'/'find-contact'/'parse-resume' actions all live
+// in that one file to stay under Vercel's Hobby-plan function cap) and
+// scout-admin.js's 'analytics' action.
 // Lives under api/_lib/ (not api/) so Vercel's function builder doesn't try
 // to turn it into its own route — it has no default export handler.
 //

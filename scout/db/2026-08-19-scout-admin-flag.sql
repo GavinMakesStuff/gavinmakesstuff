@@ -1,10 +1,10 @@
 -- Scout: admin flag for the analytics dashboard (scout/admin/analytics.html).
 -- Run this once in the Supabase SQL editor (project: scout).
 --
--- is_admin is checked server-side only (api/scout-admin-analytics.js, via
--- the service-role key) — there is no RLS policy granting the anon/
--- authenticated role read/write access to this column, so a user cannot
--- read or set their own is_admin value through the client SDK.
+-- is_admin is checked server-side only (api/scout-admin.js's 'analytics'
+-- action, via the service-role key) — there is no RLS policy granting the
+-- anon/authenticated role read/write access to this column, so a user
+-- cannot read or set their own is_admin value through the client SDK.
 --
 -- Safe to run more than once (IF NOT EXISTS throughout).
 

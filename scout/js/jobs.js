@@ -130,7 +130,8 @@ function detectMultiplePostings(text) {
   return weakSignals >= 2 || titleMatches.length >= 3 || companyMatches.length >= 3;
 }
 
-// Second, slower pass via a cheap model call (see /api/scout-detect-multi) —
+// Second, slower pass via a cheap model call (see /api/scout-ai's
+// 'detect-multi' action) —
 // catches multi-posting pastes that don't use the structural labels the
 // regex above looks for (e.g. a job-board page with no "Job Title:" text at
 // all). Auth-gated but free — does not touch the user's Scout token balance
@@ -161,10 +162,10 @@ async function checkForMultiplePostings(texts) {
     const raw = (data.content || []).map(c => c.type === 'text' ? c.text : '').join('');
     flags = parseFlagsArray(raw, texts.length);
   } else {
-    const response = await fetch('/api/scout-detect-multi', {
+    const response = await fetch('/api/scout-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
-      body: JSON.stringify({ texts }),
+      body: JSON.stringify({ action: 'detect-multi', texts }),
     });
     if (!response.ok) throw new Error('Detection API error ' + response.status);
     const data = await response.json();
@@ -366,6 +367,7 @@ async function analyzeJobs(overrideTexts, btnEl) {
           // Server builds the actual prompt itself from these — it never
           // accepts a client-supplied model/max_tokens/messages payload.
           body: JSON.stringify({
+            action: 'analyze',
             texts,
             location: userLocation || null,
           })
@@ -1317,7 +1319,7 @@ ${job.summary || ''}`;
       : await fetch('/api/scout-ai', {
           method: 'POST',
           headers: { 'Content-Type':'application/json','Authorization':`Bearer ${jwt}` },
-          body: JSON.stringify({ texts:[postingText], location: userLocation || null })
+          body: JSON.stringify({ action: 'analyze', texts:[postingText], location: userLocation || null })
         });
 
     if (response.status === 402) {
@@ -1453,9 +1455,9 @@ async function findContact(idx,isApplied) {
   try {
     const _jwt2=await getAuthToken();
     const _isLocal2=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
-    // Served by its own dedicated endpoint in prod (api/scout-find-contact.js)
-    // rather than the shared analysis proxy, so this can't be reused to
-    // send arbitrary prompts/tools through /api/scout-ai.
+    // Served by the 'find-contact' action on /api/scout-ai in prod, which
+    // builds its own fixed prompt server-side — this can't be reused to
+    // send arbitrary prompts/tools through that endpoint.
     const response = _isLocal2
       ? await fetch('https://api.anthropic.com/v1/messages',{
           method:'POST',
@@ -1463,10 +1465,10 @@ async function findContact(idx,isApplied) {
           body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,tools:[{type:'web_search_20250305',name:'web_search'}],
             messages:[{role:'user',content:`Find a publicly listed HR, recruiting, or hiring manager contact for a job application follow up.\nCompany: ${job.company}\nJob title: ${job.title}\nWebsite: ${job.companyUrl||'unknown'}\nReturn ONLY a JSON object, no markdown:\n{"name":"name or empty","email":"email or empty","note":"one short sentence"}`}]})
         })
-      : await fetch('/api/scout-find-contact',{
+      : await fetch('/api/scout-ai',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt2}`},
-          body:JSON.stringify({company:job.company,title:job.title,companyUrl:job.companyUrl||''})
+          body:JSON.stringify({action:'find-contact',company:job.company,title:job.title,companyUrl:job.companyUrl||''})
         });
     const data=await response.json();
     const raw=data.content.map(c=>c.type==='text'?c.text:'').join('');
@@ -1564,10 +1566,10 @@ async function extractTextFromDocx(file) {
 }
 
 async function analyzeResumeText(text, fileName) {
-  // Resume analysis is always free — served by its own dedicated endpoint
-  // (api/scout-parse-resume.js) rather than a bypass header on the shared
-  // proxy, so there's nothing here a caller could reuse to skip billing on
-  // an unrelated request.
+  // Resume analysis is always free — served by the 'parse-resume' action on
+  // /api/scout-ai rather than a bypass header on the shared proxy, so
+  // there's nothing here a caller could reuse to skip billing on an
+  // unrelated request.
   const _jwt3=await getAuthToken();
   const _isLocal3=(typeof ANTHROPIC_API_KEY!=='undefined'&&ANTHROPIC_API_KEY&&ANTHROPIC_API_KEY!=='null');
   const response = _isLocal3
@@ -1576,10 +1578,10 @@ async function analyzeResumeText(text, fileName) {
         headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
         body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Extract career profile from this resume. Return ONLY JSON, no markdown:\n{"role":"","industry":"","salary":"","currency":"USD","experience":"","travel":"","certs":"","notes":"","jobGoal":"","name":"","hardSkills":[],"softSkills":[],"industryTerms":[]}\nRESUME: ${text.slice(0,6000)}`}]})
       })
-    : await fetch('/api/scout-parse-resume',{
+    : await fetch('/api/scout-ai',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${_jwt3}`},
-        body:JSON.stringify({text})
+        body:JSON.stringify({action:'parse-resume',text})
       });
   if(!response.ok){const e=await response.json();throw new Error(e.error?.message||'API error');}
   const data=await response.json();
