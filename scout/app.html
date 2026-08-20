@@ -413,11 +413,14 @@
 
         <div style="display:flex;gap:10px;align-items:center;">
           <button id="analyze-btn" class="btn btn-primary" onclick="analyzeJobs(null, this)" style="padding:12px 28px;font-size:14px;">
-            <i class="ti ti-search"></i> Analyze<span id="analyze-cost-badge"></span>
+            <i class="ti ti-search" id="analyze-btn-icon"></i> <span id="analyze-btn-label">Analyze</span><span id="analyze-cost-badge"></span>
           </button>
           <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">
             Clear
           </button>
+        </div>
+        <div id="queue-indicator" style="display:none;align-items:center;gap:6px;margin-top:12px;padding:8px 12px;background:var(--teal-light);border-radius:var(--radius-sm);font-size:11px;color:var(--teal);font-weight:700;max-width:fit-content;">
+          <i class="ti ti-clock-hour-4"></i> <span id="queue-indicator-text"></span>
         </div>
       </div>
 

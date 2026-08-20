@@ -10,6 +10,33 @@ let hiddenJobKeys = new Set();
 let isAnalyzing   = false;
 let queuedBatches = []; // arrays of texts, queued while a batch is in flight
 
+// Reflects isAnalyzing on whichever Analyze button is currently in the DOM
+// (the paste form gets rebuilt often — showInlinePaste, a fresh analyzeJobs
+// call — so this has to be called after every rebuild, not just once).
+function updateAnalyzeButtonLabel() {
+  const label = document.getElementById('analyze-btn-label');
+  const icon  = document.getElementById('analyze-btn-icon');
+  if (!label) return;
+  label.textContent = isAnalyzing ? 'Add to queue' : 'Analyze';
+  if (icon) icon.className = isAnalyzing ? 'ti ti-clock-plus' : 'ti ti-search';
+}
+
+// A toast alone doesn't leave a lasting trace once it fades — this stays
+// visible for as long as anything is actually queued, so "did that click
+// register?" has a real answer to look at, not just a memory of a popup.
+function updateQueueIndicator() {
+  const el   = document.getElementById('queue-indicator');
+  const text = document.getElementById('queue-indicator-text');
+  if (!el || !text) return;
+  if (!queuedBatches.length) { el.style.display = 'none'; return; }
+
+  const totalPostings = queuedBatches.reduce((sum, t) => sum + t.length, 0);
+  const cost = costLabel(totalPostings);
+  const batchWord = queuedBatches.length === 1 ? 'batch' : 'batches';
+  text.textContent = `${queuedBatches.length} ${batchWord} queued (${totalPostings} posting${totalPostings===1?'':'s'}${cost ? `, ${cost}` : ''}) — will start automatically`;
+  el.style.display = 'flex';
+}
+
 // ══════════════════════════════════════════
 // JOB SLOTS
 // ══════════════════════════════════════════
@@ -81,18 +108,22 @@ function clearAllSlots() {
 
 // Live token/analysis cost preview on the Analyze button, updated as the
 // user types or adds/removes postings — before anything is actually spent.
+// Shared with the queue toast/indicator so "what will this cost" is worded
+// identically everywhere it's mentioned.
+function costLabel(count) {
+  const isVip = typeof scoutUser !== 'undefined' && scoutUser?.tier === 'vip';
+  if (isVip || !count) return '';
+  const isFree = typeof scoutUser === 'undefined' || !scoutUser || scoutUser.tier === 'free';
+  const label  = isFree ? `free analys${count === 1 ? 'is' : 'es'}` : `token${count === 1 ? '' : 's'}`;
+  return `${count} ${label}`;
+}
+
 function updateAnalyzeCostBadge() {
   const badge = document.getElementById('analyze-cost-badge');
   if (!badge) return;
   const count = getAllJobText().length;
-  if (count === 0) { badge.textContent = ''; return; }
-
-  const isVip = typeof scoutUser !== 'undefined' && scoutUser?.tier === 'vip';
-  if (isVip) { badge.textContent = ''; return; }
-
-  const isFree = typeof scoutUser === 'undefined' || !scoutUser || scoutUser.tier === 'free';
-  const label  = isFree ? `free analys${count === 1 ? 'is' : 'es'}` : `token${count === 1 ? '' : 's'}`;
-  badge.textContent = ` (${count} ${label})`;
+  const label = costLabel(count);
+  badge.textContent = label ? ` (${label})` : '';
 }
 
 // Delegated so it keeps working even when the paste area is rebuilt/replaced
@@ -245,7 +276,12 @@ async function analyzeJobs(overrideTexts, btnEl) {
   if (isAnalyzing && !overrideTexts) {
     queuedBatches.push(texts);
     clearAllSlots();
-    showToast(`Queued ${texts.length} posting${texts.length>1?'s':''} — will start once the current batch finishes.`);
+    const cost = costLabel(texts.length);
+    showToast(
+      `Added to queue: ${texts.length} posting${texts.length>1?'s':''}${cost ? ` (${cost})` : ''} — will start once the current batch finishes.`,
+      6000,
+    );
+    updateQueueIndicator();
     return;
   }
 
@@ -288,6 +324,10 @@ async function analyzeJobs(overrideTexts, btnEl) {
     slotCount = 0;
     detail.innerHTML = buildInlinePasteHTML();
     addJobSlot();
+    updateAnalyzeButtonLabel(); // isAnalyzing is already true at this point —
+                                // the freshly-built button needs to say "Add
+                                // to queue", not "Analyze", immediately.
+    updateQueueIndicator();
   }
   // The loading spinner renders into job-list-inner (mid-col) — on mobile
   // that's only visible in "list" mode, and the user is normally still
@@ -295,10 +335,11 @@ async function analyzeJobs(overrideTexts, btnEl) {
   // views or the loading state silently renders off-screen. No-op on
   // desktop, where both panes are always visible anyway.
   setMobileView('list');
+  const runCost = costLabel(texts.length);
   if (list) list.innerHTML = `
     <div class="loading-state">
       <div class="spinner"></div>
-      <div class="loading-text">Analyzing ${texts.length} posting${texts.length>1?'s':''}…</div>
+      <div class="loading-text">Analyzing ${texts.length} posting${texts.length>1?'s':''}${runCost ? ` — using ${runCost}` : ''}…</div>
       <div class="progress-bar-wrap"><div id="progress-bar"></div></div>
       <div id="progress-label" class="loading-sub">Starting…</div>
       <div class="loading-sub" style="margin-top:6px;opacity:0.75;">This can take up to ${formatDuration(estSeconds)} — please don't refresh or close this tab, or the analysis will be lost.</div>
@@ -440,6 +481,8 @@ async function analyzeJobs(overrideTexts, btnEl) {
   } finally {
     window.removeEventListener('beforeunload', warnOnUnloadDuringAnalysis);
     isAnalyzing = false;
+    updateAnalyzeButtonLabel();
+    updateQueueIndicator();
     if (queuedBatches.length) {
       const next = queuedBatches.shift();
       analyzeJobs(next);
@@ -1147,10 +1190,13 @@ function buildInlinePasteHTML() {
       <i class="ti ti-plus"></i> Add another posting
     </button>
     <div style="display:flex;gap:10px;align-items:center;">
-      <button class="btn btn-primary" onclick="analyzeJobs(null, this)" style="padding:12px 28px;font-size:14px;">
-        <i class="ti ti-search"></i> Analyze<span id="analyze-cost-badge"></span>
+      <button id="analyze-submit-btn" class="btn btn-primary" onclick="analyzeJobs(null, this)" style="padding:12px 28px;font-size:14px;">
+        <i class="ti ti-search" id="analyze-btn-icon"></i> <span id="analyze-btn-label">Analyze</span><span id="analyze-cost-badge"></span>
       </button>
       <button class="btn btn-ghost" onclick="clearAllSlots()" style="padding:12px 20px;font-size:13px;">Clear</button>
+    </div>
+    <div id="queue-indicator" style="display:none;align-items:center;gap:6px;margin-top:12px;padding:8px 12px;background:var(--teal-light);border-radius:var(--radius-sm);font-size:11px;color:var(--teal);font-weight:700;max-width:fit-content;">
+      <i class="ti ti-clock-hour-4"></i> <span id="queue-indicator-text"></span>
     </div>
   </div>`;
 }
@@ -1166,6 +1212,8 @@ function showInlinePaste() {
   slotCount = 0;
   detail.innerHTML = buildInlinePasteHTML();
   addJobSlot();
+  updateAnalyzeButtonLabel();
+  updateQueueIndicator();
   detail.querySelector('.paste-area')?.focus();
 }
 

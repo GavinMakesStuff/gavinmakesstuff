@@ -145,14 +145,19 @@ function jsStringEscape(str) {
 }
 
 // ── Toast ─────────────────────────────────
+// Duration scales with message length (reading speed, not a fixed flash) —
+// a one-word toast and a full sentence shouldn't get the same window. Pass
+// an explicit ms value as the second arg to override for a specific toast
+// that needs to stay up longer regardless of length.
 let _toastTimer;
-function showToast(msg) {
+function showToast(msg, durationMs) {
   const t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  const duration = durationMs || Math.min(9000, Math.max(3500, msg.length * 60));
+  _toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ── Theme ─────────────────────────────────
