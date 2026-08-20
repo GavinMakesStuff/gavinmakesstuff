@@ -530,6 +530,60 @@
           <div id="settings-view"></div>
         </div>
 
+        <!-- LOCAL LAUNCH SECTION (Studio only) -->
+        <div id="section-local-launch" style="display:none;">
+          <h1 class="section-title">Local Launch Guide</h1>
+          <p class="section-sub">How to run each app on this machine, for a preview or dev session.</p>
+
+          <div class="card" style="background:rgba(202,138,4,.06);border-color:rgba(202,138,4,.3);margin-bottom:22px;">
+            <p class="hint" style="margin:0;"><strong style="color:var(--amber);">Generated, not hand-maintained.</strong> This mirrors the <code>launch-locally</code> Claude Code skill's reference files (<code>~/.claude/skills/launch-locally/references/*.md</code>). Edit those files, not this page directly — regenerating this section is a mandatory step of that skill's refinement loop. If it looks stale, that loop was skipped somewhere.</p>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Marginalia</h2><span class="hint" style="margin:0;">Python / Flask</span></div>
+            <p class="hint">Location: <code>Desktop\Apps\Marginalia</code></p>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/Marginalia
+python webapp/app.py</pre>
+            <p class="hint">Runs at <code>http://127.0.0.1:5000</code> (Flask default). Run from the Marginalia root, not from inside <code>webapp/</code>, since <code>app.py</code> imports from the parent directory.</p>
+            <p class="hint">Env — copy <code>.env.example</code> to <code>.env</code>: <code>GMAIL_ADDRESS</code>, <code>GMAIL_APP_PASSWORD</code>, <code>KINDLE_EMAIL</code> required; <code>ANTHROPIC_API_KEY</code> optional (Highlights Workspace only). Dependencies: <code>pip install -r requirements.txt</code>.</p>
+          </div>
+
+          <div class="card" style="border-color:rgba(217,48,37,.3);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Balance (Finance Tracker)</h2><span class="hint" style="margin:0;">FastAPI + React</span></div>
+            <p class="hint">Location: <code>Desktop\Apps\Balance</code></p>
+            <div class="card" style="background:rgba(217,48,37,.06);border-color:rgba(217,48,37,.25);padding:10px 14px;margin-bottom:12px;"><p class="hint" style="margin:0;"><strong style="color:var(--red);">Legacy local/live split.</strong> <code>local/</code> and <code>live/</code> are separate, manually-synced copies. Default to <code>local</code> for dev/preview — <code>live</code> mirrors production and isn't updated automatically.</p></div>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">Desktop/Apps/Balance/local/Start App.bat</pre>
+            <p class="hint">Starts backend (<code>uvicorn main:app --host 0.0.0.0 --port 8000 --reload</code>) and frontend (<code>npm start</code>, opens <code>http://localhost:3000</code>) together. First time only: run <code>Setup (Run First).bat</code>.</p>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">gavinmakesstuff (this site)</h2><span class="hint" style="margin:0;">Static + Vercel functions</span></div>
+            <p class="hint">Location: <code>Desktop\gavinmakesstuff</code></p>
+            <p class="hint"><strong>A — static-only</strong>, for anything not touching the admin panel or <code>/api/*</code>:</p>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">npx serve .</pre>
+            <p class="hint"><strong>B — full parity</strong>, needed for admin login and any API work (this page included):</p>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">vercel dev</pre>
+            <p class="hint">One-time setup on a fresh machine: <code>vercel link</code>, then <code>vercel env pull .env.local</code> — don't hand-type <code>OAUTH_GITHUB_CLIENT_ID</code>, <code>OAUTH_GITHUB_CLIENT_SECRET</code>, <code>ANTHROPIC_API_KEY</code>, <code>GITHUB_REPO</code>, <code>ALLOWED_GITHUB_USER</code>.</p>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">TerraLens</h2><span class="hint" style="margin:0;">Next.js</span></div>
+            <p class="hint">Location: <code>Desktop\Apps\TerraLens</code></p>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/TerraLens
+npm run dev</pre>
+            <p class="hint">Runs at <code>http://localhost:3000</code>. No env prerequisites.</p>
+          </div>
+
+          <div class="card" style="border-color:rgba(217,48,37,.3);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Scout</h2><span class="hint" style="margin:0;">Static only — incomplete</span></div>
+            <p class="hint">Location: <code>Desktop\Apps\scout</code></p>
+            <div class="card" style="background:rgba(217,48,37,.06);border-color:rgba(217,48,37,.25);padding:10px 14px;margin-bottom:12px;"><p class="hint" style="margin:0;"><strong style="color:var(--red);">Not a complete local environment.</strong> Neither <code>local/</code> nor <code>live/</code> has the <code>api/</code> code that <code>js/jobs.js</code> calls (<code>/api/scout-ai</code>), and neither is a git repo. Whatever backend those calls actually hit only exists in what's deployed live. Confirm where the real repo/API code lives before treating either folder as source of truth.</p></div>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/scout/local
+npx serve .</pre>
+            <p class="hint">Fine for UI/styling preview. AI job-matching and Stripe-backed features will fail — expected given the gap above.</p>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -589,9 +643,10 @@ var ALL_SECTIONS=[
   {id:'projects',label:'Projects'},
   {id:'blog',label:'Blog'},
   {id:'ai-draft',label:'AI Draft'},
-  {id:'settings',label:'Settings'}
+  {id:'settings',label:'Settings'},
+  {id:'local-launch',label:'Local Launch'}
 ];
-var STUDIO_ONLY_SECTIONS=['projects','ai-draft','settings'];
+var STUDIO_ONLY_SECTIONS=['projects','ai-draft','settings','local-launch'];
 function sectionsForSite(siteId){
   if(siteId==='studio')return ALL_SECTIONS;
   return ALL_SECTIONS.filter(function(s){return STUDIO_ONLY_SECTIONS.indexOf(s.id)===-1;});
@@ -840,7 +895,9 @@ function removeUpload(fieldKey,i){
   document.getElementById('upload-list-'+fieldKey).innerHTML=renderUploadItems(fieldKey);
 }
 async function handleImageUpload(fieldKey,inputEl,multiple){
-  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'site';
+  var idField=document.getElementById('f-id');
+  var id=idField?idField.value.trim().replace(/[^a-zA-Z0-9.\-_]/g,''):'site';
+  if(idField&&!id){alert('Set a URL slug first, before uploading images.');inputEl.value='';return;}
   var files=Array.from(inputEl.files);
   if(!multiple)files=files.slice(0,1);
   showStatus('Uploading '+files.length+' image(s)…');
@@ -888,7 +945,8 @@ function removeDownload(fieldKey,i){
   document.getElementById('download-list-'+fieldKey).innerHTML=renderDownloadItems(fieldKey);
 }
 async function handleFileUpload(fieldKey){
-  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'site';
+  var idField=document.getElementById('f-id');
+  var id=idField?idField.value.trim().replace(/[^a-zA-Z0-9.\-_]/g,''):'site';
   if(!id){alert('Set a URL slug first.');return;}
   var labelInput=document.getElementById('dl-label-'+fieldKey);
   var btnTextInput=document.getElementById('dl-btntext-'+fieldKey);
@@ -943,7 +1001,9 @@ function removeGalleryImage(fieldKey,i){
   document.getElementById('gallery-list-'+fieldKey).innerHTML=renderGalleryItems(fieldKey);
 }
 async function handleGalleryUpload(fieldKey,inputEl){
-  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'post';
+  var idField=document.getElementById('f-id');
+  var id=idField?idField.value.trim().replace(/[^a-zA-Z0-9.\-_]/g,''):'post';
+  if(idField&&!id){alert('Set a URL slug first, before uploading images.');inputEl.value='';return;}
   var files=Array.from(inputEl.files);
   showStatus('Uploading '+files.length+' image(s)…');
   try{
@@ -2173,7 +2233,7 @@ async function handleFaviconUpload(inputEl){
   showStatus('Uploading favicon…');
   try{
     var base64=await fileToBase64(file);
-    var ext=file.name.split('.').pop();
+    var ext=file.name.split('.').pop().replace(/[^a-zA-Z0-9]/g,'')||'png';
     var path='images/site/favicon.'+ext;
     var result=await callApi({action:'upload',path:path,contentBase64:base64});
     state.settings.favicon=result.path;

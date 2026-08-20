@@ -191,6 +191,12 @@ module.exports = async function (req, res) {
       let contentBase64 = body.contentBase64;
       if (!path || !contentBase64) { res.status(400).json({ error: 'Missing path or contentBase64.' }); return; }
 
+      const isValidPathSegment = (s) => s.length > 0 && s !== '.' && s !== '..';
+      if (path.startsWith('/') || path.endsWith('/') || !path.split('/').every(isValidPathSegment)) {
+        res.status(400).json({ error: 'Malformed upload path: ' + path });
+        return;
+      }
+
       let targetRepo = repo;
       if (body.siteId && body.siteId !== 'studio') {
         const sites = await loadSites();
@@ -211,13 +217,17 @@ module.exports = async function (req, res) {
         } catch (e) { console.error('sharp failed:', e.message); }
       }
 
+      // Encoded fresh here, not up front — the webp conversion above can
+      // rewrite `path`'s extension after the initial validation.
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+
       let sha;
       try {
-        const existing = await fetch('https://api.github.com/repos/' + targetRepo + '/contents/' + path, { headers: ghHeaders });
+        const existing = await fetch('https://api.github.com/repos/' + targetRepo + '/contents/' + encodedPath, { headers: ghHeaders });
         if (existing.ok) { const d = await existing.json(); sha = d.sha; }
       } catch (e) {}
 
-      const r = await fetch('https://api.github.com/repos/' + targetRepo + '/contents/' + path, {
+      const r = await fetch('https://api.github.com/repos/' + targetRepo + '/contents/' + encodedPath, {
         method: 'PUT',
         headers: { ...ghHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Upload: ' + path, content: contentBase64, sha }),
