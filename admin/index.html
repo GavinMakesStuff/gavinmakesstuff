@@ -574,13 +574,12 @@ npm run dev</pre>
             <p class="hint">Runs at <code>http://localhost:3000</code>. No env prerequisites.</p>
           </div>
 
-          <div class="card" style="border-color:rgba(217,48,37,.3);">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Scout</h2><span class="hint" style="margin:0;">Static only — incomplete</span></div>
-            <p class="hint">Location: <code>Desktop\Apps\scout</code></p>
-            <div class="card" style="background:rgba(217,48,37,.06);border-color:rgba(217,48,37,.25);padding:10px 14px;margin-bottom:12px;"><p class="hint" style="margin:0;"><strong style="color:var(--red);">Not a complete local environment.</strong> Neither <code>local/</code> nor <code>live/</code> has the <code>api/</code> code that <code>js/jobs.js</code> calls (<code>/api/scout-ai</code>), and neither is a git repo. Whatever backend those calls actually hit only exists in what's deployed live. Confirm where the real repo/API code lives before treating either folder as source of truth.</p></div>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/scout/local
-npx serve .</pre>
-            <p class="hint">Fine for UI/styling preview. AI job-matching and Stripe-backed features will fail — expected given the gap above.</p>
+          <div class="card">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Scout</h2><span class="hint" style="margin:0;">Part of this repo, not standalone</span></div>
+            <p class="hint">Scout isn't a separate app — it's built into <em>this</em> repo: frontend at <code>scout/*</code>, backend at <code>api/scout-*.js</code>, one Vercel deployment. <code>Desktop\Apps\scout\local</code> and <code>\live</code> are stale, orphaned exports — not source of truth, don't launch from them.</p>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/gavinmakesstuff
+vercel dev</pre>
+            <p class="hint">Same command as this site (full-parity mode, needed for <code>/api/scout-*</code>, Stripe, and auth) — then browse to <code>http://localhost:3000/scout/index.html</code> or <code>/scout/app.html</code>.</p>
           </div>
         </div>
 
