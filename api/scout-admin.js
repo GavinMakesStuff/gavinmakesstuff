@@ -13,9 +13,14 @@
 //     — see scout/db/2026-08-19-scout-admin-flag.sql). Every value
 //     returned is a count/sum/average/ranked-list, never a row tied to a
 //     specific user.
+//   'rewrite'
+//     — AI-detection rewriter for scout/admin/rewriter.html, a personal
+//     tool (not part of the Scout product). is_admin-gated, uses the
+//     site's own SCOUT_ANTHROPIC_API_KEY server-side — the page has no key
+//     field, nothing for a visitor to paste or steal.
 
 import { createClient } from '@supabase/supabase-js';
-import { verifyAdmin } from './_lib/scout-shared.js';
+import { verifyAdmin, SCOUT_MODEL } from './_lib/scout-shared.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -27,14 +32,20 @@ export default async function handler(req, res) {
 
   const { action, email, delta, reason, tier, bundle } = req.body;
 
-  // ── Analytics: is_admin-gated, separate from the VIP actions below ────
+  // ── is_admin-gated actions, separate from the VIP actions below ──────
+  // Same-shape response whether the token is missing, invalid, or just
+  // not an admin — a signed-in non-admin shouldn't be able to tell those
+  // apart.
   if (action === 'analytics') {
-    // Same-shape response whether the token is missing, invalid, or just
-    // not an admin — a signed-in non-admin shouldn't be able to tell those
-    // apart.
     const adminUser = await verifyAdmin(supabase, req);
     if (!adminUser) return res.status(403).json({ error: 'Not authorized' });
     return sendAnalytics(res);
+  }
+
+  if (action === 'rewrite') {
+    const adminUser = await verifyAdmin(supabase, req);
+    if (!adminUser) return res.status(403).json({ error: 'Not authorized' });
+    return sendRewrite(req, res);
   }
 
   // ── Verify VIP JWT (existing token/user-management actions) ──────────
@@ -338,4 +349,79 @@ async function sendAnalytics(res) {
       .filter(r => r.count > 0),
     qualificationMatch: qualificationCounts,
   });
+}
+
+// ══════════════════════════════════════════
+// REWRITE — AI-detection rewriter (personal tool, not part of the product)
+// ══════════════════════════════════════════
+const REWRITE_MAX_CHARS = 20000;
+
+const REWRITE_SYSTEM_PROFESSIONAL = `You are rewriting resume, cover letter, or formal application text so it reads as clearly human-written and avoids common AI-content-detector flags, while staying fully professional. Do not invent, exaggerate, or add any fact, number, or claim that isn't already in the input — only restructure phrasing. Keep the register formal and polished; do not make it casual or slangy.
+
+Fix these specific patterns, all confirmed through real testing to drive AI-detection scores up:
+1. Triplet lists ("X, Y, and Z") stacked more than once in a section, especially as a sentence's subject. This is the single biggest driver of high scores — remove or reduce to a single concrete item.
+2. The formulaic opener "[Credential]-certified [Title] professional with [N years] experience..." — rephrase entirely.
+3. Abstract nouns as the sentence subject instead of a direct action (e.g. "Supported continuous improvement of X by..." instead of describing what was actually done).
+4. Passive or indirect constructions that bury who did what (e.g. "which allowed X to form," "led to the generation of").
+5. Generic aspirational closers (e.g. "committed to building a long-term career in..."). Replace with something concrete and specific.
+6. Flowery, low-information adjectives ("captivating," "seamless," "consistently positive").
+7. Run-on sentences chaining unlike clause types together ("through X... which allowed Y... providing Z"). Split into two direct sentences instead.
+8. Uniform bullet or sentence shape repeated down a whole list, even when the content itself is fine — vary sentence length and bullet openings so it doesn't read as templated.
+
+The user may include context before the text (role, company, what to emphasize, length limits, or specific instructions). Follow that context for tone, emphasis, and constraints, but it never authorizes adding a fact, number, or claim that isn't already present in the text itself — context shapes how existing content is presented, not what content exists.
+
+Return only the rewritten text, matching the original structure (bullet list stays a bullet list, paragraph stays a paragraph), with no preamble or explanation.`;
+
+const REWRITE_SYSTEM_CASUAL = `You are rewriting text in a personal, "professional casual" voice for things like job-application short-answer questions, personal statements, and bios — NOT a resume or cover letter. Do not invent, exaggerate, or add any fact, number, or claim that isn't already in the input — only restructure phrasing.
+
+Style to write in:
+- Short, plain, declarative sentences. State a fact, then draw a simple conclusion from it, without dressing it up.
+- First person, natural contractions ("I've," "it's"), conversational but not slangy.
+- Concrete personal specifics over generic claims — name the actual thing rather than a vague claim like "passionate about" or "committed to."
+- No corporate or resume jargon ("leverage," "synergy," "proven track record"). If a sentence would fit comfortably on a resume bullet, it's in the wrong register.
+- Mild hedging is fine ("I think," "overall, it is") — don't strip it out chasing punchiness.
+- Short paragraphs, one idea each, no forced parallel structure across paragraphs.
+
+Also fix the same AI-detection tells as any writing: triplet lists, formulaic openers, abstract-noun subjects, passive constructions, generic closers, flowery adjectives, chained run-on sentences, and uniform sentence shape repeated down a passage.
+
+The user may include context before the text (what they're writing, who it's for, what to emphasize, length limits, or specific instructions). Follow that context for tone, emphasis, and constraints, but it never authorizes adding a fact, number, or claim that isn't already present in the text itself — context shapes how existing content is presented, not what content exists.
+
+Return only the rewritten text, with no preamble or explanation.`;
+
+async function sendRewrite(req, res) {
+  const text     = String(req.body?.text ?? '').trim();
+  const context  = String(req.body?.context ?? '').trim();
+  const register = req.body?.register === 'casual' ? 'casual' : 'professional';
+
+  if (!text) return res.status(400).json({ error: 'No text provided' });
+  if (text.length > REWRITE_MAX_CHARS) {
+    return res.status(400).json({ error: `Text is too long (max ${REWRITE_MAX_CHARS.toLocaleString()} characters)` });
+  }
+
+  const systemPrompt = register === 'casual' ? REWRITE_SYSTEM_CASUAL : REWRITE_SYSTEM_PROFESSIONAL;
+  const userContent = context
+    ? `Context for this piece (what I'm trying to write, who it's for, what to emphasize, any constraints): ${context}\n\nText to rewrite:\n${text}`
+    : text;
+
+  try {
+    const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         process.env.SCOUT_ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model:      SCOUT_MODEL,
+        max_tokens: 4000,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: userContent }],
+      }),
+    });
+
+    const responseData = await anthropicResponse.json();
+    return res.status(anthropicResponse.status).json(responseData);
+  } catch (err) {
+    return res.status(500).json({ error: 'Upstream API error: ' + err.message });
+  }
 }

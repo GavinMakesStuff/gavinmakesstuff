@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Belt-and-suspenders alongside the X-Robots-Tag header vercel.json
+     already sends for /scout/admin/(.*) — this page should never be
+     indexed or linked from anywhere in the public app. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Scout — Rewriter</title>
+<link rel="stylesheet" href="../css/styles.css"/>
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* ── Gate screens (loading / login / denied) — same as analytics.html ── */
+  .gate { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+  .gate-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px 30px; max-width: 380px; width: 90%; text-align: center; }
+  .gate-icon { font-size: 1.6rem; margin-bottom: 10px; }
+  .gate-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .gate-sub { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 18px; }
+  .gate input[type=email] { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font-family: var(--font-ui); font-size: 13px; margin-bottom: 10px; }
+  .gate-error { font-size: 11px; color: var(--red); margin-top: 8px; min-height: 14px; }
+  .spinner { width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--teal); border-radius: 50%; margin: 0 auto 14px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Page chrome ─────────────────────────────────────────── */
+  .admin-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
+  .admin-title { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+  .admin-title .badge { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; background: var(--teal-light); color: var(--teal); padding: 3px 9px; border-radius: 20px; }
+  .admin-actions button { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12px; font-family: var(--font-ui); cursor: pointer; }
+  .admin-actions button:hover { border-color: var(--teal); color: var(--teal); }
+  .page-sub { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
+
+  /* ── Form ─────────────────────────────────────────────────── */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: 6px; }
+  select, textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px;
+    font-family: var(--font-ui); font-size: 13px; color: var(--text-body); background: var(--surface-2);
+  }
+  textarea { min-height: 220px; resize: vertical; line-height: 1.55; }
+  textarea#rw-context { min-height: 64px; }
+  .note { font-size: 11px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+  .status { font-size: 12px; color: var(--text-dim); margin-top: 10px; min-height: 1.2em; }
+  .status.error { color: var(--red); }
+  .out-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div id="admin-root">
+  <div class="gate">
+    <div class="gate-card">
+      <div class="spinner"></div>
+      <div class="gate-sub">Checking access…</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function applyTheme() {
+  try {
+    var saved = localStorage.getItem('scout-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+  } catch (e) { /* storage blocked (privacy mode, sandboxed frame) — fall back to light */ }
+})();
+
+var SCOUT_SUPABASE_URL      = 'https://danpqkwdttjqwduhhrbp.supabase.co';
+var SCOUT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbnBxa3dkdHRqcXdkdWhocmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3Mzk0MTMsImV4cCI6MjA5OTMxNTQxM30.g__YZgpVzlN-Y6hYVREY4yuwlCTiFkYJfrZHH3uzpTQ';
+var _supa = window.supabase.createClient(SCOUT_SUPABASE_URL, SCOUT_SUPABASE_ANON_KEY);
+var root = document.getElementById('admin-root');
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderLoading(msg) {
+  root.innerHTML = '<div class="gate"><div class="gate-card"><div class="spinner"></div><div class="gate-sub">' + escHtml(msg || 'Checking access…') + '</div></div></div>';
+}
+
+function renderLogin() {
+  root.innerHTML =
+    '<div class="gate"><div class="gate-card">' +
+      '<div class="gate-icon">🔒</div>' +
+      '<div class="gate-title">Admin sign-in required</div>' +
+      '<div class="gate-sub">This page is restricted. Sign in with your Scout account to continue.</div>' +
+      '<input type="email" id="admin-email" placeholder="you@example.com" autocomplete="email"/>' +
+      '<button class="btn btn-primary" id="admin-login-btn" style="width:100%;justify-content:center;">Send magic link</button>' +
+      '<div class="gate-error" id="admin-login-err"></div>' +
+    '</div></div>';
+
+  document.getElementById('admin-login-btn').addEventListener('click', async function () {
+    var emailEl = document.getElementById('admin-email');
+    var errEl   = document.getElementById('admin-login-err');
+    var email   = (emailEl.value || '').trim();
+    if (!email || email.indexOf('@') === -1) { errEl.textContent = 'Enter a valid email address.'; return; }
+    this.disabled = true; this.textContent = 'Sending…';
+    var self = this;
+    var { error } = await _supa.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + window.location.pathname, shouldCreateUser: false },
+    });
+    if (error) {
+      errEl.textContent = error.message;
+      self.disabled = false; self.textContent = 'Send magic link';
+    } else {
+      root.innerHTML = '<div class="gate"><div class="gate-card"><div class="gate-icon">📬</div><div class="gate-title">Check your inbox</div><div class="gate-sub">Magic link sent to <strong>' + escHtml(email) + '</strong>. Click it to continue.</div></div></div>';
+    }
+  });
+}
+
+function renderDenied() {
+  root.innerHTML =
+    '<div class="gate"><div class="gate-card">' +
+      '<div class="gate-icon">🚫</div>' +
+      '<div class="gate-title">Access denied</div>' +
+      '<div class="gate-sub">Your account doesn\'t have access to this page.</div>' +
+      '<button class="btn btn-ghost" id="admin-signout-btn" style="width:100%;justify-content:center;">Sign out</button>' +
+    '</div></div>';
+  document.getElementById('admin-signout-btn').addEventListener('click', async function () {
+    await _supa.auth.signOut();
+    renderLogin();
+  });
+}
+
+function renderRewriter() {
+  root.innerHTML =
+    '<div class="wrap">' +
+      '<div class="admin-header">' +
+        '<div class="admin-title">Rewriter <span class="badge">Admin</span></div>' +
+        '<div class="admin-actions"><button id="admin-signout">Sign out</button></div>' +
+      '</div>' +
+      '<div class="page-sub">Personal tool, not part of the Scout product — rewrites application text to reduce AI-detector flags while staying honest and accurate. Doesn\'t fabricate or exaggerate anything; only restructures phrasing. Runs on the site\'s own API key server-side — nothing to paste or manage here.</div>' +
+
+      '<div class="panel">' +
+        '<div class="field">' +
+          '<label for="rw-register">Register</label>' +
+          '<select id="rw-register">' +
+            '<option value="professional">Professional (resume, cover letter, formal application email)</option>' +
+            '<option value="casual">Professional casual (personal statement, bio, "tell us about yourself")</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="rw-context">What are you trying to write? (optional)</label>' +
+          '<textarea id="rw-context" placeholder="e.g. This is for a Customer Success role at a mining-tech company. I want to emphasize my SaaS implementation background and keep it under 150 words. Or: just fix the AI-detection patterns, don\'t change the content."></textarea>' +
+          '<div class="note">Anything you\'d normally explain first — the role, what to emphasize, length limits, or specific instructions beyond just fixing AI-detection patterns.</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="rw-input">Paste the text to rewrite</label>' +
+          '<textarea id="rw-input" placeholder="Paste a resume section, cover letter, or application answer..."></textarea>' +
+        '</div>' +
+        '<button class="btn btn-primary" id="rw-go">Rewrite</button>' +
+        '<div class="status" id="rw-status"></div>' +
+      '</div>' +
+
+      '<div class="panel" id="rw-out-panel" style="display:none;">' +
+        '<div class="field">' +
+          '<label for="rw-output">Result</label>' +
+          '<textarea id="rw-output" readonly></textarea>' +
+        '</div>' +
+        '<div class="out-actions"><button class="btn btn-ghost" id="rw-copy">Copy</button></div>' +
+        '<div class="note">This doesn\'t run a live AI-detector check — that still means pasting the result into a tool like zerogpt.com yourself, or asking Claude to check it in your regular chat, before you finalize anything.</div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('admin-signout').addEventListener('click', async function () {
+    await _supa.auth.signOut();
+    renderLogin();
+  });
+  document.getElementById('rw-go').addEventListener('click', doRewrite);
+  document.getElementById('rw-copy').addEventListener('click', function () {
+    var out = document.getElementById('rw-output');
+    out.select();
+    document.execCommand('copy');
+    var status = document.getElementById('rw-status');
+    status.className = 'status';
+    status.textContent = 'Copied.';
+  });
+}
+
+async function doRewrite() {
+  var register = document.getElementById('rw-register').value;
+  var context  = document.getElementById('rw-context').value.trim();
+  var text     = document.getElementById('rw-input').value.trim();
+  var status   = document.getElementById('rw-status');
+  var goBtn    = document.getElementById('rw-go');
+
+  if (!text) { status.className = 'status error'; status.textContent = 'Paste some text first.'; return; }
+
+  goBtn.disabled = true;
+  status.className = 'status';
+  status.textContent = 'Rewriting…';
+
+  try {
+    var session = (await _supa.auth.getSession()).data.session;
+    if (!session) { renderLogin(); return; }
+
+    var res = await fetch('/api/scout-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ action: 'rewrite', register: register, context: context, text: text }),
+    });
+
+    if (res.status === 403 || res.status === 401) { renderDenied(); return; }
+
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || data.error || ('API error ' + res.status));
+
+    var outText = (data.content || []).map(function (c) { return c.type === 'text' ? c.text : ''; }).join('\n').trim();
+    document.getElementById('rw-output').value = outText;
+    document.getElementById('rw-out-panel').style.display = 'block';
+    status.textContent = 'Done.';
+  } catch (err) {
+    status.className = 'status error';
+    status.textContent = 'Error: ' + err.message;
+  } finally {
+    goBtn.disabled = false;
+  }
+}
+
+// The real gate is server-side (profiles.is_admin, checked on every
+// /api/scout-admin 'rewrite' call) — the form itself has nothing sensitive
+// in it, so it's shown to any signed-in user, and a non-admin simply gets
+// "Access denied" the moment they click Rewrite (doRewrite() handles the
+// 403/401 response). No separate whoami round-trip needed.
+(async function init() {
+  var { data: { session } } = await _supa.auth.getSession();
+  if (session) { renderRewriter(); } else { renderLogin(); }
+
+  _supa.auth.onAuthStateChange(function (event, session) {
+    if (event === 'SIGNED_IN' && session) renderRewriter();
+    if (event === 'SIGNED_OUT') renderLogin();
+  });
+})();
+</script>
+</body>
+</html>
