@@ -18,6 +18,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Newer Stripe API versions moved current_period_end off the subscription's
+// top level and onto each subscription item instead (part of flexible-
+// billing support for multi-item subscriptions) — same relocation
+// scout-webhook.js already works around for invoice.subscription. Scout's
+// subscriptions only ever have one item, so items.data[0] is always the
+// right one to read here.
+function resolvePeriodEnd(subscription) {
+  return subscription.current_period_end
+    ?? subscription.items?.data?.[0]?.current_period_end
+    ?? null;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -43,11 +55,10 @@ export default async function handler(req, res) {
     const subscription = await stripe.subscriptions.update(profile.stripe_subscription_id, {
       cancel_at_period_end: true,
     });
+    const periodEnd = resolvePeriodEnd(subscription);
     return res.status(200).json({
       ok: true,
-      endsAt: subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
-        : null,
+      endsAt: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
     });
   } catch (err) {
     console.error('Cancel subscription error:', err);
