@@ -196,6 +196,13 @@ function renderDashboard(d) {
 
   var scoreCapHtml = barRows(d.skillsGap.scoreCapReasons);
 
+  var gr = d.ghostJobRisk || {};
+  var ghostRiskHtml = barRows([
+    { label: 'Low', count: gr.low || 0 },
+    { label: 'Medium', count: gr.medium || 0 },
+    { label: 'High', count: gr.high || 0 },
+  ].filter(function (r) { return r.count > 0; }));
+
   var q = d.qualificationMatch || {};
   var qualTotal = (q.overqualified||0) + (q.underqualified||0) + (q.matched||0) + (q.unclear||0);
   var qualHtml = '<div class="empty-note">No data yet.</div>';
@@ -265,10 +272,11 @@ function renderDashboard(d) {
         '<div class="panel"><div class="panel-title">Why scores get capped</div><div class="panel-sub">Structured reasons behind below-100 matches</div>' + scoreCapHtml + '</div>' +
       '</div>' +
 
-      '<div class="panel">' +
-        '<div class="panel-title">Company reputation (aggregate)</div>' +
-        '<div class="panel-sub">Average AI-assessed reputation rating across users who analyzed the same company</div>' +
-        repHtml +
+      '<div class="grid-2">' +
+        '<div class="panel"><div class="panel-title">Company reputation (aggregate)</div>' +
+          '<div class="panel-sub">Average AI-assessed reputation rating across users who analyzed the same company</div>' + repHtml + '</div>' +
+        '<div class="panel"><div class="panel-title">Ghost job risk</div>' +
+          '<div class="panel-sub">AI-assessed likelihood a posting isn\'t actively being hired for</div>' + ghostRiskHtml + '</div>' +
       '</div>' +
     '</div>';
 

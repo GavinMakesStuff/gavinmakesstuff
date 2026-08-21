@@ -259,7 +259,7 @@ async function sendAnalytics(res) {
   // ── Full analyzed-job demand data (every analysis) ───────────
   const { data: analyzedRows } = await supabase
     .from('scout_analyzed_jobs')
-    .select('user_id, job_key, title, company, industry, level, viability_score, score_cap_reasons, missing_keywords, company_reputation_rating, source, posted_days_ago, user_experience');
+    .select('user_id, job_key, title, company, industry, level, viability_score, score_cap_reasons, missing_keywords, company_reputation_rating, source, posted_days_ago, ghost_job_risk_level, user_experience');
   const analyzed = analyzedRows || [];
 
   const companyCounts    = {};
@@ -271,6 +271,7 @@ async function sendAnalytics(res) {
   const sourceCounts     = {};
   const scoreCapCounts   = {};
   const freshnessCounts  = {};
+  const ghostRiskCounts  = { low: 0, medium: 0, high: 0 };
   const qualificationCounts = { overqualified: 0, underqualified: 0, matched: 0, unclear: 0 };
   const listingUsers     = {}; // job_key -> { label, users: Set }
 
@@ -283,6 +284,7 @@ async function sendAnalytics(res) {
     (j.score_cap_reasons || []).forEach(r => { if (r && r !== 'none') bump(scoreCapCounts, r); });
     bump(sourceCounts, SOURCE_LABELS[j.source] || SOURCE_LABELS.unknown);
     bump(freshnessCounts, freshnessBucket(j.posted_days_ago));
+    if (j.ghost_job_risk_level && ghostRiskCounts[j.ghost_job_risk_level] !== undefined) ghostRiskCounts[j.ghost_job_risk_level]++;
 
     if (j.company && typeof j.company_reputation_rating === 'number') {
       const c = companyRatings[j.company] || { sum: 0, count: 0 };
@@ -348,6 +350,7 @@ async function sendAnalytics(res) {
       .map(label => ({ label, count: freshnessCounts[label] || 0 }))
       .filter(r => r.count > 0),
     qualificationMatch: qualificationCounts,
+    ghostJobRisk: ghostRiskCounts,
   });
 }
 

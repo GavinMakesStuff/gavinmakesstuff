@@ -68,6 +68,8 @@ SCORE CAP REASONS: In addition to the freeform viabilityReason, classify which o
 
 POSTED DATE: If the posting states how long it's been live (e.g. "Posted 3 days ago", "Posted today", a specific date), set postedDaysAgo to that many whole days as an integer (0 for "today"). If not stated anywhere, set postedDaysAgo to null. Never guess.
 
+GHOST JOB RISK: Assess whether this posting shows real signs of being a "ghost" or "zombie" listing — posted but not actively being hired for. Consider: how long it's been live (30+ days with no urgency language is a stronger signal than a stated deadline), vague or generic requirements that could describe almost any role, no named hiring manager/team/department, "always looking for talented people" evergreen language instead of a specific need, and a missing or unusually broad salary range combined with vague duties. Set ghostJobRisk to {"level":"low|medium|high","reasons":["specific reason 1","specific reason 2"]} — reasons must be concrete observations from the actual posting text, not generic boilerplate. Default to "low" unless there's real signal; a well-written but genuinely brief posting is not itself a red flag.
+
 MISSING KEYWORDS: Identify the top 5 keywords from the job posting that are absent from the user's profile/resume. These are the most important gaps to address before applying.
 
 HIGHLIGHT SKILLS: Identify the top 5 skills or experiences the user already has that are most relevant and impressive for this specific posting. These are what they should lead with in their cover letter and emphasize in their resume. Be specific — name the actual skill and briefly say why it matters for this role.
@@ -83,6 +85,7 @@ For EACH job:
   "industry":"Industry","summary":"2-3 sentence summary","requirements":["req1","req2"],
   "viabilityScore":72,"viabilityReason":"Specific explanation of score","scoreCapReasons":["below_min_salary"],
   "postedDaysAgo":3,
+  "ghostJobRisk":{"level":"low","reasons":[]},
   "benefits":["benefit1"],
   "companyReputation":{"rating":"X.X / 5 or Not available","summary":"2-3 sentences","pros":["pro1"],"cons":["con1"],"source":"Glassdoor/Indeed Reviews/Limited public data/Unknown"},
   "workLocation":{"type":"Remote|On-site|Hybrid|Not specified","address":"full address or empty","city":"city/province or empty","distanceKm":null},
@@ -323,9 +326,10 @@ export async function logAnalyzedJobs(supabase, { userId, texts, jobs, userExper
         const n = parseFloat(job.companyReputation?.rating);
         return !Number.isNaN(n) && n > 0 && n <= 5 ? n : null;
       })(),
-      source:          texts[i] ? detectPostingSource(texts[i]) : 'unknown',
-      posted_days_ago: typeof job.postedDaysAgo === 'number' ? job.postedDaysAgo : null,
-      user_experience: userExperience || null,
+      source:               texts[i] ? detectPostingSource(texts[i]) : 'unknown',
+      posted_days_ago:      typeof job.postedDaysAgo === 'number' ? job.postedDaysAgo : null,
+      ghost_job_risk_level: ['low', 'medium', 'high'].includes(job.ghostJobRisk?.level) ? job.ghostJobRisk.level : null,
+      user_experience:      userExperience || null,
     }));
     await supabase.from('scout_analyzed_jobs').insert(rows);
   } catch (err) {

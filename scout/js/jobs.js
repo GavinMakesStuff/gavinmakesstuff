@@ -656,6 +656,8 @@ SCORE CAP REASONS: In addition to the freeform viabilityReason, classify which o
 
 POSTED DATE: If the posting states how long it's been live (e.g. "Posted 3 days ago", "Posted today", a specific date), set postedDaysAgo to that many whole days as an integer (0 for "today"). If not stated anywhere, set postedDaysAgo to null. Never guess.
 
+GHOST JOB RISK: Assess whether this posting shows real signs of being a "ghost" or "zombie" listing — posted but not actively being hired for. Consider: how long it's been live (30+ days with no urgency language is a stronger signal than a stated deadline), vague or generic requirements that could describe almost any role, no named hiring manager/team/department, "always looking for talented people" evergreen language instead of a specific need, and a missing or unusually broad salary range combined with vague duties. Set ghostJobRisk to {"level":"low|medium|high","reasons":["specific reason 1","specific reason 2"]} — reasons must be concrete observations from the actual posting text, not generic boilerplate. Default to "low" unless there's real signal; a well-written but genuinely brief posting is not itself a red flag.
+
 MISSING KEYWORDS: Identify the top 5 keywords from the job posting that are absent from the user's profile/resume. These are the most important gaps to address before applying.
 
 HIGHLIGHT SKILLS: Identify the top 5 skills or experiences the user already has that are most relevant and impressive for this specific posting. These are what they should lead with in their cover letter and emphasize in their resume. Be specific — name the actual skill and briefly say why it matters for this role.
@@ -671,6 +673,7 @@ For EACH job:
   "industry":"Industry","summary":"2-3 sentence summary","requirements":["req1","req2"],
   "viabilityScore":72,"viabilityReason":"Specific explanation of score","scoreCapReasons":["below_min_salary"],
   "postedDaysAgo":3,
+  "ghostJobRisk":{"level":"low","reasons":[]},
   "benefits":["benefit1"],
   "companyReputation":{"rating":"X.X / 5 or Not available","summary":"2-3 sentences","pros":["pro1"],"cons":["con1"],"source":"Glassdoor/Indeed Reviews/Limited public data/Unknown"},
   "workLocation":{"type":"Remote|On-site|Hybrid|Not specified","address":"full address or empty","city":"city/province or empty","distanceKm":null},
@@ -839,6 +842,21 @@ function selectJob(idx) {
   const reqs     = (job.requirements||[]).map(r=>`<span class="chip chip-req">${escHtml(r)}</span>`).join(' ');
   const benefits = (job.benefits||[]).map(b=>`<span class="benefit-pill">${escHtml(b)}</span>`).join(' ');
 
+  // Ghost/zombie-listing warning — a caution about the POSTING itself
+  // (staleness, evergreen language, vague requirements), separate from the
+  // candidate-fit red flags above. Only shown at medium/high risk so a
+  // routine "low" assessment doesn't clutter every result.
+  const ghost = job.ghostJobRisk;
+  const ghostJobHtml = (ghost && (ghost.level === 'medium' || ghost.level === 'high'))
+    ? `<div class="detail-section" style="border-left:3px solid var(--amber);">
+      <div class="ds-label" style="color:var(--amber);">👻 ${ghost.level === 'high' ? 'High' : 'Possible'} Ghost Job Risk</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Signs this posting may not be actively hiring for — worth weighing before you invest time:</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
+        ${(ghost.reasons||[]).map(r=>`<li style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><i class="ti ti-alert-triangle" style="flex-shrink:0;color:var(--amber);margin-top:2px;font-size:12px;"></i>${escHtml(r)}</li>`).join('')}
+      </ul>
+    </div>`
+    : '';
+
   let locHtml='';
   if (loc) {
     const lc = loc.type==='Remote'?'loc-remote':loc.type==='Hybrid'?'loc-hybrid':loc.type==='On-site'?'loc-onsite':'loc-unknown';
@@ -901,10 +919,12 @@ function selectJob(idx) {
       <div class="meta-item"><span class="meta-val salary">${escHtml(job.salary||'Not listed')}</span></div>
       <div class="meta-item">Level: <span class="meta-val">${escHtml(job.level||'Not specified')}</span></div>
       <div class="meta-item">Industry: <span class="meta-val">${escHtml(job.industry||'—')}</span></div>
+      ${typeof job.postedDaysAgo==='number'?`<div class="meta-item">Posted: <span class="meta-val">${job.postedDaysAgo===0?'Today':job.postedDaysAgo+' day'+(job.postedDaysAgo===1?'':'s')+' ago'}</span></div>`:''}
       ${safeHref(job.postingUrl)?`<div class="meta-item"><a href="${safeHref(job.postingUrl)}" target="_blank" rel="noopener" style="font-size:11px;font-family:var(--font-mono);">View posting ↗</a></div>`:''}
     </div>
 
     <div class="detail-body">
+      ${ghostJobHtml}
       <div class="detail-section">
         <div class="ds-label">About this role</div>
         <div class="ds-body">${escHtml(job.summary)}</div>
@@ -1050,6 +1070,17 @@ function renderSavedCard(job, idx, isApplied) {
   const contactLinkedIn = job.contactLinkedIn||'';
   const manualPostingUrl = job.manualPostingUrl||job.postingUrl||'';
 
+  const ghostSc = job.ghostJobRisk;
+  const ghostScHtml = (ghostSc && (ghostSc.level === 'medium' || ghostSc.level === 'high'))
+    ? `<div class="detail-section" style="border-left:3px solid var(--amber);">
+      <div class="ds-label" style="color:var(--amber);">👻 ${ghostSc.level === 'high' ? 'High' : 'Possible'} Ghost Job Risk</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Signs this posting may not be actively hiring for — worth weighing before you invest time:</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
+        ${(ghostSc.reasons||[]).map(r=>`<li style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-body);line-height:1.6;"><i class="ti ti-alert-triangle" style="flex-shrink:0;color:var(--amber);margin-top:2px;font-size:12px;"></i>${escHtml(r)}</li>`).join('')}
+      </ul>
+    </div>`
+    : '';
+
   let locHtml='';
   if (loc) {
     const lc=loc.type==='Remote'?'loc-remote':loc.type==='Hybrid'?'loc-hybrid':loc.type==='On-site'?'loc-onsite':'loc-unknown';
@@ -1096,8 +1127,10 @@ function renderSavedCard(job, idx, isApplied) {
     <div class="meta-item"><span class="meta-val salary">${escHtml(job.salary||'Not listed')}</span></div>
     <div class="meta-item">Level: <span class="meta-val">${escHtml(job.level||'Not specified')}</span></div>
     <div class="meta-item">Industry: <span class="meta-val">${escHtml(job.industry||'—')}</span></div>
+    ${typeof job.postedDaysAgo==='number'?`<div class="meta-item">Posted: <span class="meta-val">${job.postedDaysAgo===0?'Today':job.postedDaysAgo+' day'+(job.postedDaysAgo===1?'':'s')+' ago'}</span></div>`:''}
   </div>
   <div class="detail-body">
+    ${ghostScHtml}
     <div class="detail-section"><div class="ds-label">About this role</div><div class="ds-body">${escHtml(job.summary)}</div></div>
     <div class="detail-section" style="border-left:3px solid var(--teal);"><div class="ds-label" style="color:var(--teal);">🎯 Why This Score</div><div class="ds-body">${escHtml(job.viabilityReason||'')}</div></div>
     ${highlightScHtml}
