@@ -52,6 +52,30 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Webhook error: ${err.message}` });
   }
 
+  // ── Idempotency guard ──────────────────────────────────────
+  // Stripe retries on any non-2xx response and can occasionally deliver an
+  // event twice outright. The per-type checks below (look up `transactions`
+  // by stripe_session_id) are check-then-act and have a real race window —
+  // two concurrent deliveries of the same event could both pass "not yet
+  // completed" before either finishes writing, double-crediting tokens.
+  // This INSERT is the atomic fix: stripe_processed_events.event_id is a
+  // primary key, so the first delivery wins the insert and any retry/
+  // concurrent duplicate hits a unique-violation and is skipped before any
+  // side effect runs. Fails OPEN on any other error (e.g. the migration
+  // hasn't been run yet) — a missing safety table should never block real
+  // payment processing.
+  const { error: dedupeError } = await supabase
+    .from('stripe_processed_events')
+    .insert({ event_id: event.id, event_type: event.type });
+
+  if (dedupeError) {
+    if (dedupeError.code === '23505') { // unique_violation — genuine duplicate
+      console.log(`Duplicate webhook delivery for event ${event.id} (${event.type}), skipping`);
+      return res.status(200).json({ received: true, note: 'duplicate event' });
+    }
+    console.warn('stripe_processed_events insert failed (non-fatal, proceeding):', dedupeError.message);
+  }
+
   // ── Handle checkout.session.completed ────────────────────
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
