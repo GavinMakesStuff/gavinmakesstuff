@@ -15,6 +15,7 @@
 //   'detect-multi'           — is this box actually multiple postings? Free, rate-limited.
 //   'find-contact'           — HR/recruiting contact lookup via web_search. Tier-gated (1 unit).
 //   'parse-resume'           — extract profile fields from a resume. Free, rate-limited.
+//   'cover-letter'           — 3 cover-letter opening lines from an analyzed job. Tier-gated (1 unit).
 //
 // Vercel env vars required:
 //   SCOUT_ANTHROPIC_API_KEY   — Anthropic API key
@@ -56,6 +57,7 @@ export default async function handler(req, res) {
     case 'detect-multi': return handleDetectMulti(req, res);
     case 'find-contact': return handleFindContact(req, res);
     case 'parse-resume': return handleParseResume(req, res);
+    case 'cover-letter': return handleCoverLetter(req, res);
     default:              return res.status(400).json({ error: 'Unknown action: ' + action });
   }
 }
@@ -306,6 +308,66 @@ RESUME: ${text.slice(0, RESUME_MAX_CHARS)}`;
     const responseData = await anthropicResponse.json();
     return res.status(anthropicResponse.status).json(responseData);
   } catch (err) {
+    return res.status(500).json({ error: 'Upstream API error: ' + err.message });
+  }
+}
+
+// ══════════════════════════════════════════
+// COVER-LETTER — { title, company, summary?, highlightSkills?, missingKeywords? }
+// 3 cover-letter opening lines from an already-analyzed job. Tier-gated, 1
+// unit — same cost class as find-contact. Extends data the analysis already
+// computed (highlightSkills) rather than re-deriving fit from scratch.
+// ══════════════════════════════════════════
+async function handleCoverLetter(req, res) {
+  const user = await verifyUser(supabase, req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const title   = cap(req.body?.title, 200);
+  const company = cap(req.body?.company, 200);
+  const summary = cap(req.body?.summary, 2000);
+  const highlightSkills = Array.isArray(req.body?.highlightSkills) ? req.body.highlightSkills.slice(0, 5).map(s => cap(s, 300)) : [];
+  const missingKeywords = Array.isArray(req.body?.missingKeywords) ? req.body.missingKeywords.slice(0, 5).map(s => cap(s, 100)) : [];
+
+  if (!title || !company) {
+    return res.status(400).json({ error: 'Title and company are required' });
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('tier, job_profile').eq('id', user.id).single();
+  const tier = profile?.tier || 'free';
+
+  const gate = await applyTierGate(supabase, user.id, tier, 1);
+  if (!gate.ok) {
+    return res.status(gate.status).json(gate.body);
+  }
+
+  const role = profile?.job_profile?.role || '';
+
+  const prompt = `Write 3 distinct opening lines (1-2 sentences each) for a cover letter applying to this role. Use ONLY the facts given below — never invent an achievement, employer, number, or credential that isn't already listed. Vary the angle across the three (e.g. one leads with a specific skill match, one leads with genuine interest in the role/company, one leads with a relevant outcome) — don't just reword the same sentence three times. No generic filler ("I am excited to apply for..."). Direct, specific, human.
+
+ROLE: ${title} at ${company}
+ABOUT THE ROLE: ${summary || 'Not provided'}
+CANDIDATE'S BACKGROUND: ${role || 'Not specified'}
+CANDIDATE'S STRONGEST ASSETS FOR THIS ROLE: ${highlightSkills.length ? highlightSkills.join(' | ') : 'Not provided'}
+GAPS TO BE MINDFUL OF (never claim these): ${missingKeywords.length ? missingKeywords.join(', ') : 'None noted'}
+
+Return ONLY a JSON array of exactly 3 strings, no markdown, no explanation.`;
+
+  try {
+    const anthropicResponse = await callAnthropic({
+      model:      SCOUT_MODEL,
+      max_tokens: 500,
+      messages:   [{ role: 'user', content: prompt }],
+    });
+
+    const responseData = await anthropicResponse.json();
+    if (!anthropicResponse.ok) {
+      await refundTokens(supabase, user.id, gate.tokensDeducted, 'refund_anthropic_error');
+    }
+    return res.status(anthropicResponse.status).json(responseData);
+  } catch (err) {
+    await refundTokens(supabase, user.id, gate.tokensDeducted, 'refund_api_error');
     return res.status(500).json({ error: 'Upstream API error: ' + err.message });
   }
 }

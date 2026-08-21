@@ -935,6 +935,14 @@ function selectJob(idx) {
       </div>
       ${highlightHtml}
       ${redFlagsHtml}
+      <div class="detail-section" style="border-left:3px solid var(--sand);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div class="ds-label" style="margin-bottom:0;color:var(--sand-text,var(--text-dim));">✍️ Cover Letter Opening Lines</div>
+          <button class="btn-icon btn-sm" onclick="generateCoverLetterFor(${idx}, this)"><i class="ti ti-sparkles"></i> Generate</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Three ways to open, built from your strongest matches above — costs the same as one posting analysis.</div>
+        <div id="cl-results-${idx}"></div>
+      </div>
       ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
       ${benefits?`<div class="detail-section"><div class="ds-label">Benefits and Compensation</div><div class="chip-row">${benefits}</div></div>`:''}
       ${(kwHard||kwSoft||kwInd)?`<div class="detail-section">
@@ -1135,6 +1143,14 @@ function renderSavedCard(job, idx, isApplied) {
     <div class="detail-section" style="border-left:3px solid var(--teal);"><div class="ds-label" style="color:var(--teal);">🎯 Why This Score</div><div class="ds-body">${escHtml(job.viabilityReason||'')}</div></div>
     ${highlightScHtml}
     ${redFlagsScHtml}
+    <div class="detail-section" style="border-left:3px solid var(--sand);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="ds-label" style="margin-bottom:0;color:var(--sand-text,var(--text-dim));">✍️ Cover Letter Opening Lines</div>
+        <button class="btn-icon btn-sm" onclick="generateCoverLetterForSaved(${idx}, ${isApplied}, this)"><i class="ti ti-sparkles"></i> Generate</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Three ways to open, built from your strongest matches above — costs the same as one posting analysis.</div>
+      <div id="cl-results-${prefix}-${idx}"></div>
+    </div>
     ${reqs?`<div class="detail-section"><div class="ds-label">Requirements</div><div class="chip-row">${reqs}</div></div>`:''}
     ${benefits?`<div class="detail-section"><div class="ds-label">Benefits</div><div class="chip-row">${benefits}</div></div>`:''}
     ${(kwHard||kwSoft||kwInd||kwMissingSc)?`<div class="detail-section"><div class="ds-label" style="margin-bottom:10px;">Resume and Cover Letter Keywords</div>${kwHard?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}${kwSoft?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}${kwInd?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}${kwMissingSc?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:4px;">⚠ Missing from your resume</div><div class="chip-row">${kwMissingSc}</div></div>`:''}</div>`:''}
@@ -1569,6 +1585,71 @@ async function findContact(idx,isApplied) {
     resultEl.textContent='Search failed. Enter a contact manually.';
     resultEl.className='contact-result not-found';
     console.error(err);
+  }
+}
+
+// ══════════════════════════════════════════
+// COVER LETTER OPENING LINES
+// ══════════════════════════════════════════
+function generateCoverLetterFor(idx, btnEl) {
+  const job = allResults[idx];
+  if (!job) return;
+  runCoverLetterGeneration(job, `cl-results-${idx}`, btnEl);
+}
+
+function generateCoverLetterForSaved(idx, isApplied, btnEl) {
+  const job = (isApplied ? appliedJobs : savedJobs)[idx];
+  if (!job) return;
+  runCoverLetterGeneration(job, `cl-results-${isApplied?'ac':'sc'}-${idx}`, btnEl);
+}
+
+async function runCoverLetterGeneration(job, containerId, btnEl) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (btnEl) { btnEl.disabled = true; btnEl.dataset.origHtml = btnEl.innerHTML; btnEl.innerHTML = '<i class="ti ti-loader-2"></i> Generating…'; }
+  container.innerHTML = '<div class="empty-note">Generating three opening lines…</div>';
+
+  try {
+    const jwt = await getAuthToken();
+    const response = await fetch('/api/scout-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({
+        action: 'cover-letter',
+        title: job.title,
+        company: job.company,
+        summary: job.summary || '',
+        highlightSkills: job.highlightSkills || [],
+        missingKeywords: job.keywords?.missingFromResume || [],
+      }),
+    });
+
+    if (response.status === 402) {
+      const err = await response.json();
+      container.innerHTML = `<div class="empty-note" style="color:var(--red);">${escHtml(err.message || 'Insufficient tokens or weekly limit reached.')}</div>`;
+      return;
+    }
+    if (!response.ok) { const e = await response.json(); throw new Error(e.error?.message || 'API error'); }
+
+    const data = await response.json();
+    const raw = (data.content || []).map(c => c.type === 'text' ? c.text : '').join('');
+    const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const start = clean.indexOf('[');
+    const end = clean.lastIndexOf(']');
+    const lines = start !== -1 && end !== -1 ? JSON.parse(clean.slice(start, end + 1)) : null;
+    if (!Array.isArray(lines) || !lines.length) throw new Error('No opening lines returned.');
+
+    container.innerHTML = lines.map(l => `
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--text-body);line-height:1.6;display:flex;gap:8px;align-items:flex-start;">
+        <span style="flex:1;">${escHtml(l)}</span>
+        <button class="btn-icon btn-sm" onclick="copyKw('${jsStringEscape(l)}')" title="Copy" style="flex-shrink:0;"><i class="ti ti-copy"></i></button>
+      </div>`).join('');
+  } catch (err) {
+    container.innerHTML = `<div class="empty-note" style="color:var(--red);">Couldn't generate opening lines: ${escHtml(err.message)}</div>`;
+    console.error('[Scout] cover letter generation failed:', err);
+  } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = btnEl.dataset.origHtml || btnEl.innerHTML; }
   }
 }
 
