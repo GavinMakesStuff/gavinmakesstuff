@@ -2,7 +2,9 @@
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/sitemap.xml", "destination": "/api/seo-tools?action=sitemap" }
+    { "source": "/sitemap.xml", "destination": "/api/seo-tools?action=sitemap" },
+    { "source": "/anami", "destination": "https://anami-nu.vercel.app/anami" },
+    { "source": "/anami/:path*", "destination": "https://anami-nu.vercel.app/anami/:path*" }
   ],
   "crons": [
     { "path": "/api/seo-tools?action=cron-report", "schedule": "0 9 1 * *" }
