@@ -177,7 +177,7 @@ function updateUserUI() {
   if (emailEl) emailEl.textContent = scoutUser.email;
 
   // Tier badge
-  const tierLabels = { vip: '★ VIP', plus: 'Plus', pro: 'Pro', paid: 'Paid', free: 'Free' };
+  const tierLabels = { vip: '★ VIP', plus: 'Starter', pro: 'Pro', paid: 'Paid', free: 'Free' };
   const tierEl = document.getElementById('sb-user-tier');
   if (tierEl) {
     tierEl.textContent = tierLabels[scoutUser.tier] || 'Free';

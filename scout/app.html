@@ -107,7 +107,7 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
       <div style="border:1px solid var(--border);border-radius:10px;padding:16px 14px;text-align:center;cursor:pointer;transition:all 0.13s;"
            onclick="subscribeToPlan('plus')" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Plus</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Starter</div>
         <div style="font-size:22px;font-weight:800;color:var(--teal);font-family:var(--font-mono);margin-bottom:4px;">40</div>
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">analyses / month</div>
         <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">$9/mo</div>
@@ -126,10 +126,10 @@
       </div>
     </div>
     <div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;margin-top:-8px;">
-      Already on Plus or Pro? Switching plans takes effect immediately at no extra charge — your new price and token amount start on your next billing date. Full details in the <a href="#" onclick="document.getElementById('token-shop-modal').classList.remove('open');switchView('faq');return false;" style="color:var(--teal);font-weight:700;">FAQ</a>.
+      Already on Starter or Pro? Switching plans takes effect immediately at no extra charge — your new price and token amount start on your next billing date. Full details in the <a href="#" onclick="document.getElementById('token-shop-modal').classList.remove('open');switchView('faq');return false;" style="color:var(--teal);font-weight:700;">FAQ</a>.
     </div>
 
-    <!-- Cancel subscription — shown only when currently on Plus/Pro -->
+    <!-- Cancel subscription — shown only when currently on Starter/Pro -->
     <div id="cancel-sub-row" style="display:none;margin-bottom:20px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;align-items:center;justify-content:space-between;gap:10px;">
       <div style="font-size:11px;color:var(--text-muted);">Want to stop your subscription?</div>
       <button class="btn btn-ghost btn-sm" onclick="cancelSubscription()" style="color:var(--red);border-color:rgba(164,41,27,0.3);">Cancel subscription</button>
@@ -249,7 +249,7 @@
       </div>
       <div class="guide-tip">
         <span style="font-size:1.1rem;flex-shrink:0;color:var(--sand-lo);"><i class="ti ti-coin"></i></span>
-        <div><b>Free and paid access:</b> Free accounts get 3 analyses per week, no strings attached. Need more? Subscribe to <b>Plus</b> or <b>Pro</b> for a monthly allowance, or top up with one-time tokens anytime from <b>Buy tokens</b> in the sidebar — tokens never expire. Click <b>Exit</b> in the top-right corner any time to head back to the Scout homepage.</div>
+        <div><b>Free and paid access:</b> Free accounts get 3 analyses per week, no strings attached. Need more? Subscribe to <b>Starter</b> or <b>Pro</b> for a monthly allowance, or top up with one-time tokens anytime from <b>Buy tokens</b> in the sidebar — tokens never expire. Click <b>Exit</b> in the top-right corner any time to head back to the Scout homepage.</div>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:18px;">
         <button class="btn btn-ghost" onclick="toggleGuide()"><i class="ti ti-x"></i> Close guide</button>
@@ -672,7 +672,7 @@
 
       <div style="margin-bottom:20px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens when I run out of tokens?</div>
-        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Free accounts get 3 analyses a week, resetting every Monday. Plus, Pro, and pay-as-you-go accounts draw from a token balance instead: if you use it all before your next billing date, you can top up with a one-time token pack anytime, or just wait for your next month's renewal to add more. Nothing is auto-charged beyond your regular subscription price.</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Free accounts get 3 analyses a week, resetting every Monday. Starter, Pro, and pay-as-you-go accounts draw from a token balance instead: if you use it all before your next billing date, you can top up with a one-time token pack anytime, or just wait for your next month's renewal to add more. Nothing is auto-charged beyond your regular subscription price.</div>
       </div>
 
       <div style="margin-bottom:20px;">
@@ -681,8 +681,8 @@
       </div>
 
       <div style="margin-bottom:20px;">
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens if I switch between Plus and Pro?</div>
-        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Your plan updates immediately with no extra charge and no double billing. Your existing token balance carries over untouched, and the new price plus the new plan's monthly token amount take effect starting your next regular billing date. For example: you're on Plus (40 tokens/mo) with 15 left, and you switch to Pro on day 10 of your cycle. You keep using those 15 tokens under Pro for free until your next billing date, when you're charged the Pro price and get 100 fresh tokens added to whatever's left.</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">What happens if I switch between Starter and Pro?</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">Your plan updates immediately with no extra charge and no double billing. Your existing token balance carries over untouched, and the new price plus the new plan's monthly token amount take effect starting your next regular billing date. For example: you're on Starter (40 tokens/mo) with 15 left, and you switch to Pro on day 10 of your cycle. You keep using those 15 tokens under Pro for free until your next billing date, when you're charged the Pro price and get 100 fresh tokens added to whatever's left.</div>
       </div>
 
       <div style="margin-bottom:20px;">

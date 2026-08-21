@@ -161,7 +161,7 @@ function barRows(items, max) {
 
 function renderDashboard(d) {
   var tierOrder = ['free', 'paid', 'plus', 'pro', 'vip'];
-  var tierLabel = { free: 'Free', paid: 'Paid', plus: 'Plus', pro: 'Pro', vip: 'VIP' };
+  var tierLabel = { free: 'Free', paid: 'Paid', plus: 'Starter', pro: 'Pro', vip: 'VIP' };
 
   var scoreTotal = (d.demand.scoreTiers.high || 0) + (d.demand.scoreTiers.mid || 0) + (d.demand.scoreTiers.low || 0);
   function seg(n, color, label) {
