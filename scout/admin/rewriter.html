@@ -10,7 +10,10 @@
 <title>Scout — Rewriter</title>
 <link rel="stylesheet" href="../css/styles.css"/>
 <style>
-  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; }
+  /* styles.css sets body{overflow:hidden} for app.html's internal-scroll-region
+     layout — this page is a plain scrolling page, not that SPA shell, so it
+     needs the override or long output has nowhere to scroll to. */
+  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; overflow-y: auto; }
   .wrap { max-width: 760px; margin: 0 auto; padding: 28px 24px 60px; }
 
   /* ── Gate screens (loading / login / denied) — same as analytics.html ── */
@@ -181,6 +184,44 @@ function renderRewriter() {
     status.className = 'status';
     status.textContent = 'Copied.';
   });
+
+  // Mobile browsers frequently discard a backgrounded tab and reload it
+  // from scratch when you switch back, wiping any in-memory form state —
+  // autosave every field to localStorage and restore it here so a draft
+  // survives that.
+  ['rw-register', 'rw-context', 'rw-input'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', saveDraft);
+  });
+  restoreDraft();
+}
+
+var DRAFT_KEY = 'scout-rewriter-draft';
+
+function saveDraft() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      register: document.getElementById('rw-register').value,
+      context:  document.getElementById('rw-context').value,
+      input:    document.getElementById('rw-input').value,
+      output:   document.getElementById('rw-output').value,
+      outVisible: document.getElementById('rw-out-panel').style.display === 'block',
+    }));
+  } catch (e) { /* storage blocked (privacy mode) — draft just won't persist */ }
+}
+
+function restoreDraft() {
+  try {
+    var raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    var draft = JSON.parse(raw);
+    if (draft.register) document.getElementById('rw-register').value = draft.register;
+    if (draft.context)  document.getElementById('rw-context').value  = draft.context;
+    if (draft.input)    document.getElementById('rw-input').value    = draft.input;
+    if (draft.outVisible && draft.output) {
+      document.getElementById('rw-output').value = draft.output;
+      document.getElementById('rw-out-panel').style.display = 'block';
+    }
+  } catch (e) { /* corrupt/old draft shape — ignore and start fresh */ }
 }
 
 async function doRewrite() {
@@ -215,6 +256,7 @@ async function doRewrite() {
     document.getElementById('rw-output').value = outText;
     document.getElementById('rw-out-panel').style.display = 'block';
     status.textContent = 'Done.';
+    saveDraft();
   } catch (err) {
     status.className = 'status error';
     status.textContent = 'Error: ' + err.message;
