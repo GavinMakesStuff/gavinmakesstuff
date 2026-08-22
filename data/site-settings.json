@@ -86,7 +86,7 @@
     {
       "id": "new-creation-1787367536835",
       "name": "Anami",
-      "description": "A daily briefing built from your own library of saved reading.",
+      "description": "A daily briefing built from your own library of saved reading",
       "url": "/",
       "status": "wip",
       "statusLabel": "",
@@ -116,7 +116,7 @@
     {
       "id": "new-creation-1787367976100",
       "name": "Marginalia",
-      "description": "All-in-one Kindle companion that archiving your highlights",
+      "description": "All-in-one Kindle companion that archives your highlights",
       "url": "/",
       "status": "private",
       "statusLabel": "",
