@@ -97,6 +97,21 @@
       "downloadEnabled": false,
       "downloadLabel": "Download",
       "downloadFile": null
+    },
+    {
+      "id": "new-creation-1787367934314",
+      "name": "Balance",
+      "description": "Personal finance tracker with smart auto-categorization",
+      "url": "/",
+      "status": "wip",
+      "statusLabel": "",
+      "thumbnail": "/images/projects/site/1787367943925-BalanceLogo2.webp",
+      "showOnHome": true,
+      "useLabel": "Coming Soon",
+      "passwordProtected": false,
+      "downloadEnabled": false,
+      "downloadLabel": "Download",
+      "downloadFile": null
     }
   ]
 }
