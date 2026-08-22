@@ -1,6 +1,20 @@
 {
   "posts": [
     {
+      "id": "terralens-post",
+      "draft": false,
+      "title": "Why I Built TerraLens: The ESG Gap Nobody Talks About",
+      "date": "2026-08-22",
+      "summary": "There's a weird market gap in ESG tooling for junior miners. Here's what I found—and why I decided to build something.",
+      "thumbnail": "",
+      "body": "I started digging into junior mining companies because a client mentioned an offhand frustration: their CFO was maintaining ESG data in a spreadsheet. Not because they didn't care about disclosure. Because there was literally nowhere else to put it.\n\nThat stuck with me, so I went looking. Talked to a few exploration-stage outfits, some junior miners ramping up operations. The pattern was consistent.\n\nOn one end of the spectrum, there's nothing. No spreadsheet, no system, data lives in email threads and people's heads. On the other end, there's expensive consulting, $50K, $100K per financing round, where a firm comes in, builds a one-off report, and disappears until the next time you need to prove something to a lender.\n\nIn the middle? Almost nothing.\n\nI looked at what the actual market players were doing. Digbee runs a 32-100+ question assessment (~$18,700/year), but it assumes you already have the data organized. S&P's Sustainable1 is a ratings product investors subscribe to, not something a company self-serves. Both solutions skip the hard part: the actual capture and organization of the data in the first place.\n\nSo I dug deeper. What does a regulator actually want to see? What fields does a lender care about? What does due diligence actually look like for a 5-person exploration company?\n\nThe answers were specific: tailings inspection status, discharge compliance, permit status. Not a glossy ESG report. Real, structured data that de-risks the conversation and gives you something concrete to hand an analyst instead of starting from zero.\n\nThat's what TerraLens is built on. Not a promise that better disclosure will lower your cost of capital (the academic literature doesn't actually support that for junior miners). Instead: a lightweight place to keep your ESG data organized on an ongoing basis, so whenever you need to prove something, to an investor, a lender, a regulator, you aren't starting from a blank page.",
+      "seo": {
+        "title": "",
+        "metaDescription": "",
+        "keywords": []
+      }
+    },
+    {
       "id": "concert-scrapbook-app",
       "status": "draft",
       "draft": true,
