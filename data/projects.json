@@ -9,7 +9,7 @@
       "showOnPublic": true,
       "showOnPortfolio": true,
       "public": {
-        "title": "TerraLens",
+        "title": "TerraLens - Filling in ESG Gaps in Mining",
         "summary": "I built a lightweight ESG data platform for junior mining companies that are drowning in spreadsheets and consultant bills.",
         "tags": [],
         "description": "Junior miners need to track environmental and governance stuff for investors and regulators, but there's this weird gap in the market: either you've got nothing written down, or you're paying $50K+ for a consultant to build it from scratch. TerraLens sits in the middle, a simple, self-serve place to organize and keep your ESG data on an ongoing basis, so when a lender or regulator shows up asking questions, you're not starting from zero.",
