@@ -4,7 +4,8 @@
       "id": "terralens",
       "draft": false,
       "appUrl": "/terralens",
-      "thumbnail": "",
+      "appUrlPasswordProtected": false,
+      "thumbnail": "/images/projects/terralens/1787368707081-TerraLensLogo00.webp",
       "showOnPublic": true,
       "showOnPortfolio": true,
       "public": {
@@ -13,7 +14,15 @@
         "tags": [],
         "description": "Junior miners need to track environmental and governance stuff for investors and regulators, but there's this weird gap in the market: either you've got nothing written down, or you're paying $50K+ for a consultant to build it from scratch. TerraLens sits in the middle, a simple, self-serve place to organize and keep your ESG data on an ongoing basis, so when a lender or regulator shows up asking questions, you're not starting from zero.",
         "gallery": [],
-        "downloads": []
+        "downloads": [],
+        "downloadsEnabled": true,
+        "downloadsShowHeading": true,
+        "downloadsHeading": "Downloads",
+        "seo": {
+          "title": "TerraLens",
+          "metaDescription": "",
+          "keywords": []
+        }
       },
       "portfolio": {
         "title": "TerraLens",
@@ -21,7 +30,15 @@
         "tags": [],
         "description": "## Problem\nJunior exploration-stage mining companies face increasing pressure to produce ESG disclosure, but lack both the tooling and internal resources to capture it systematically. Existing solutions either assume organized data already exists (Digbee, S&P Sustainable1) or require expensive episodic consulting ($50K–$100K per financing round). The actual failure mode: a 5-person team with no sustainability role has nowhere consistent to write the data down. It scatters across spreadsheets, one-off reports, or nowhere at all.\n\n## Approach\nRefined the value proposition to match what the research actually supported: this isn't a \"get funded faster\" or \"improve your ESG rating\" tool. Instead, it focuses on the measurable win, structured disclosure de-risks due diligence, provides regulators, insurers, and lenders the exact fields they already scrutinize (tailings status, discharge compliance, permits), and gives the company something concrete to hand an analyst instead of starting from scratch.\n\n## Outcome\nA lightweight, self-serve platform that bridges the gap between \"nothing documented\" and \"expensive consultant,\" allowing junior miners to organize and maintain ESG data on an ongoing basis so they're ready whenever due diligence happens.",
         "gallery": [],
-        "downloads": []
+        "downloads": [],
+        "downloadsEnabled": true,
+        "downloadsShowHeading": true,
+        "downloadsHeading": "Downloads",
+        "seo": {
+          "title": "TerraLens",
+          "metaDescription": "",
+          "keywords": []
+        }
       }
     },
     {
