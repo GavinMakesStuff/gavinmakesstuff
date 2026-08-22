@@ -112,6 +112,21 @@
       "downloadEnabled": false,
       "downloadLabel": "Download",
       "downloadFile": null
+    },
+    {
+      "id": "new-creation-1787367976100",
+      "name": "Marginalia",
+      "description": "All-in-one Kindle companion that archiving your highlights",
+      "url": "/",
+      "status": "private",
+      "statusLabel": "",
+      "thumbnail": "/images/projects/site/1787368005115-MarginaliaLogo2.webp",
+      "showOnHome": true,
+      "useLabel": "Coming Soon",
+      "passwordProtected": false,
+      "downloadEnabled": false,
+      "downloadLabel": "Download",
+      "downloadFile": null
     }
   ]
 }
