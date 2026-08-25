@@ -576,11 +576,11 @@ npm run dev</pre>
           </div>
 
           <div class="card">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Anami</h2><span class="hint" style="margin:0;">Next.js + Supabase</span></div>
-            <p class="hint">Location: <code>Desktop\Apps\Anami</code></p>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Anami</h2><span class="hint" style="margin:0;">Next.js + Supabase — live at /anami</span></div>
+            <p class="hint">Local folder: <code>Desktop\Apps\Anami</code>. <strong>Correction (2026-08-25):</strong> already deployed and live at <a href="/anami" target="_blank">gavinmakesstuff.com/anami</a>, proxied to its own separate Vercel project (<code>anami-nu.vercel.app</code>) — not part of this site's own deployment. Its own daily Cron is already configured. How deploys actually get triggered isn't confirmed yet (git-auto-deploy vs. manual push) — the local repo here has no GitHub remote set.</p>
             <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/Anami
 npm run dev</pre>
-            <p class="hint">Runs at <code>http://localhost:3000</code>. <code>.env.local</code> already configured locally with Supabase/Anthropic/NewsAPI keys — if missing, copy <code>.env.local.example</code> and fill in <code>ANAMI_SUPABASE_URL</code>, <code>ANAMI_SUPABASE_SERVICE_ROLE_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>NEWS_API_KEY</code>, <code>CRON_SECRET</code>. No GitHub remote or Vercel deploy yet — local dev is the only way to run it today.</p>
+            <p class="hint">For local dev/preview only, runs at <code>http://localhost:3000</code>. <code>.env.local</code> already configured locally with Supabase/Anthropic/NewsAPI keys — if missing, copy <code>.env.local.example</code> and fill in <code>ANAMI_SUPABASE_URL</code>, <code>ANAMI_SUPABASE_SERVICE_ROLE_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>NEWS_API_KEY</code>, <code>CRON_SECRET</code>.</p>
           </div>
 
           <div class="card">
