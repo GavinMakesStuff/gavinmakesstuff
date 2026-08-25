@@ -551,9 +551,10 @@ python webapp/app.py</pre>
           <div class="card" style="border-color:rgba(217,48,37,.3);">
             <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Balance (Finance Tracker)</h2><span class="hint" style="margin:0;">FastAPI + React</span></div>
             <p class="hint">Location: <code>Desktop\Apps\Balance</code></p>
-            <div class="card" style="background:rgba(217,48,37,.06);border-color:rgba(217,48,37,.25);padding:10px 14px;margin-bottom:12px;"><p class="hint" style="margin:0;"><strong style="color:var(--red);">Legacy local/live split.</strong> <code>local/</code> and <code>live/</code> are separate, manually-synced copies. Default to <code>local</code> for dev/preview — <code>live</code> mirrors production and isn't updated automatically.</p></div>
+            <div class="card" style="background:rgba(217,48,37,.06);border-color:rgba(217,48,37,.25);padding:10px 14px;margin-bottom:12px;"><p class="hint" style="margin:0;"><strong style="color:var(--red);">Legacy local/live split.</strong> <code>local/</code> and <code>live/</code> are separate, manually-synced copies. Default to <code>local</code> for dev/preview — <code>live</code> mirrors production and isn't updated automatically. Syncing means a full code copy (robocopy, excluding db/build/node_modules), not a cherry-pick, since <code>local</code>'s codebase is fully integrated.</p></div>
             <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">Desktop/Apps/Balance/local/Start App.bat</pre>
             <p class="hint">Starts backend (<code>uvicorn main:app --host 0.0.0.0 --port 8000 --reload</code>) and frontend (<code>npm start</code>, opens <code>http://localhost:3000</code>) together. First time only: run <code>Setup (Run First).bat</code>.</p>
+            <p class="hint" style="margin-top:8px;"><code>live/</code> also has its own <code>.claude/launch.json</code> entries (<code>balance-live-backend</code> port 8000, <code>balance-live-frontend</code> port 3000) — same conceptual ports as <code>local</code>, so don't run both sides at once without changing one's port.</p>
           </div>
 
           <div class="card">
@@ -572,6 +573,14 @@ python webapp/app.py</pre>
             <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/TerraLens
 npm run dev</pre>
             <p class="hint">Runs at <code>http://localhost:3000</code>. No env prerequisites.</p>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Anami</h2><span class="hint" style="margin:0;">Next.js + Supabase</span></div>
+            <p class="hint">Location: <code>Desktop\Apps\Anami</code></p>
+            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/Anami
+npm run dev</pre>
+            <p class="hint">Runs at <code>http://localhost:3000</code>. <code>.env.local</code> already configured locally with Supabase/Anthropic/NewsAPI keys — if missing, copy <code>.env.local.example</code> and fill in <code>ANAMI_SUPABASE_URL</code>, <code>ANAMI_SUPABASE_SERVICE_ROLE_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>NEWS_API_KEY</code>, <code>CRON_SECRET</code>. No GitHub remote or Vercel deploy yet — local dev is the only way to run it today.</p>
           </div>
 
           <div class="card">
