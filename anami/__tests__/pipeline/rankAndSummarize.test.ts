@@ -47,7 +47,8 @@ describe('rankAndSummarize', () => {
       },
     ])
     const callArgs = mockCreate.mock.calls[0][0]
-    expect(callArgs.messages[0].content).toContain('consequence over volume')
+    expect(callArgs.messages[0].content).toContain('human impact')
+    expect(callArgs.messages[0].content).toContain('geographic diversity')
   })
 
   it('returns an empty array when there are no candidates', async () => {
