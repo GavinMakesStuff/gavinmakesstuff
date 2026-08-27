@@ -10,6 +10,8 @@ import {
   publishEdition,
   failEdition,
   getLatestPublishedEdition,
+  getEditionByDateAnyStatus,
+  resetEditionToGenerating,
 } from '../../lib/db/editions'
 
 describe('editions', () => {
@@ -82,5 +84,47 @@ describe('editions', () => {
 
     expect(eq).toHaveBeenCalledWith('status', 'published')
     expect(edition?.id).toBe('e2')
+  })
+
+  it('gets an edition for a date regardless of status, scoped to the default user', async () => {
+    const row = {
+      id: 'e3', user_id: '00000000-0000-0000-0000-000000000001',
+      edition_date: '2026-08-21', status: 'failed',
+      generated_at: null, read_time_minutes: null,
+    }
+    const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null })
+    const eqDate = vi.fn(() => ({ maybeSingle }))
+    const eqUser = vi.fn(() => ({ eq: eqDate }))
+    const select = vi.fn(() => ({ eq: eqUser }))
+    mockFrom.mockReturnValue({ select })
+
+    const edition = await getEditionByDateAnyStatus('2026-08-21')
+
+    expect(eqUser).toHaveBeenCalledWith('user_id', '00000000-0000-0000-0000-000000000001')
+    expect(eqDate).toHaveBeenCalledWith('edition_date', '2026-08-21')
+    expect(edition?.id).toBe('e3')
+  })
+
+  it('returns null from getEditionByDateAnyStatus when no edition exists for the date', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
+    const eqDate = vi.fn(() => ({ maybeSingle }))
+    const eqUser = vi.fn(() => ({ eq: eqDate }))
+    const select = vi.fn(() => ({ eq: eqUser }))
+    mockFrom.mockReturnValue({ select })
+
+    const edition = await getEditionByDateAnyStatus('2026-08-21')
+
+    expect(edition).toBeNull()
+  })
+
+  it('resets an edition to generating status', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null })
+    const update = vi.fn(() => ({ eq }))
+    mockFrom.mockReturnValue({ update })
+
+    await resetEditionToGenerating('e4')
+
+    expect(update).toHaveBeenCalledWith({ status: 'generating' })
+    expect(eq).toHaveBeenCalledWith('id', 'e4')
   })
 })

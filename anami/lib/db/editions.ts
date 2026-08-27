@@ -81,6 +81,7 @@ export async function getEditionByDateAnyStatus(editionDate: string): Promise<Ed
   const { data, error } = await supabase
     .from('editions')
     .select()
+    .eq('user_id', DEFAULT_USER_ID)
     .eq('edition_date', editionDate)
     .maybeSingle()
   if (error) throw error

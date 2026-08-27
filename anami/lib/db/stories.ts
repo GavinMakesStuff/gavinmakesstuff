@@ -48,6 +48,12 @@ export async function insertStories(stories: NewStory[]): Promise<Story[]> {
   return (data ?? []).map(toStory)
 }
 
+export async function deleteStoriesForEdition(editionId: string): Promise<void> {
+  const supabase = getSupabaseClient()
+  const { error } = await supabase.from('stories').delete().eq('edition_id', editionId)
+  if (error) throw error
+}
+
 export async function getStoriesForEdition(editionId: string): Promise<Story[]> {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase

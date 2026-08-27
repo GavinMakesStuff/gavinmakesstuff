@@ -9,6 +9,7 @@ const {
   mockPublishEdition,
   mockFailEdition,
   mockInsertStories,
+  mockDeleteStoriesForEdition,
 } = vi.hoisted(() => ({
   mockSourceWorldCandidates: vi.fn(),
   mockRankAndSummarize: vi.fn(),
@@ -18,6 +19,7 @@ const {
   mockPublishEdition: vi.fn(),
   mockFailEdition: vi.fn(),
   mockInsertStories: vi.fn(),
+  mockDeleteStoriesForEdition: vi.fn(),
 }))
 
 vi.mock('../../lib/pipeline/sourceWorldCandidates', () => ({
@@ -35,6 +37,7 @@ vi.mock('../../lib/db/editions', () => ({
 }))
 vi.mock('../../lib/db/stories', () => ({
   insertStories: mockInsertStories,
+  deleteStoriesForEdition: mockDeleteStoriesForEdition,
 }))
 
 import { runGeneration } from '../../lib/pipeline/runGeneration'
@@ -49,6 +52,7 @@ describe('runGeneration', () => {
     mockPublishEdition.mockReset()
     mockFailEdition.mockReset()
     mockInsertStories.mockReset()
+    mockDeleteStoriesForEdition.mockReset()
     // Default: no existing edition for the date, so a fresh one gets created.
     mockGetEditionByDateAnyStatus.mockResolvedValue(null)
   })
@@ -117,11 +121,12 @@ describe('runGeneration', () => {
 
     expect(mockCreateGeneratingEdition).not.toHaveBeenCalled()
     expect(mockResetEditionToGenerating).toHaveBeenCalledWith('e4')
+    expect(mockDeleteStoriesForEdition).toHaveBeenCalledWith('e4')
     expect(mockPublishEdition).toHaveBeenCalledWith('e4', expect.any(Number))
     expect(result).toEqual({ status: 'published', editionId: 'e4' })
   })
 
-  it('reuses an existing generating edition for the date without resetting its status', async () => {
+  it('reuses an existing generating edition for the date without resetting its status, clearing any prior stories first', async () => {
     mockGetEditionByDateAnyStatus.mockResolvedValue({
       id: 'e5',
       userId: 'u1',
@@ -137,7 +142,28 @@ describe('runGeneration', () => {
 
     expect(mockCreateGeneratingEdition).not.toHaveBeenCalled()
     expect(mockResetEditionToGenerating).not.toHaveBeenCalled()
+    expect(mockDeleteStoriesForEdition).toHaveBeenCalledWith('e5')
     expect(mockFailEdition).toHaveBeenCalledWith('e5')
     expect(result).toEqual({ status: 'failed', editionId: 'e5' })
+  })
+
+  it('returns the existing result without re-running the pipeline when the date already published', async () => {
+    mockGetEditionByDateAnyStatus.mockResolvedValue({
+      id: 'e6',
+      userId: 'u1',
+      editionDate: '2026-08-21',
+      status: 'published',
+      generatedAt: '2026-08-21T05:00:00Z',
+      readTimeMinutes: 4,
+    })
+
+    const result = await runGeneration('2026-08-21')
+
+    expect(mockSourceWorldCandidates).not.toHaveBeenCalled()
+    expect(mockRankAndSummarize).not.toHaveBeenCalled()
+    expect(mockCreateGeneratingEdition).not.toHaveBeenCalled()
+    expect(mockDeleteStoriesForEdition).not.toHaveBeenCalled()
+    expect(mockPublishEdition).not.toHaveBeenCalled()
+    expect(result).toEqual({ status: 'published', editionId: 'e6' })
   })
 })

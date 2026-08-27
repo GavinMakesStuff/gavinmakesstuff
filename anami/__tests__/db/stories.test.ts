@@ -5,7 +5,7 @@ vi.mock('../../lib/supabase', () => ({
   getSupabaseClient: () => ({ from: mockFrom }),
 }))
 
-import { insertStories, getStoriesForEdition } from '../../lib/db/stories'
+import { insertStories, getStoriesForEdition, deleteStoriesForEdition } from '../../lib/db/stories'
 
 describe('stories', () => {
   beforeEach(() => {
@@ -45,5 +45,16 @@ describe('stories', () => {
 
     expect(eq).toHaveBeenCalledWith('edition_id', 'e1')
     expect(order).toHaveBeenCalledWith('rank_position', { ascending: true })
+  })
+
+  it('deletes all stories for an edition', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null })
+    const del = vi.fn(() => ({ eq }))
+    mockFrom.mockReturnValue({ delete: del })
+
+    await deleteStoriesForEdition('e1')
+
+    expect(mockFrom).toHaveBeenCalledWith('stories')
+    expect(eq).toHaveBeenCalledWith('edition_id', 'e1')
   })
 })
