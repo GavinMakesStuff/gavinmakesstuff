@@ -45,7 +45,7 @@ async function fetchClaudeSearchCandidates(): Promise<Candidate[]> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-5',
-    max_tokens: 2048,
+    max_tokens: 8192,
     tools: [{ type: 'web_search_20260209', name: 'web_search' }],
     messages: [
       {
