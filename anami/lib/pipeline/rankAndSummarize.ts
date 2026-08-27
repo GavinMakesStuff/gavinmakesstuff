@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { Candidate } from './sourceWorldCandidates'
+import { parseModelJson } from './parseModelJson'
 
 export type RankedStory = {
   headline: string
@@ -31,7 +32,7 @@ export async function rankAndSummarize(candidates: Candidate[]): Promise<RankedS
     return []
   }
   try {
-    const parsed = JSON.parse(textBlock.text)
+    const parsed = parseModelJson(textBlock.text)
     return Array.isArray(parsed) ? parsed : []
   } catch (err) {
     console.error(

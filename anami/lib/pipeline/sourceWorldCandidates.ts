@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { parseModelJson } from './parseModelJson'
 
 export type Candidate = {
   headline: string
@@ -62,7 +63,7 @@ async function fetchClaudeSearchCandidates(): Promise<Candidate[]> {
     return []
   }
   try {
-    const parsed = JSON.parse(textBlock.text)
+    const parsed = parseModelJson(textBlock.text)
     return Array.isArray(parsed) ? parsed : []
   } catch (err) {
     console.error(
