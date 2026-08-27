@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/generate",
+      "path": "/anami/api/generate",
       "schedule": "0 10 * * *"
     }
   ]
