@@ -13,6 +13,9 @@ export default function NavRail() {
       <Link href="/library" className={styles.link}>
         Library
       </Link>
+      <Link href="/settings" className={styles.link}>
+        Settings
+      </Link>
     </nav>
   )
 }

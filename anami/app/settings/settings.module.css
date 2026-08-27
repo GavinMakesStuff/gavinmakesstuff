@@ -1,0 +1,112 @@
+/* app/settings/settings.module.css */
+.layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 2.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.rail {
+  padding-top: 0.5rem;
+  border-right: 1px solid var(--color-sand);
+}
+
+.content {
+  min-width: 0;
+}
+
+.pageTitle {
+  font-family: var(--font-headline);
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.sectionLabel {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-slate);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-ink);
+}
+
+.industryGroup {
+  border-bottom: 1px solid var(--color-sand);
+  padding: 0.75rem 0;
+}
+
+.industrySummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-headline);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.topicList {
+  list-style: none;
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+}
+
+.topicItem {
+  font-size: 0.9rem;
+  color: var(--color-slate);
+  padding: 0.25rem 0;
+}
+
+.form,
+.inlineForm {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.input,
+.select {
+  font-family: var(--font-body);
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-sand);
+  background: var(--color-parchment);
+  color: var(--color-ink);
+}
+
+.submitButton,
+.deleteButton {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--color-ink);
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  color: var(--color-ink);
+}
+
+.deleteButton {
+  border-color: var(--color-slate);
+  color: var(--color-slate);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.submitButton:hover {
+  background: var(--color-ink);
+  color: var(--color-parchment);
+}
+
+.deleteButton:hover {
+  color: var(--color-destructive, #b3261e);
+  border-color: var(--color-destructive, #b3261e);
+}
