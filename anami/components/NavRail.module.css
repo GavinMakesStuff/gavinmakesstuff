@@ -1,0 +1,22 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.link {
+  color: var(--color-ink);
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid transparent;
+  width: fit-content;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.link:hover {
+  color: var(--color-herald-blue);
+  border-bottom-color: var(--color-herald-blue);
+}

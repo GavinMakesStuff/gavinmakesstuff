@@ -1,0 +1,30 @@
+.buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-slate);
+  padding: 0.25rem 0;
+  min-height: 32px;
+  transition: color 150ms ease;
+}
+
+.button:hover:not(:disabled) {
+  color: var(--color-herald-blue);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button[aria-pressed='true'] {
+  color: var(--color-herald-blue);
+  opacity: 1;
+}

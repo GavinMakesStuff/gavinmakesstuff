@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { FeedbackAction } from '../lib/db/feedback'
+import styles from './FeedbackButtons.module.css'
 
 export const FEEDBACK_ACTIONS: { action: FeedbackAction; label: string }[] = [
   { action: 'thumbs_up', label: '👍' },
@@ -30,13 +31,14 @@ export default function FeedbackButtons({ storyId }: { storyId: string }) {
   }
 
   return (
-    <div>
+    <div className={styles.buttons}>
       {FEEDBACK_ACTIONS.map(({ action, label }) => (
         <button
           key={action}
           onClick={() => send(action)}
           disabled={sentAction !== null}
           aria-pressed={sentAction === action}
+          className={styles.button}
         >
           {label}
         </button>

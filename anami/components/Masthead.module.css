@@ -1,0 +1,81 @@
+.masthead {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+}
+
+.iconLink {
+  display: none;
+}
+
+.icon {
+  display: block;
+  margin: 0 auto 0.5rem;
+  height: auto;
+}
+
+.lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 4vw, 2.5rem);
+}
+
+.est,
+.briefing {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--color-slate);
+  text-transform: uppercase;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.wordmark {
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-size: clamp(2.25rem, 9vw, 4.5rem);
+  letter-spacing: 0.04em;
+  margin: 0;
+  line-height: 1;
+}
+
+.wordmark a {
+  color: var(--color-ink);
+}
+
+.rule {
+  position: relative;
+  border-top: 3px double var(--color-ink);
+  max-width: 640px;
+  margin: 1.25rem auto 0.75rem;
+}
+
+.diamond {
+  position: absolute;
+  top: -0.7em;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-parchment);
+  padding: 0 0.6rem;
+  color: var(--color-ink);
+  font-size: 0.8rem;
+}
+
+.tagline {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-slate);
+}
+
+@media (max-width: 480px) {
+  .lockup {
+    display: none;
+  }
+
+  .iconLink {
+    display: inline-block;
+  }
+}
