@@ -12,7 +12,7 @@ export default function Masthead() {
         <span className={styles.est}>
           EST.
           <br />
-          2024
+          2026
         </span>
         <h1 className={styles.wordmark}>
           <Link href="/">ANAMI</Link>
