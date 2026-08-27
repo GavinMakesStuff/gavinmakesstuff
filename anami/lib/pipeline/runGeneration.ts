@@ -1,5 +1,8 @@
 import { sourceWorldCandidates } from './sourceWorldCandidates'
-import { rankAndSummarize } from './rankAndSummarize'
+import { rankAndSummarize, type RankedStory } from './rankAndSummarize'
+import { sourceIndustryCandidates } from './sourceIndustryCandidates'
+import { rankAndSummarizeForIndustry } from './rankAndSummarizeIndustry'
+import { listInterests, type Interest } from '../db/interests'
 import {
   createGeneratingEdition,
   getEditionByDateAnyStatus,
@@ -8,7 +11,7 @@ import {
   failEdition,
   type Edition,
 } from '../db/editions'
-import { insertStories, deleteStoriesForEdition } from '../db/stories'
+import { insertStories, deleteStoriesForEdition, type NewStory } from '../db/stories'
 
 const WORDS_PER_MINUTE = 200
 
@@ -20,13 +23,6 @@ function estimateReadTimeMinutes(stories: { summary: string; whyItMatters: strin
   return Math.max(1, Math.round(totalWords / WORDS_PER_MINUTE))
 }
 
-// Reuses an in-progress ('generating') or previously-failed edition for this
-// date instead of blindly inserting, since (user_id, edition_date) is unique
-// and a second insert for the same date would otherwise throw. Any stories
-// already attached to a reused edition are cleared first -- a 'generating'
-// edition can have stories from a run that died between insertStories and
-// publishEdition (e.g. a function timeout), and reusing it without clearing
-// would double up the story list on the retry.
 async function getOrCreateEdition(
   editionDate: string,
   existing: Edition | null
@@ -42,13 +38,11 @@ async function getOrCreateEdition(
   return createGeneratingEdition(editionDate)
 }
 
+type SettledRanked = { status: 'fulfilled'; value: RankedStory[] } | { status: 'rejected'; reason: unknown }
+
 export async function runGeneration(
   editionDate: string
 ): Promise<{ status: 'published' | 'failed'; editionId: string }> {
-  // A duplicate/retried delivery for a date that already published successfully
-  // (e.g. Vercel Cron's documented possibility of duplicate invocations) should
-  // report the existing result cleanly rather than attempting a second insert
-  // and hitting the (user_id, edition_date) unique constraint.
   const existingForDate = await getEditionByDateAnyStatus(editionDate)
   if (existingForDate && existingForDate.status === 'published') {
     return { status: 'published', editionId: existingForDate.id }
@@ -57,28 +51,83 @@ export async function runGeneration(
   const edition = await getOrCreateEdition(editionDate, existingForDate)
 
   try {
-    const candidates = await sourceWorldCandidates()
-    const rankedStories = await rankAndSummarize(candidates)
+    const interests = await listInterests()
+    const industries = interests.filter(
+      (i): i is Interest => i.type === 'industry' && i.parentInterestId === null
+    )
 
-    if (rankedStories.length === 0) {
+    const worldTask: Promise<RankedStory[]> = (async () => {
+      const candidates = await sourceWorldCandidates()
+      return rankAndSummarize(candidates)
+    })()
+
+    const industryTasks: Promise<RankedStory[]>[] = industries.map((industry) =>
+      (async () => {
+        const candidates = await sourceIndustryCandidates(industry)
+        return rankAndSummarizeForIndustry(candidates, industry)
+      })()
+    )
+
+    const settled = (await Promise.allSettled([worldTask, ...industryTasks])) as SettledRanked[]
+    const [worldSettled, ...industrySettled] = settled
+
+    const rankedWorldStories = worldSettled.status === 'fulfilled' ? worldSettled.value : []
+    if (worldSettled.status === 'rejected') {
+      console.error('runGeneration: World sourcing/ranking failed for', editionDate, worldSettled.reason)
+    }
+
+    const industryStories: NewStory[] = []
+    industries.forEach((industry, i) => {
+      const result = industrySettled[i]
+      const ranked = result.status === 'fulfilled' ? result.value : []
+      if (result.status === 'rejected') {
+        console.error(
+          'runGeneration: industry sourcing/ranking failed for',
+          industry.label,
+          result.reason
+        )
+      }
+      ranked.forEach((story, index) => {
+        industryStories.push({
+          editionId: edition.id,
+          module: 'industry',
+          headline: story.headline,
+          summary: story.summary,
+          whyItMatters: story.whyItMatters,
+          sourceUrls: story.sourceUrls,
+          interestId: industry.id,
+          rankPosition: index + 1,
+        })
+      })
+    })
+
+    const worldStories: NewStory[] = rankedWorldStories.map((story, index) => ({
+      editionId: edition.id,
+      module: 'world',
+      headline: story.headline,
+      summary: story.summary,
+      whyItMatters: story.whyItMatters,
+      sourceUrls: story.sourceUrls,
+      interestId: null,
+      rankPosition: index + 1,
+    }))
+
+    const allStories = [...worldStories, ...industryStories]
+
+    if (allStories.length === 0) {
       await failEdition(edition.id)
       return { status: 'failed', editionId: edition.id }
     }
 
-    await insertStories(
-      rankedStories.map((story, index) => ({
-        editionId: edition.id,
-        module: 'world' as const,
-        headline: story.headline,
-        summary: story.summary,
-        whyItMatters: story.whyItMatters,
-        sourceUrls: story.sourceUrls,
-        interestId: null,
-        rankPosition: index + 1,
-      }))
-    )
+    await insertStories(allStories)
 
-    await publishEdition(edition.id, estimateReadTimeMinutes(rankedStories))
+    const allRankedForReadTime = [
+      ...rankedWorldStories,
+      ...industries.flatMap((_industry, i) =>
+        industrySettled[i].status === 'fulfilled' ? (industrySettled[i] as { value: RankedStory[] }).value : []
+      ),
+    ]
+    await publishEdition(edition.id, estimateReadTimeMinutes(allRankedForReadTime))
     return { status: 'published', editionId: edition.id }
   } catch (err) {
     console.error('generation failed for date', editionDate, err)
