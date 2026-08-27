@@ -1,7 +1,7 @@
 // lib/pipeline/rankAndSummarizeIndustry.ts
 import Anthropic from '@anthropic-ai/sdk'
 import type { Candidate } from './sourceWorldCandidates'
-import type { RankedStory } from './rankAndSummarize'
+import { isRankedStory, normalizeRankedStory, type RankedStory } from './rankAndSummarize'
 import type { Interest } from '../db/interests'
 import { parseModelJson } from './parseModelJson'
 
@@ -36,7 +36,22 @@ export async function rankAndSummarizeForIndustry(
   }
   try {
     const parsed = parseModelJson(textBlock.text)
-    return Array.isArray(parsed) ? parsed.slice(0, 2) : []
+    const items = Array.isArray(parsed) ? parsed.filter(isRankedStory) : []
+    if (!Array.isArray(parsed)) {
+      console.error(
+        'rankAndSummarizeForIndustry: Claude returned a non-array JSON payload for',
+        interest.label,
+        parsed
+      )
+    } else if (items.length < parsed.length) {
+      console.error(
+        'rankAndSummarizeForIndustry: dropped',
+        parsed.length - items.length,
+        'malformed story item(s) from the model output for',
+        interest.label
+      )
+    }
+    return items.slice(0, 2).map(normalizeRankedStory)
   } catch (err) {
     console.error(
       'rankAndSummarizeForIndustry: failed to parse Claude JSON for',

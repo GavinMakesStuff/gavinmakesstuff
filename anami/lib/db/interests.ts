@@ -50,8 +50,16 @@ export async function createInterest(
 
 export async function deleteInterest(id: string): Promise<void> {
   const supabase = getSupabaseClient()
-  const { error: childError } = await supabase.from('interests').delete().eq('parent_interest_id', id)
+  const { error: childError } = await supabase
+    .from('interests')
+    .delete()
+    .eq('parent_interest_id', id)
+    .eq('user_id', DEFAULT_USER_ID)
   if (childError) throw childError
-  const { error } = await supabase.from('interests').delete().eq('id', id)
+  const { error } = await supabase
+    .from('interests')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', DEFAULT_USER_ID)
   if (error) throw error
 }

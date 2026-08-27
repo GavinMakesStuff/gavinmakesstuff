@@ -96,6 +96,7 @@ export async function runGeneration(
           whyItMatters: story.whyItMatters,
           sourceUrls: story.sourceUrls,
           interestId: industry.id,
+          interestLabel: industry.label,
           rankPosition: index + 1,
         })
       })
@@ -109,6 +110,7 @@ export async function runGeneration(
       whyItMatters: story.whyItMatters,
       sourceUrls: story.sourceUrls,
       interestId: null,
+      interestLabel: null,
       rankPosition: index + 1,
     }))
 

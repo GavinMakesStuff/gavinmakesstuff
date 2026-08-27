@@ -51,6 +51,53 @@ describe('rankAndSummarize', () => {
     expect(callArgs.messages[0].content).toContain('geographic diversity')
   })
 
+  it('drops malformed items and coerces a missing sourceUrls to an empty array', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify([
+            { headline: 'Good', summary: 'S', whyItMatters: 'W', sourceUrls: ['https://a.com/1'] },
+            { headline: 'No summary', whyItMatters: 'W', sourceUrls: [] },
+            { headline: 'Blank summary', summary: '   ', whyItMatters: 'W', sourceUrls: [] },
+            { headline: 'Bad urls', summary: 'S', whyItMatters: 'W', sourceUrls: 'https://a.com/1' },
+            { headline: 'No urls', summary: 'S', whyItMatters: 'W' },
+            'not an object',
+          ]),
+        },
+      ],
+    })
+    const candidates: Candidate[] = [
+      { headline: 'Big Story', snippet: 'x', url: 'https://a.com/1', publishedAt: '2026-08-21T00:00:00Z' },
+    ]
+
+    const result = await rankAndSummarize(candidates)
+
+    expect(result).toEqual([
+      { headline: 'Good', summary: 'S', whyItMatters: 'W', sourceUrls: ['https://a.com/1'] },
+      { headline: 'No urls', summary: 'S', whyItMatters: 'W', sourceUrls: [] },
+    ])
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('returns an empty array and logs when the model returns a non-array payload', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockCreate.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ headline: 'Big Story' }) }],
+    })
+    const candidates: Candidate[] = [
+      { headline: 'Big Story', snippet: 'x', url: 'https://a.com/1', publishedAt: '2026-08-21T00:00:00Z' },
+    ]
+
+    const result = await rankAndSummarize(candidates)
+
+    expect(result).toEqual([])
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
   it('returns an empty array when there are no candidates', async () => {
     const result = await rankAndSummarize([])
     expect(result).toEqual([])

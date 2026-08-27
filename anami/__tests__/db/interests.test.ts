@@ -86,16 +86,20 @@ describe('interests', () => {
     expect(result.parentInterestId).toBe('i1')
   })
 
-  it('deletes an interest and any children pointing at it', async () => {
-    const childEq = vi.fn().mockResolvedValue({ error: null })
+  it('deletes an interest and any children pointing at it, scoped to the default user', async () => {
+    const childUserEq = vi.fn().mockResolvedValue({ error: null })
+    const childEq = vi.fn(() => ({ eq: childUserEq }))
     const childDelete = vi.fn(() => ({ eq: childEq }))
-    const selfEq = vi.fn().mockResolvedValue({ error: null })
+    const selfUserEq = vi.fn().mockResolvedValue({ error: null })
+    const selfEq = vi.fn(() => ({ eq: selfUserEq }))
     const selfDelete = vi.fn(() => ({ eq: selfEq }))
     mockFrom.mockReturnValueOnce({ delete: childDelete }).mockReturnValueOnce({ delete: selfDelete })
 
     await deleteInterest('i1')
 
     expect(childEq).toHaveBeenCalledWith('parent_interest_id', 'i1')
+    expect(childUserEq).toHaveBeenCalledWith('user_id', '00000000-0000-0000-0000-000000000001')
     expect(selfEq).toHaveBeenCalledWith('id', 'i1')
+    expect(selfUserEq).toHaveBeenCalledWith('user_id', '00000000-0000-0000-0000-000000000001')
   })
 })

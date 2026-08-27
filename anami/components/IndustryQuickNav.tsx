@@ -10,10 +10,12 @@ export default function IndustryQuickNav({ industries }: { industries: { id: str
     if (!(el instanceof HTMLDetailsElement)) return
     el.open = true
     el.scrollIntoView({ behavior: 'smooth' })
+    el.setAttribute('tabindex', '-1')
+    el.focus({ preventScroll: true })
   }
 
   return (
-    <div className={styles.quickNav}>
+    <nav aria-label="Jump to industry section" className={styles.quickNav}>
       <span className={styles.quickNavLabel}>Jump to</span>
       {industries.map((industry) => (
         <button
@@ -25,6 +27,6 @@ export default function IndustryQuickNav({ industries }: { industries: { id: str
           {industry.label}
         </button>
       ))}
-    </div>
+    </nav>
   )
 }

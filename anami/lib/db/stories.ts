@@ -9,6 +9,7 @@ export type Story = {
   whyItMatters: string
   sourceUrls: string[]
   interestId: string | null
+  interestLabel: string | null
   rankPosition: number
 }
 
@@ -24,6 +25,7 @@ function toStory(row: any): Story {
     whyItMatters: row.why_it_matters,
     sourceUrls: row.source_urls,
     interestId: row.interest_id,
+    interestLabel: row.interest_label,
     rankPosition: row.rank_position,
   }
 }
@@ -37,6 +39,7 @@ function toRow(story: NewStory) {
     why_it_matters: story.whyItMatters,
     source_urls: story.sourceUrls,
     interest_id: story.interestId,
+    interest_label: story.interestLabel,
     rank_position: story.rankPosition,
   }
 }
@@ -61,6 +64,7 @@ export async function getStoriesForEdition(editionId: string): Promise<Story[]> 
     .select()
     .eq('edition_id', editionId)
     .order('rank_position', { ascending: true })
+    .order('interest_id', { ascending: true, nullsFirst: true })
   if (error) throw error
   return (data ?? []).map(toStory)
 }

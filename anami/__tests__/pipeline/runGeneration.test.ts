@@ -91,7 +91,7 @@ describe('runGeneration', () => {
     const result = await runGeneration('2026-08-27')
 
     expect(mockInsertStories).toHaveBeenCalledWith([
-      { editionId: 'e1', module: 'world', headline: 'A', summary: 'S', whyItMatters: 'W', sourceUrls: ['https://a.com'], interestId: null, rankPosition: 1 },
+      { editionId: 'e1', module: 'world', headline: 'A', summary: 'S', whyItMatters: 'W', sourceUrls: ['https://a.com'], interestId: null, interestLabel: null, rankPosition: 1 },
     ])
     expect(result).toEqual({ status: 'published', editionId: 'e1' })
   })
@@ -117,7 +117,7 @@ describe('runGeneration', () => {
     expect(mockSourceIndustryCandidates).toHaveBeenCalledWith(mining)
     expect(mockSourceIndustryCandidates).toHaveBeenCalledWith(ai)
     expect(mockInsertStories).toHaveBeenCalledWith([
-      { editionId: 'e2', module: 'industry', headline: 'Mining story', summary: 'S', whyItMatters: 'W', sourceUrls: ['https://m.com'], interestId: 'ind1', rankPosition: 1 },
+      { editionId: 'e2', module: 'industry', headline: 'Mining story', summary: 'S', whyItMatters: 'W', sourceUrls: ['https://m.com'], interestId: 'ind1', interestLabel: 'Mining', rankPosition: 1 },
     ])
     expect(result).toEqual({ status: 'published', editionId: 'e2' })
   })

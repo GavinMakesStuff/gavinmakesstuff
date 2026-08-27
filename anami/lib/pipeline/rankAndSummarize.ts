@@ -9,6 +9,30 @@ export type RankedStory = {
   sourceUrls: string[]
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+/**
+ * Guards a single model-produced item before it is trusted as a RankedStory.
+ * A missing `sourceUrls` is tolerated (callers coerce it to []); a present but
+ * wrongly-typed `sourceUrls` rejects the item outright.
+ */
+export function isRankedStory(x: unknown): x is RankedStory {
+  if (typeof x !== 'object' || x === null) return false
+  const item = x as Record<string, unknown>
+  if (!isNonEmptyString(item.headline)) return false
+  if (!isNonEmptyString(item.summary)) return false
+  if (!isNonEmptyString(item.whyItMatters)) return false
+  if (item.sourceUrls === undefined || item.sourceUrls === null) return true
+  return Array.isArray(item.sourceUrls) && item.sourceUrls.every((u) => typeof u === 'string')
+}
+
+/** Normalizes a guarded item so `sourceUrls` is always a string array. */
+export function normalizeRankedStory(story: RankedStory): RankedStory {
+  return { ...story, sourceUrls: Array.isArray(story.sourceUrls) ? story.sourceUrls : [] }
+}
+
 export async function rankAndSummarize(candidates: Candidate[]): Promise<RankedStory[]> {
   if (candidates.length === 0) return []
 
@@ -42,7 +66,17 @@ export async function rankAndSummarize(candidates: Candidate[]): Promise<RankedS
   }
   try {
     const parsed = parseModelJson(textBlock.text)
-    return Array.isArray(parsed) ? parsed : []
+    const items = Array.isArray(parsed) ? parsed.filter(isRankedStory) : []
+    if (!Array.isArray(parsed)) {
+      console.error('rankAndSummarize: Claude returned a non-array JSON payload; dropping it', parsed)
+    } else if (items.length < parsed.length) {
+      console.error(
+        'rankAndSummarize: dropped',
+        parsed.length - items.length,
+        'malformed story item(s) from the model output'
+      )
+    }
+    return items.map(normalizeRankedStory)
   } catch (err) {
     console.error(
       'rankAndSummarize: failed to parse Claude JSON:',

@@ -47,6 +47,48 @@ describe('rankAndSummarizeForIndustry', () => {
     expect(callArgs.messages[0].content).toContain('Mining')
   })
 
+  it('drops malformed items from the model output before capping at 2', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify([
+            { headline: 'A', summary: 'S1', whyItMatters: 'W1', sourceUrls: ['https://a.com'] },
+            { headline: 'B', whyItMatters: 'W2', sourceUrls: ['https://b.com'] },
+            { headline: 'C', summary: 'S3', whyItMatters: 'W3', sourceUrls: ['https://c.com'] },
+          ]),
+        },
+      ],
+    })
+    const candidates: Candidate[] = [
+      { headline: 'A', snippet: '', url: 'https://a.com', publishedAt: '2026-08-27T00:00:00Z' },
+    ]
+
+    const result = await rankAndSummarizeForIndustry(candidates, mockInterest)
+
+    expect(result).toHaveLength(2)
+    expect(result.map((s) => s.headline)).toEqual(['A', 'C'])
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('returns an empty array and logs when the model returns a non-array payload', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockCreate.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ headline: 'A' }) }],
+    })
+    const candidates: Candidate[] = [
+      { headline: 'A', snippet: '', url: 'https://a.com', publishedAt: '2026-08-27T00:00:00Z' },
+    ]
+
+    const result = await rankAndSummarizeForIndustry(candidates, mockInterest)
+
+    expect(result).toEqual([])
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
   it('returns an empty array when there are no candidates, without calling Claude', async () => {
     const result = await rankAndSummarizeForIndustry([], mockInterest)
     expect(result).toEqual([])

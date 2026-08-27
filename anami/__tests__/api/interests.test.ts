@@ -42,14 +42,48 @@ describe('POST /api/interests', () => {
     expect(mockCreateInterest).not.toHaveBeenCalled()
   })
 
+  it('rejects a topic whose parent is whitespace only', async () => {
+    const response = await POST(makeRequest('POST', { type: 'topic', label: 'Job trends', parentInterestId: '   ' }))
+    expect(response.status).toBe(400)
+    expect(mockCreateInterest).not.toHaveBeenCalled()
+  })
+
+  it('rejects an industry that carries a parent', async () => {
+    const response = await POST(makeRequest('POST', { type: 'industry', label: 'Automotive', parentInterestId: 'i1' }))
+    expect(response.status).toBe(400)
+    expect(mockCreateInterest).not.toHaveBeenCalled()
+  })
+
   it('rejects an empty label', async () => {
     const response = await POST(makeRequest('POST', { type: 'industry', label: '', parentInterestId: null }))
     expect(response.status).toBe(400)
+    expect(mockCreateInterest).not.toHaveBeenCalled()
   })
 
   it('rejects an invalid type', async () => {
     const response = await POST(makeRequest('POST', { type: 'nonsense', label: 'X', parentInterestId: null }))
     expect(response.status).toBe(400)
+    expect(mockCreateInterest).not.toHaveBeenCalled()
+  })
+
+  it('trims the label and the parent id before creating', async () => {
+    mockCreateInterest.mockResolvedValue({ id: 'i4', type: 'topic', label: 'Job trends', parentInterestId: 'i1' })
+
+    await POST(makeRequest('POST', { type: 'topic', label: '  Job trends  ', parentInterestId: ' i1 ' }))
+
+    expect(mockCreateInterest).toHaveBeenCalledWith('topic', 'Job trends', 'i1')
+  })
+
+  it('returns 500 when createInterest throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockCreateInterest.mockRejectedValue(new Error('db down'))
+
+    const response = await POST(makeRequest('POST', { type: 'industry', label: 'Automotive', parentInterestId: null }))
+    const body = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(body.ok).toBe(false)
+    consoleError.mockRestore()
   })
 })
 
@@ -72,5 +106,18 @@ describe('DELETE /api/interests', () => {
   it('rejects a missing id', async () => {
     const response = await DELETE(makeRequest('DELETE', {}))
     expect(response.status).toBe(400)
+    expect(mockDeleteInterest).not.toHaveBeenCalled()
+  })
+
+  it('returns 500 when deleteInterest throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockDeleteInterest.mockRejectedValue(new Error('db down'))
+
+    const response = await DELETE(makeRequest('DELETE', { id: 'i1' }))
+    const body = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(body.ok).toBe(false)
+    consoleError.mockRestore()
   })
 })

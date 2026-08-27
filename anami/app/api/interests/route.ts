@@ -12,12 +12,24 @@ export async function POST(request: Request): Promise<Response> {
   if (typeof label !== 'string' || label.trim().length === 0) {
     return new Response('Label is required', { status: 400 })
   }
-  if (type === 'topic' && (typeof parentInterestId !== 'string' || parentInterestId.length === 0)) {
+  if (type === 'industry' && typeof parentInterestId === 'string' && parentInterestId.trim().length > 0) {
+    return new Response('An industry cannot have a parent', { status: 400 })
+  }
+  if (type === 'topic' && (typeof parentInterestId !== 'string' || parentInterestId.trim().length === 0)) {
     return new Response('A sub-topic requires a parent industry', { status: 400 })
   }
 
-  const interest = await createInterest(type, label, parentInterestId)
-  return Response.json({ ok: true, interest })
+  try {
+    const interest = await createInterest(
+      type,
+      label.trim(),
+      type === 'topic' ? (parentInterestId as string).trim() : null
+    )
+    return Response.json({ ok: true, interest })
+  } catch (err) {
+    console.error('POST /api/interests: failed to create interest', err)
+    return Response.json({ ok: false, error: 'Could not create that interest.' }, { status: 500 })
+  }
 }
 
 export async function DELETE(request: Request): Promise<Response> {
@@ -28,6 +40,11 @@ export async function DELETE(request: Request): Promise<Response> {
     return new Response('id is required', { status: 400 })
   }
 
-  await deleteInterest(id)
-  return Response.json({ ok: true })
+  try {
+    await deleteInterest(id)
+    return Response.json({ ok: true })
+  } catch (err) {
+    console.error('DELETE /api/interests: failed to delete interest', err)
+    return Response.json({ ok: false, error: 'Could not delete that interest.' }, { status: 500 })
+  }
 }
