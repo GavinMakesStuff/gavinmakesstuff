@@ -189,6 +189,64 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
   }).join('');
 }
 
+/* ---- Project showcase (expanding-panel carousel) ----
+   Alternative to renderProjectCards for a small featured set (the
+   homepage) — one open panel with the logo, title, description and a
+   link, the rest collapsed to slim strips with their name rotated
+   vertically. Each panel's own background uses project.cardBg (set per
+   project in the CMS) so a logo that doesn't fill the frame blends into
+   its own plate instead of showing a seam; collapsed strips show a
+   blurred, saturated version of that same thumbnail as their backdrop so
+   the color is genuinely the project's own, not a fixed site color. */
+function renderProjectShowcase(containerId, section, detailPageUrl, limit) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var dataKey = (section === 'studio') ? 'public' : 'portfolio';
+  var visible = (window.PROJECTS || []).filter(function (p) {
+    if (p.draft) return false;
+    return section === 'studio' ? p.showOnPublic : p.showOnPortfolio;
+  });
+  if (limit) visible = visible.slice(0, limit);
+  if (!visible.length) { container.innerHTML = '<div class="empty-state">No projects posted yet — check back soon.</div>'; return; }
+
+  var activeIndex = 0;
+
+  function render() {
+    container.innerHTML = visible.map(function (project, i) {
+      var content = project[dataKey];
+      var isActive = i === activeIndex;
+      var bg = project.cardBg || 'var(--color-ink-raised)';
+      var category = (content.tags && content.tags[0]) || '';
+      return (
+        '<div class="showcase-panel' + (isActive ? ' active' : '') + '" style="background:' + bg + '" data-index="' + i + '">' +
+          '<div class="showcase-blur" style="background-image:url(' + project.thumbnail + ')"></div>' +
+          '<div class="showcase-scrim"></div>' +
+          '<div class="showcase-panel-img"><img src="' + project.thumbnail + '" alt="' + content.title + '"></div>' +
+          '<div class="showcase-vert"><span>' + content.title + '</span></div>' +
+          '<div class="showcase-panel-body">' +
+            (category ? '<div class="showcase-cat">' + category + '</div>' : '') +
+            '<h3 class="showcase-title">' + content.title + '</h3>' +
+            '<p class="showcase-summary">' + content.summary + '</p>' +
+            '<a class="btn btn-primary" href="' + detailPageUrl + '?id=' + project.id + '">View project →</a>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    container.querySelectorAll('.showcase-panel').forEach(function (panel) {
+      panel.addEventListener('click', function (e) {
+        var i = parseInt(panel.getAttribute('data-index'), 10);
+        if (i === activeIndex) return; // active panel's own link/button handles navigation
+        e.preventDefault();
+        activeIndex = i;
+        render();
+      });
+    });
+  }
+
+  render();
+}
+
 /* ---- Shared downloads-box builder ----
    Used by both renderProjectDetail and renderBlogDetail. `data` is the
    object holding downloadsEnabled/downloadsShowHeading/downloadsHeading/downloads

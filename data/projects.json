@@ -6,6 +6,7 @@
       "appUrl": "/terralens",
       "appUrlPasswordProtected": false,
       "thumbnail": "/images/projects/terralens/1787368707081-TerraLensLogo00.webp",
+      "cardBg": "#F1EDE3",
       "showOnPublic": true,
       "showOnPortfolio": true,
       "public": {
@@ -47,6 +48,7 @@
       "appUrl": "",
       "appUrlPasswordProtected": false,
       "thumbnail": "/images/projects/jorgen-and-his-times/1783109537237-JorgenHisTimesCover.webp",
+      "cardBg": "#F4F2EE",
       "showOnPublic": true,
       "showOnPortfolio": false,
       "public": {
@@ -94,6 +96,7 @@
       "appUrl": "https://www.gavinmakesstuff.com/scout/",
       "appUrlPasswordProtected": true,
       "thumbnail": "/images/projects/scout-a-personal-job-search-companion/1782859654722-ScoutLogoOG.webp",
+      "cardBg": "#FFFFFF",
       "showOnPublic": true,
       "showOnPortfolio": true,
       "public": {

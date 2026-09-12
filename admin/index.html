@@ -530,68 +530,6 @@
           <div id="settings-view"></div>
         </div>
 
-        <!-- LOCAL LAUNCH SECTION (Studio only) -->
-        <div id="section-local-launch" style="display:none;">
-          <h1 class="section-title">Local Launch Guide</h1>
-          <p class="section-sub">How to run each app on this machine, for a preview or dev session.</p>
-
-          <div class="card" style="background:rgba(202,138,4,.06);border-color:rgba(202,138,4,.3);margin-bottom:22px;">
-            <p class="hint" style="margin:0;"><strong style="color:var(--amber);">Generated, not hand-maintained.</strong> This mirrors the <code>launch-locally</code> Claude Code skill's reference files (<code>~/.claude/skills/launch-locally/references/*.md</code>). Edit those files, not this page directly — regenerating this section is a mandatory step of that skill's refinement loop. If it looks stale, that loop was skipped somewhere.</p>
-          </div>
-
-          <div class="card">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Marginalia</h2><span class="hint" style="margin:0;">Python / Flask</span></div>
-            <p class="hint">Location: <code>Desktop\Apps\Marginalia</code></p>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/Marginalia
-python webapp/app.py</pre>
-            <p class="hint">Runs at <code>http://127.0.0.1:5000</code> (Flask default). Run from the Marginalia root, not from inside <code>webapp/</code>, since <code>app.py</code> imports from the parent directory.</p>
-            <p class="hint">Env — copy <code>.env.example</code> to <code>.env</code>: <code>GMAIL_ADDRESS</code>, <code>GMAIL_APP_PASSWORD</code>, <code>KINDLE_EMAIL</code> required; <code>ANTHROPIC_API_KEY</code> optional (Highlights Workspace only). Dependencies: <code>pip install -r requirements.txt</code>.</p>
-          </div>
-
-          <div class="card" style="border-color:rgba(217,48,37,.3);">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Balance (Finance Tracker)</h2><span class="hint" style="margin:0;">FastAPI + React</span></div>
-            <p class="hint">Location: <code>Desktop\Apps\Balance</code></p>
-            <div class="card" style="background:rgba(217,48,37,.06);border-color:rgba(217,48,37,.25);padding:10px 14px;margin-bottom:12px;"><p class="hint" style="margin:0;"><strong style="color:var(--red);">Legacy local/live split.</strong> <code>local/</code> and <code>live/</code> are separate, manually-synced copies. Default to <code>local</code> for dev/preview — <code>live</code> mirrors production and isn't updated automatically. Syncing means a full code copy (robocopy, excluding db/build/node_modules), not a cherry-pick, since <code>local</code>'s codebase is fully integrated.</p></div>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">Desktop/Apps/Balance/local/Start App.bat</pre>
-            <p class="hint">Starts backend (<code>uvicorn main:app --host 0.0.0.0 --port 8000 --reload</code>) and frontend (<code>npm start</code>, opens <code>http://localhost:3000</code>) together. First time only: run <code>Setup (Run First).bat</code>.</p>
-            <p class="hint" style="margin-top:8px;"><code>live/</code> also has its own <code>.claude/launch.json</code> entries (<code>balance-live-backend</code> port 8000, <code>balance-live-frontend</code> port 3000) — same conceptual ports as <code>local</code>, so don't run both sides at once without changing one's port.</p>
-          </div>
-
-          <div class="card">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">gavinmakesstuff (this site)</h2><span class="hint" style="margin:0;">Static + Vercel functions</span></div>
-            <p class="hint">Location: <code>Desktop\gavinmakesstuff</code></p>
-            <p class="hint"><strong>A — static-only</strong>, for anything not touching the admin panel or <code>/api/*</code>:</p>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">npx serve .</pre>
-            <p class="hint"><strong>B — full parity</strong>, needed for admin login and any API work (this page included):</p>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">vercel dev</pre>
-            <p class="hint">One-time setup on a fresh machine: <code>vercel link</code>, then <code>vercel env pull .env.local</code> — don't hand-type <code>OAUTH_GITHUB_CLIENT_ID</code>, <code>OAUTH_GITHUB_CLIENT_SECRET</code>, <code>ANTHROPIC_API_KEY</code>, <code>GITHUB_REPO</code>, <code>ALLOWED_GITHUB_USER</code>.</p>
-          </div>
-
-          <div class="card">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">TerraLens</h2><span class="hint" style="margin:0;">Next.js</span></div>
-            <p class="hint">Location: <code>Desktop\Apps\TerraLens</code></p>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/TerraLens
-npm run dev</pre>
-            <p class="hint">Runs at <code>http://localhost:3000</code>. No env prerequisites.</p>
-          </div>
-
-          <div class="card">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Anami</h2><span class="hint" style="margin:0;">Next.js + Supabase — live at /anami</span></div>
-            <p class="hint">Local folder: <code>Desktop\Apps\Anami</code>. <strong>Correction (2026-08-25):</strong> already deployed and live at <a href="/anami" target="_blank">gavinmakesstuff.com/anami</a>, proxied to its own separate Vercel project (<code>anami-nu.vercel.app</code>) — not part of this site's own deployment. Its own daily Cron is already configured. How deploys actually get triggered isn't confirmed yet (git-auto-deploy vs. manual push) — the local repo here has no GitHub remote set.</p>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/Apps/Anami
-npm run dev</pre>
-            <p class="hint">For local dev/preview only, runs at <code>http://localhost:3000</code>. <code>.env.local</code> already configured locally with Supabase/Anthropic/NewsAPI keys — if missing, copy <code>.env.local.example</code> and fill in <code>ANAMI_SUPABASE_URL</code>, <code>ANAMI_SUPABASE_SERVICE_ROLE_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>NEWS_API_KEY</code>, <code>CRON_SECRET</code>.</p>
-          </div>
-
-          <div class="card">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;"><h2 style="font-size:1.1rem;margin-bottom:2px;">Scout</h2><span class="hint" style="margin:0;">Part of this repo, not standalone</span></div>
-            <p class="hint">Scout isn't a separate app — it's built into <em>this</em> repo: frontend at <code>scout/*</code>, backend at <code>api/scout-*.js</code>, one Vercel deployment. <code>Desktop\Apps\scout\local</code> and <code>\live</code> are stale, orphaned exports — not source of truth, don't launch from them.</p>
-            <pre style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.85rem;overflow-x:auto;color:#3dd9b8;">cd Desktop/gavinmakesstuff
-vercel dev</pre>
-            <p class="hint">Same command as this site (full-parity mode, needed for <code>/api/scout-*</code>, Stripe, and auth) — then browse to <code>http://localhost:3000/scout/index.html</code> or <code>/scout/app.html</code>.</p>
-          </div>
-        </div>
-
       </div>
     </main>
   </div>
@@ -651,10 +589,9 @@ var ALL_SECTIONS=[
   {id:'projects',label:'Projects'},
   {id:'blog',label:'Blog'},
   {id:'ai-draft',label:'AI Draft'},
-  {id:'settings',label:'Settings'},
-  {id:'local-launch',label:'Local Launch'}
+  {id:'settings',label:'Settings'}
 ];
-var STUDIO_ONLY_SECTIONS=['projects','ai-draft','settings','local-launch'];
+var STUDIO_ONLY_SECTIONS=['projects','ai-draft','settings'];
 function sectionsForSite(siteId){
   if(siteId==='studio')return ALL_SECTIONS;
   return ALL_SECTIONS.filter(function(s){return STUDIO_ONLY_SECTIONS.indexOf(s.id)===-1;});
@@ -903,9 +840,7 @@ function removeUpload(fieldKey,i){
   document.getElementById('upload-list-'+fieldKey).innerHTML=renderUploadItems(fieldKey);
 }
 async function handleImageUpload(fieldKey,inputEl,multiple){
-  var idField=document.getElementById('f-id');
-  var id=idField?idField.value.trim().replace(/[^a-zA-Z0-9.\-_]/g,''):'site';
-  if(idField&&!id){alert('Set a URL slug first, before uploading images.');inputEl.value='';return;}
+  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'site';
   var files=Array.from(inputEl.files);
   if(!multiple)files=files.slice(0,1);
   showStatus('Uploading '+files.length+' image(s)…');
@@ -953,8 +888,7 @@ function removeDownload(fieldKey,i){
   document.getElementById('download-list-'+fieldKey).innerHTML=renderDownloadItems(fieldKey);
 }
 async function handleFileUpload(fieldKey){
-  var idField=document.getElementById('f-id');
-  var id=idField?idField.value.trim().replace(/[^a-zA-Z0-9.\-_]/g,''):'site';
+  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'site';
   if(!id){alert('Set a URL slug first.');return;}
   var labelInput=document.getElementById('dl-label-'+fieldKey);
   var btnTextInput=document.getElementById('dl-btntext-'+fieldKey);
@@ -1009,9 +943,7 @@ function removeGalleryImage(fieldKey,i){
   document.getElementById('gallery-list-'+fieldKey).innerHTML=renderGalleryItems(fieldKey);
 }
 async function handleGalleryUpload(fieldKey,inputEl){
-  var idField=document.getElementById('f-id');
-  var id=idField?idField.value.trim().replace(/[^a-zA-Z0-9.\-_]/g,''):'post';
-  if(idField&&!id){alert('Set a URL slug first, before uploading images.');inputEl.value='';return;}
+  var id=document.getElementById('f-id')?document.getElementById('f-id').value.trim():'post';
   var files=Array.from(inputEl.files);
   showStatus('Uploading '+files.length+' image(s)…');
   try{
@@ -1058,7 +990,7 @@ function toggleDownloadsSection(prefix){
 function formPrefix(type){ return type==='project' ? 'projects' : 'blog'; }
 
 function blankProject(){
-  return{id:'',draft:true,appUrl:'',appUrlPasswordProtected:false,thumbnail:'',showOnPublic:true,showOnPortfolio:true,
+  return{id:'',draft:true,appUrl:'',appUrlPasswordProtected:false,thumbnail:'',cardBg:'',showOnPublic:true,showOnPortfolio:true,
     public:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'},
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'}};
 }
@@ -1120,6 +1052,14 @@ function renderForm(){
         '</div>'+
         '<p class="hint" style="margin-top:-10px;margin-bottom:16px;">Uses the single shared <code>TOOL_PASSWORD</code> environment variable in Vercel — the same password protects every protected item site-wide (projects, blog posts, creations, and Scout).</p>'+
         '<div class="field"><label>Thumbnail image</label>'+uploadWidget('thumb',item.thumbnail?[item.thumbnail]:[''],false)+'</div>'+
+        '<div class="field">'+
+          '<label>Card background color</label>'+
+          '<div style="display:flex;gap:10px;align-items:center;">'+
+            '<input type="color" id="f-card-bg" value="'+esc(item.cardBg||'#F2EFE9')+'" oninput="document.getElementById(\'f-card-bg-hex\').value=this.value;" style="width:52px;height:38px;padding:2px;flex-shrink:0;">'+
+            '<input type="text" id="f-card-bg-hex" value="'+esc(item.cardBg||'')+'" placeholder="#F2EFE9" oninput="document.getElementById(\'f-card-bg\').value=this.value||\'#F2EFE9\';" style="max-width:140px;">'+
+          '</div>'+
+          '<p class="hint">Used behind the thumbnail wherever it does not fill the whole space (e.g. the homepage showcase) — set it to match your thumbnail\'s own background so there is no visible seam.</p>'+
+        '</div>'+
       '</div>'+
 
       '<div class="card">'+
@@ -1289,6 +1229,7 @@ async function saveItem(asDraft){
       appUrl:document.getElementById('f-app-url').value.trim(),
       appUrlPasswordProtected:document.getElementById('f-app-url-pw').checked,
       thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',
+      cardBg:document.getElementById('f-card-bg-hex').value.trim()||document.getElementById('f-card-bg').value,
       showOnPublic:document.getElementById('f-public').checked,
       showOnPortfolio:document.getElementById('f-portfolio').checked,
       public:{
@@ -2241,7 +2182,7 @@ async function handleFaviconUpload(inputEl){
   showStatus('Uploading favicon…');
   try{
     var base64=await fileToBase64(file);
-    var ext=file.name.split('.').pop().replace(/[^a-zA-Z0-9]/g,'')||'png';
+    var ext=file.name.split('.').pop();
     var path='images/site/favicon.'+ext;
     var result=await callApi({action:'upload',path:path,contentBase64:base64});
     state.settings.favicon=result.path;
