@@ -474,6 +474,82 @@ function renderCreations(containerId) {
   }).join('');
 }
 
+/* ---- Creations showcase (expanding-panel carousel) ----
+   Same pattern as renderProjectShowcase, adapted to Creations' flatter
+   data shape (no public/portfolio split, no detail page — the CTA is the
+   existing "Use It" / Download button logic from renderCreations above,
+   including the password-gated flow via openToolLink). Collapsed strips
+   use the same equal-weighted color swirl (extractEqualColorSwirl). */
+function renderCreationShowcase(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var settings = window.SITE_SETTINGS;
+  var visible = (settings && settings.creations) ? settings.creations.filter(function (c) { return c.showOnHome; }) : [];
+  if (!visible.length) { container.innerHTML = ''; return; }
+
+  var statusLabels = { open: 'Open to All', private: 'Private', wip: 'Work In Progress' };
+  var activeIndex = 0;
+  var swirls = {};
+
+  function render() {
+    container.innerHTML = visible.map(function (c, i) {
+      var isActive = i === activeIndex;
+      var bg = c.cardBg || 'var(--color-ink-raised)';
+      var category = c.status === 'custom' ? (c.statusLabel || '') : (statusLabels[c.status] || c.status || '');
+      var useLabel = c.useLabel || 'Use It';
+      var downloadLabel = c.downloadLabel || 'Download';
+      var useBtnHtml = c.passwordProtected
+        ? '<button type="button" class="cell-tool-btn cell-tool-btn-primary" onclick="event.preventDefault();openToolLink(this,\'' + c.id + '\',\'' + encodeURIComponent(c.url) + '\')">' + useLabel + '</button>'
+        : '<a class="cell-tool-btn cell-tool-btn-primary" href="' + c.url + '">' + useLabel + '</a>';
+      var downloadBtnHtml = (c.downloadEnabled !== false && c.downloadFile && c.downloadFile.file)
+        ? '<a class="cell-tool-btn" href="' + c.downloadFile.file + '" download>' + downloadLabel + '</a>'
+        : '';
+      var swirl = swirls[c.id];
+      var blurStyle = swirl
+        ? 'background:' + swirl + ';'
+        : (c.thumbnail ? 'background-image:url(' + c.thumbnail + ');background-position:center;' : '');
+      return (
+        '<div class="showcase-panel' + (isActive ? ' active' : '') + '" style="background:' + bg + '" data-index="' + i + '">' +
+          '<div class="showcase-blur" style="' + blurStyle + '"></div>' +
+          '<div class="showcase-scrim"></div>' +
+          '<div class="showcase-panel-img">' + (c.thumbnail ? '<img src="' + c.thumbnail + '" alt="' + c.name + '">' : '') + '</div>' +
+          '<div class="showcase-vert"><span>' + c.name + '</span></div>' +
+          '<div class="showcase-panel-body">' +
+            (category ? '<div class="showcase-cat">' + category + '</div>' : '') +
+            '<h3 class="showcase-title">' + c.name + '</h3>' +
+            '<p class="showcase-summary">' + c.description + '</p>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;">' + useBtnHtml + downloadBtnHtml + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    container.querySelectorAll('.showcase-panel').forEach(function (panel) {
+      panel.addEventListener('click', function (e) {
+        var i = parseInt(panel.getAttribute('data-index'), 10);
+        if (i === activeIndex) return;
+        e.preventDefault();
+        activeIndex = i;
+        render();
+      });
+    });
+  }
+
+  render();
+
+  visible.forEach(function (c) {
+    if (!c.thumbnail) return;
+    var probe = new Image();
+    probe.crossOrigin = 'anonymous';
+    probe.onload = function () {
+      extractEqualColorSwirl(probe, 6, function (gradient) {
+        if (gradient) { swirls[c.id] = gradient; render(); }
+      });
+    };
+    probe.src = c.thumbnail;
+  });
+}
+
 /* ---- Password-gated "Use It" link ----
    Used both by Creations (renderCreations) and by password-protected
    project "Try the app" links (renderProjectDetail). Generic by id —

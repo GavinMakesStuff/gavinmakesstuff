@@ -29,7 +29,7 @@
         <h2>Recent projects</h2>
         <a href="/studio/projects.html">All projects →</a>
       </div>
-      <div id="featured-projects-grid" class="showcase-row"><div class="empty-state">Loading…</div></div>
+      <div id="featured-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
     </div>
   </section>
 
@@ -61,7 +61,7 @@
         initBlog(await bRes.json());
         applySettings(await sRes.json(), 'studio');
       } catch (e) { console.error(e); }
-      renderProjectShowcase('featured-projects-grid', 'studio', '/studio/project.html', 3);
+      renderProjectCards('featured-projects-grid', 'studio', '/studio/project.html', 3);
       renderBlogCards('featured-blog-list', '/studio/blog-post.html', 1);
     })();
   </script>

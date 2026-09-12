@@ -2126,6 +2126,14 @@ function renderCreationsBuilder(creations){
           '<label class="check-label"><input type="checkbox" id="cr-show-'+i+'" '+(c.showOnHome?'checked':'')+'>Show on homepage</label>'+
         '</div>'+
       '</div>'+
+      '<div class="field">'+
+        '<label>Card background color</label>'+
+        '<div style="display:flex;gap:10px;align-items:center;">'+
+          '<input type="color" id="cr-card-bg-'+i+'" value="'+esc(c.cardBg||'#F2EFE9')+'" oninput="document.getElementById(\'cr-card-bg-hex-'+i+'\').value=this.value;" style="width:52px;height:38px;padding:2px;flex-shrink:0;">'+
+          '<input type="text" id="cr-card-bg-hex-'+i+'" value="'+esc(c.cardBg||'')+'" placeholder="#F2EFE9" oninput="document.getElementById(\'cr-card-bg-'+i+'\').value=this.value||\'#F2EFE9\';" style="max-width:140px;">'+
+        '</div>'+
+        '<p class="hint">Match this to the thumbnail\'s own background so the homepage showcase has no visible seam.</p>'+
+      '</div>'+
 
       '<div class="creation-section-label">Use It button</div>'+
       '<div class="creation-row" style="margin-bottom:14px;">'+
@@ -2167,7 +2175,7 @@ function toggleCreationDownload(i){
 
 function addCreation(){
   state.settings.creations=state.settings.creations||[];
-  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadEnabled:true,downloadLabel:'Download',downloadFile:null});
+  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',cardBg:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadEnabled:true,downloadLabel:'Download',downloadFile:null});
   renderSettingsForm();
 }
 function removeCreation(i){
@@ -2204,6 +2212,7 @@ async function saveSettings(){
       status:document.getElementById('cr-status-'+i)?.value||'private',
       statusLabel:document.getElementById('cr-label-'+i)?.value||'',
       thumbnail:(window.__uploads['cr-thumb-'+i]&&window.__uploads['cr-thumb-'+i][0])||c.thumbnail||'',
+      cardBg:(document.getElementById('cr-card-bg-hex-'+i)?.value.trim())||(document.getElementById('cr-card-bg-'+i)?.value)||'',
       showOnHome:document.getElementById('cr-show-'+i)?document.getElementById('cr-show-'+i).checked:true,
       useLabel:document.getElementById('cr-uselabel-'+i)?.value||'Use It',
       passwordProtected:document.getElementById('cr-pw-'+i)?document.getElementById('cr-pw-'+i).checked:false,
