@@ -189,15 +189,60 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
   }).join('');
 }
 
+/* ---- Equal-weighted color palette extraction ----
+   Samples an already-loaded image via canvas, buckets pixels into
+   distinct colors, and returns a smooth conic-gradient CSS string giving
+   each distinct color an EQUAL angular share — deliberately not a raw
+   image blur (which just reflects whatever pixels happen to dominate by
+   area, e.g. a mostly-white logo background would drown out its actual
+   colors). Same-origin images only (canvas pixel reads throw on
+   cross-origin data without CORS headers) — fine here since thumbnails
+   are always served from this same site. */
+function extractEqualColorSwirl(imgEl, maxColors, callback) {
+  try {
+    var size = 48;
+    var canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, size, size);
+    var data = ctx.getImageData(0, 0, size, size).data;
+
+    var STEP = 28; // quantization step — groups near-identical shades into one bucket
+    var buckets = {};
+    for (var i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 128) continue; // skip transparent pixels
+      var r = data[i], g = data[i + 1], b = data[i + 2];
+      var key = Math.round(r / STEP) + ',' + Math.round(g / STEP) + ',' + Math.round(b / STEP);
+      var bucket = buckets[key];
+      if (!bucket) bucket = buckets[key] = { count: 0, r: 0, g: 0, b: 0 };
+      bucket.count++; bucket.r += r; bucket.g += g; bucket.b += b;
+    }
+    var colors = Object.keys(buckets).map(function (k) {
+      var bkt = buckets[k];
+      return { count: bkt.count, r: Math.round(bkt.r / bkt.count), g: Math.round(bkt.g / bkt.count), b: Math.round(bkt.b / bkt.count) };
+    }).sort(function (a, b) { return b.count - a.count; }).slice(0, maxColors || 6);
+
+    if (!colors.length) { callback(null); return; }
+    var n = colors.length;
+    var rgb = function (c) { return 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')'; };
+    var stops = colors.map(function (c, i) { return rgb(c) + ' ' + Math.round(360 * i / n) + 'deg'; });
+    stops.push(rgb(colors[0]) + ' 360deg'); // close the loop so the blend wraps smoothly
+    callback('conic-gradient(from 0deg, ' + stops.join(', ') + ')');
+  } catch (e) { callback(null); }
+}
+
 /* ---- Project showcase (expanding-panel carousel) ----
    Alternative to renderProjectCards for a small featured set (the
    homepage) — one open panel with the logo, title, description and a
    link, the rest collapsed to slim strips with their name rotated
-   vertically. Each panel's own background uses project.cardBg (set per
-   project in the CMS) so a logo that doesn't fill the frame blends into
-   its own plate instead of showing a seam; collapsed strips show a
-   blurred, saturated version of that same thumbnail as their backdrop so
-   the color is genuinely the project's own, not a fixed site color. */
+   vertically. The open panel's own background uses project.cardBg (set
+   per project in the CMS) so a logo that doesn't fill the frame blends
+   into its own plate instead of showing a seam — that one stays a flat,
+   legible color since real text sits on top of it. Collapsed strips show
+   an equal-weighted color swirl (extractEqualColorSwirl above) built
+   from that project's own thumbnail, so the color is genuinely the
+   project's own rather than a fixed site color or a bland pixel-area
+   average dominated by whitespace. */
 function renderProjectShowcase(containerId, section, detailPageUrl, limit) {
   var container = document.getElementById(containerId);
   if (!container) return;
@@ -210,6 +255,7 @@ function renderProjectShowcase(containerId, section, detailPageUrl, limit) {
   if (!visible.length) { container.innerHTML = '<div class="empty-state">No projects posted yet — check back soon.</div>'; return; }
 
   var activeIndex = 0;
+  var swirls = {}; // project.id -> conic-gradient CSS string, filled in asynchronously
 
   function render() {
     container.innerHTML = visible.map(function (project, i) {
@@ -217,9 +263,13 @@ function renderProjectShowcase(containerId, section, detailPageUrl, limit) {
       var isActive = i === activeIndex;
       var bg = project.cardBg || 'var(--color-ink-raised)';
       var category = (content.tags && content.tags[0]) || '';
+      var swirl = swirls[project.id];
+      var blurStyle = swirl
+        ? 'background:' + swirl + ';'
+        : 'background-image:url(' + project.thumbnail + ');background-position:center;'; // fallback until extracted
       return (
         '<div class="showcase-panel' + (isActive ? ' active' : '') + '" style="background:' + bg + '" data-index="' + i + '">' +
-          '<div class="showcase-blur" style="background-image:url(' + project.thumbnail + ')"></div>' +
+          '<div class="showcase-blur" style="' + blurStyle + '"></div>' +
           '<div class="showcase-scrim"></div>' +
           '<div class="showcase-panel-img"><img src="' + project.thumbnail + '" alt="' + content.title + '"></div>' +
           '<div class="showcase-vert"><span>' + content.title + '</span></div>' +
@@ -245,6 +295,21 @@ function renderProjectShowcase(containerId, section, detailPageUrl, limit) {
   }
 
   render();
+
+  // Extract each project's palette once, off the visible <img> elements
+  // (a fresh Image() so this doesn't depend on render/re-render timing),
+  // then re-render as each one finishes so collapsed strips upgrade from
+  // the plain-blur fallback to the real equal-weighted swirl in place.
+  visible.forEach(function (project) {
+    var probe = new Image();
+    probe.crossOrigin = 'anonymous';
+    probe.onload = function () {
+      extractEqualColorSwirl(probe, 6, function (gradient) {
+        if (gradient) { swirls[project.id] = gradient; render(); }
+      });
+    };
+    probe.src = project.thumbnail;
+  });
 }
 
 /* ---- Shared downloads-box builder ----
