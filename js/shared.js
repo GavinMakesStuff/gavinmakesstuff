@@ -345,12 +345,13 @@ function buildDownloadsHtml(data) {
   var itemsHtml = data.downloads.map(function (d) {
     var isPdf = d.file && d.file.toLowerCase().endsWith('.pdf');
     var btnText = d.buttonText || 'Download';
-    var labelHtml = d.label ? '<div class="file-label">' + d.label + '</div>' : '';
-    var metaHtml = d.meta ? '<div class="file-meta">' + d.meta + '</div>' : '';
-    return '<div class="download-item"><div>' + labelHtml + metaHtml + '</div>' +
-      '<a class="btn btn-primary" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>' + btnText + '</a></div>';
+    var labelHtml = d.label ? '<div class="download-label">' + d.label + '</div>' : '';
+    var metaHtml = d.meta ? '<div class="download-meta">' + d.meta + '</div>' : '';
+    return '<div class="download-row"><div>' + labelHtml + metaHtml + '</div>' +
+      '<a class="download-btn" href="' + d.file + '"' + (isPdf ? ' target="_blank"' : ' download') + '>' + btnText + '</a></div>';
   }).join('');
-  return '<div class="downloads-box">' + (showHeading ? '<h3>' + heading + '</h3>' : '') + itemsHtml + '</div>';
+  return (showHeading ? '<p class="creations-label" style="margin-top:26px;">' + heading + '</p>' : '') +
+    '<div class="downloads-list">' + itemsHtml + '</div>';
 }
 
 /* ---- Project detail ---- */
@@ -362,11 +363,14 @@ function renderProjectDetail(section) {
   if (!root) return;
   if (!project) { root.innerHTML = '<div class="empty-state">Could not find that project.</div>'; return; }
   var content = project[dataKey];
-  var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
+  var tags = (content.tags || []).map(function (t, i) { return '<span class="pf-tag' + (i === 0 ? ' hot' : '') + '">' + t + '</span>'; }).join('');
+  var lo = project.brandColor || null;
+  var hi = lo ? lightenHex(lo, 0.55) : null;
+  var knobStyle = lo ? ' style="margin:0;--knob-lo:' + lo + ';--knob-hi:' + (hi || lo) + ';"' : ' style="margin:0;"';
   var appLinkHtml = project.appUrl
     ? '<div class="app-link-row">' + (project.appUrlPasswordProtected
-        ? '<button type="button" class="btn btn-primary" onclick="openToolLink(this,\'' + project.id + '\',\'' + encodeURIComponent(project.appUrl) + '\')">Try the app →</button>'
-        : '<a class="btn btn-primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a>') + '</div>'
+        ? '<button type="button" class="btn-key primary" onclick="openToolLink(this,\'' + project.id + '\',\'' + encodeURIComponent(project.appUrl) + '\')">Try the app →</button>'
+        : '<a class="btn-key primary" href="' + project.appUrl + '" target="_blank" rel="noopener">Try the app →</a>') + '</div>'
     : '';
   var galleryHtml = (content.gallery && content.gallery.length)
     ? '<div class="gallery-grid">' + content.gallery.map(function (src) {
@@ -380,12 +384,12 @@ function renderProjectDetail(section) {
     metaDesc.setAttribute('content', content.seo.metaDescription);
   }
   root.innerHTML = (
-    '<div class="card-tags" style="margin-bottom:16px;">' + tags + '</div>' +
-    '<h1>' + content.title + '</h1>' +
+    '<div class="detail-eyebrow"><span class="cell-knob"' + knobStyle + '></span>' +
+      '<span class="cell-caption" style="border:none;padding:0;margin:0;">' + project.id.replace(/-/g, ' ') + '</span></div>' +
+    '<h1 class="detail-title">' + content.title + '</h1>' +
+    '<div class="pf-tags" style="margin-bottom:18px;">' + tags + '</div>' +
     '<img class="detail-thumb" src="' + project.thumbnail + '" alt="' + content.title + '">' +
-    appLinkHtml +
-    '<div class="detail-body">' + renderMarkdown(content.description) + '</div>' +
-    galleryHtml + downloadsHtml
+    '<div class="detail-body">' + appLinkHtml + renderMarkdown(content.description) + galleryHtml + downloadsHtml + '</div>'
   );
   trackEvent('view_project', { project_id: project.id, project_title: content.title, section: section });
 }
@@ -419,16 +423,17 @@ function renderBlogCards(containerId, detailPageUrl, limit) {
   var posts = (window.BLOG_POSTS || []).filter(isPostVisible);
   if (limit) posts = posts.slice(0, limit);
   if (!posts.length) { container.innerHTML = '<div class="empty-state">No posts yet — check back soon.</div>'; return; }
-  container.innerHTML = posts.map(function (post) {
+  container.innerHTML = '<div class="blog-rows">' + posts.map(function (post) {
+    var d = new Date(post.date + 'T00:00:00');
+    var shortDate = String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
     return (
-      '<div class="blog-list-item">' +
-        '<a href="' + detailPageUrl + '?id=' + post.id + '"><img src="' + post.thumbnail + '" alt="' + post.title + '"></a>' +
-        '<div><div class="post-date">' + formatDate(post.date) + '</div>' +
-        '<h3><a href="' + detailPageUrl + '?id=' + post.id + '">' + post.title + '</a></h3>' +
-        '<p class="card-summary">' + post.summary + '</p></div>' +
-      '</div>'
+      '<a class="blog-row" href="' + detailPageUrl + '?id=' + post.id + '">' +
+        '<span class="blog-date">' + shortDate + '</span>' +
+        '<div><p class="blog-row-title">' + post.title + '</p><p class="blog-row-desc">' + post.summary + '</p></div>' +
+        '<span class="blog-row-arrow">→</span>' +
+      '</a>'
     );
-  }).join('');
+  }).join('') + '</div>';
 }
 
 /* ---- Blog detail ---- */
@@ -439,7 +444,6 @@ function renderBlogDetail() {
   if (!root) return;
   if (!post || !isPostVisible(post)) { root.innerHTML = '<div class="empty-state">Could not find that post.</div>'; return; }
   document.title = (post.seo && post.seo.title) ? post.seo.title : post.title;
-  // Inject meta description if SEO data available
   if (post.seo && post.seo.metaDescription) {
     var metaDesc = document.querySelector('meta[name="description"]');
     if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.setAttribute('name', 'description'); document.head.appendChild(metaDesc); }
@@ -448,16 +452,14 @@ function renderBlogDetail() {
   var downloadsHtml = buildDownloadsHtml(post);
   var appLinkHtml = post.appUrl
     ? '<div class="app-link-row">' + (post.appUrlPasswordProtected
-        ? '<button type="button" class="btn btn-primary" onclick="openToolLink(this,\'' + post.id + '\',\'' + encodeURIComponent(post.appUrl) + '\')">Try the app →</button>'
-        : '<a class="btn btn-primary" href="' + post.appUrl + '" target="_blank" rel="noopener">Try the app →</a>') + '</div>'
+        ? '<button type="button" class="btn-key primary" onclick="openToolLink(this,\'' + post.id + '\',\'' + encodeURIComponent(post.appUrl) + '\')">Try the app →</button>'
+        : '<a class="btn-key primary" href="' + post.appUrl + '" target="_blank" rel="noopener">Try the app →</a>') + '</div>'
     : '';
   root.innerHTML = (
-    '<div class="post-date" style="margin-bottom:12px;">' + formatDate(post.date) + '</div>' +
-    '<h1>' + post.title + '</h1>' +
-    '<img class="detail-thumb" src="' + post.thumbnail + '" alt="' + post.title + '" style="margin-bottom:28px;">' +
-    appLinkHtml +
-    '<div class="detail-body">' + renderPostBody(post.body) + '</div>' +
-    downloadsHtml
+    '<div class="detail-eyebrow"><span class="blog-date">' + formatDate(post.date) + '</span></div>' +
+    '<h1 class="detail-title">' + post.title + '</h1>' +
+    '<img class="detail-thumb" src="' + post.thumbnail + '" alt="' + post.title + '">' +
+    '<div class="detail-body">' + appLinkHtml + renderPostBody(post.body) + downloadsHtml + '</div>'
   );
   trackEvent('view_blog_post', { post_id: post.id, post_title: post.title });
 }
