@@ -990,7 +990,7 @@ function toggleDownloadsSection(prefix){
 function formPrefix(type){ return type==='project' ? 'projects' : 'blog'; }
 
 function blankProject(){
-  return{id:'',draft:true,appUrl:'',appUrlPasswordProtected:false,thumbnail:'',cardBg:'',showOnPublic:true,showOnPortfolio:true,
+  return{id:'',draft:true,appUrl:'',appUrlPasswordProtected:false,thumbnail:'',cardBg:'',brandColor:'',showOnPublic:true,showOnPortfolio:true,
     public:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'},
     portfolio:{title:'',summary:'',tags:[],description:'',gallery:[],downloads:[],downloadsEnabled:true,downloadsShowHeading:true,downloadsHeading:'Downloads'}};
 }
@@ -1059,6 +1059,14 @@ function renderForm(){
             '<input type="text" id="f-card-bg-hex" value="'+esc(item.cardBg||'')+'" placeholder="#F2EFE9" oninput="document.getElementById(\'f-card-bg\').value=this.value||\'#F2EFE9\';" style="max-width:140px;">'+
           '</div>'+
           '<p class="hint">Used behind the thumbnail wherever it does not fill the whole space (e.g. the homepage showcase) — set it to match your thumbnail\'s own background so there is no visible seam.</p>'+
+        '</div>'+
+        '<div class="field">'+
+          '<label>Brand accent color</label>'+
+          '<div style="display:flex;gap:10px;align-items:center;">'+
+            '<input type="color" id="f-brand-color" value="'+esc(item.brandColor||'#8f8b7d')+'" oninput="document.getElementById(\'f-brand-color-hex\').value=this.value;" style="width:52px;height:38px;padding:2px;flex-shrink:0;">'+
+            '<input type="text" id="f-brand-color-hex" value="'+esc(item.brandColor||'')+'" placeholder="#8f8b7d" oninput="document.getElementById(\'f-brand-color\').value=this.value||\'#8f8b7d\';" style="max-width:140px;">'+
+          '</div>'+
+          '<p class="hint">This project\'s own accent color — shown on its card on the Studio and Portfolio pages. Leave blank for the default neutral tone.</p>'+
         '</div>'+
       '</div>'+
 
@@ -1230,6 +1238,7 @@ async function saveItem(asDraft){
       appUrlPasswordProtected:document.getElementById('f-app-url-pw').checked,
       thumbnail:(window.__uploads['thumb']&&window.__uploads['thumb'][0])||'',
       cardBg:document.getElementById('f-card-bg-hex').value.trim()||document.getElementById('f-card-bg').value,
+      brandColor:document.getElementById('f-brand-color-hex').value.trim()||document.getElementById('f-brand-color').value,
       showOnPublic:document.getElementById('f-public').checked,
       showOnPortfolio:document.getElementById('f-portfolio').checked,
       public:{
