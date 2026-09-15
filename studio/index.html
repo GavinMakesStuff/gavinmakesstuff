@@ -8,44 +8,50 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div id="site-nav-placeholder"></div>
+  <div class="page-stage">
+    <div class="device">
+      <span class="hole tl"></span><span class="hole tr"></span><span class="hole bl"></span><span class="hole br"></span>
 
-  <header class="hero">
-    <div class="container">
-      <p class="hero-eyebrow">Workshop &amp; Blog</p>
-      <h1>The Studio</h1>
-      <p class="lede">Projects, builds, and the occasional thing that catches fire a little. Grab the files, follow along, build your own.</p>
-      <p id="studio-bio" style="display:none;font-size:.95rem;color:var(--color-muted);max-width:580px;margin-top:8px;"></p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="/studio/projects.html">Browse projects</a>
-        <a class="btn" href="/studio/blog.html">Read the blog</a>
+      <div class="tech-strip">
+        <div class="tech-strip-left">
+          <span><span class="model">GK—01</span> / SELF-INITIATED WORK</span>
+          <span class="tech-dot"></span>
+          <span>STILL SHIPPING</span>
+        </div>
+        <div class="roundel"><span class="roundel-mark"></span><span class="roundel-text">gavin makes stuff</span></div>
+      </div>
+
+      <div class="device-body">
+        <div id="site-nav-placeholder"></div>
+
+        <div class="hero-sub">
+          <div class="hero-eyebrow-row"><span class="lcd">WORKSHOP <span class="lcd-sep">/</span> BLOG</span></div>
+          <h1 class="wordmark">THE<br>STUDIO.</h1>
+          <p class="hero-desc">Projects, builds, and the occasional thing that catches fire a little. Grab the files, follow along, build your own.</p>
+          <p id="studio-bio" style="display:none;font-size:.82rem;color:var(--muted);max-width:560px;margin-top:14px;line-height:1.65;"></p>
+          <div class="actions-row">
+            <a class="btn-key primary" href="/studio/projects.html">Browse projects</a>
+            <a class="btn-key" href="/studio/blog.html">Read the blog</a>
+          </div>
+        </div>
+
+        <p class="creations-label">Recent Projects</p>
+        <div id="featured-projects-grid" class="pf-grid pf-grid-3" style="margin-bottom:26px;"><div class="empty-state">Loading…</div></div>
+
+        <p class="creations-label">Latest From The Blog</p>
+        <div id="featured-blog-list" style="margin-bottom:10px;"><div class="empty-state">Loading…</div></div>
+      </div>
+
+      <div class="device-footer">
+        <span class="edge-label">MODEL GK·01 — GRID SYSTEM</span>
+        <div class="footer-mid"><span class="knurl"></span><span id="footer-text">© 2026 Gavin makes stuff</span></div>
+        <div class="footer-right">
+          <div class="barcode"><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:16px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span></div>
+          <span class="serial">GMS·2026·V1</span>
+        </div>
       </div>
     </div>
-  </header>
-
-  <section class="section">
-    <div class="container">
-      <div class="section-heading">
-        <h2>Recent projects</h2>
-        <a href="/studio/projects.html">All projects →</a>
-      </div>
-      <div id="featured-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
-    </div>
-  </section>
-
-  <section class="section" style="padding-top:0;">
-    <div class="container">
-      <div class="section-heading">
-        <h2>Latest from the blog</h2>
-        <a href="/studio/blog.html">All posts →</a>
-      </div>
-      <div id="featured-blog-list" class="blog-list"><div class="empty-state">Loading…</div></div>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="container"><span id="footer-text">© 2026 Gavin makes stuff</span></div>
-  </footer>
+  </div>
 
   <script src="/js/shared.js"></script>
   <script>
