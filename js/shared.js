@@ -9,6 +9,22 @@ function initProjects(data)  { window.PROJECTS      = data.projects || []; }
 function initBlog(data)      { window.BLOG_POSTS     = data.posts    || []; }
 function initSettings(data)  { window.SITE_SETTINGS  = data; }
 
+/* ---- Hex color lightening (for brand-color knob highlights) ----
+   Mixes a hex color toward white by `amount` (0–1). Used so a single
+   brandColor field in the CMS can drive both the knob's highlight and
+   shadow tone in its radial-gradient render. */
+function lightenHex(hex, amount) {
+  if (!hex) return null;
+  var m = String(hex).replace('#', '');
+  if (m.length === 3) m = m.split('').map(function (c) { return c + c; }).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(m)) return null;
+  var r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16);
+  r = Math.round(r + (255 - r) * amount);
+  g = Math.round(g + (255 - g) * amount);
+  b = Math.round(b + (255 - b) * amount);
+  return '#' + [r, g, b].map(function (v) { return v.toString(16).padStart(2, '0'); }).join('');
+}
+
 /* ---- Apply site-wide settings to current page ---- */
 // pageKey matches keys in site-settings.json → pages
 // e.g. 'home', 'studio', 'studioProjects', 'studioBlog', 'portfolio', 'contact'
@@ -128,32 +144,35 @@ function renderMarkdown(text) {
 /* ---- Nav builder ---- */
 function buildNav(section, showDonate) {
   var links = [
-    { label: 'The Studio', href: '/studio/index.html',    key: 'studio' },
-    { label: 'Portfolio',  href: '/portfolio/index.html', key: 'portfolio' },
-    { label: 'Blog',       href: '/studio/blog.html',     key: 'blog' },
-    { label: 'Contact',    href: '/contact.html',         key: 'contact' },
+    { label: 'Home',       href: '/index.html',           key: 'home',
+      icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/>' },
+    { label: 'The Studio', href: '/studio/index.html',    key: 'studio',
+      icon: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>' },
+    { label: 'Portfolio',  href: '/portfolio/index.html', key: 'portfolio',
+      icon: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>' },
+    { label: 'Blog',       href: '/studio/blog.html',     key: 'blog',
+      icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>' },
+    { label: 'Contact',    href: '/contact.html',         key: 'contact',
+      icon: '<path d="M4 4h16v12H4z"/><path d="M22 6 12 13 2 6"/>' },
   ];
   var donateHtml = showDonate
-    ? '<li><a href="https://www.paypal.com/" class="btn btn-donate" target="_blank" rel="noopener">Support</a></li>'
+    ? '<a href="https://www.paypal.com/" class="btn-key" target="_blank" rel="noopener" style="margin-left:10px;">Support</a>'
     : '';
+  var btns = links.map(function (l) {
+    var isCurrent = l.key === section;
+    return '<a class="navbtn' + (isCurrent ? ' current' : '') + '" href="' + l.href + '">' +
+      '<svg viewBox="0 0 24 24">' + l.icon + '</svg><span class="dot"></span></a>';
+  }).join('');
+  var caps = links.map(function (l) { return '<span class="navcap">' + l.label + '</span>'; }).join('');
   return (
-    '<nav class="site-nav">' +
-      '<div class="container">' +
-        '<a class="logo" href="/index.html">Gavin makes stuff</a>' +
-        '<button class="nav-toggle" aria-label="Toggle menu" onclick="toggleMobileNav()">☰</button>' +
-        '<ul class="nav-links" id="main-nav-links">' +
-          links.map(function (l) {
-            return '<li><a href="' + l.href + '"' + (l.key === section ? ' class="active"' : '') + '>' + l.label + '</a></li>';
-          }).join('') +
-          donateHtml +
-        '</ul>' +
+    '<div class="top-nav">' +
+      '<div>' +
+        '<div class="navbtns">' + btns + '</div>' +
+        '<div class="navcaps">' + caps + '</div>' +
       '</div>' +
-    '</nav>'
+      donateHtml +
+    '</div>'
   );
-}
-function toggleMobileNav() {
-  var el = document.getElementById('main-nav-links');
-  if (el) el.classList.toggle('open');
 }
 function injectNav(section, showDonate) {
   var ph = document.getElementById('site-nav-placeholder');
@@ -171,20 +190,22 @@ function renderProjectCards(containerId, section, detailPageUrl, limit) {
   });
   if (limit) visible = visible.slice(0, limit);
   if (!visible.length) { container.innerHTML = '<div class="empty-state">No projects posted yet — check back soon.</div>'; return; }
-  container.innerHTML = visible.map(function (project) {
+  container.innerHTML = visible.map(function (project, i) {
     var content = project[dataKey];
-    var tags = (content.tags || []).map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('');
+    var tags = (content.tags || []).map(function (t) { return '<span class="pf-tag' + (i === 0 && t === content.tags[0] ? ' hot' : '') + '">' + t + '</span>'; }).join('');
+    var lo = project.brandColor || null;
+    var hi = lo ? lightenHex(lo, 0.55) : null;
+    var cardStyle = lo ? ' style="--knob-lo:' + lo + ';--knob-hi:' + (hi || lo) + ';"' : '';
+    var num = String(i + 1).padStart(2, '0');
     return (
-      '<div class="card">' +
-        '<a class="card-link" href="' + detailPageUrl + '?id=' + project.id + '">' +
-          '<img class="card-thumb" src="' + project.thumbnail + '" alt="' + content.title + ' thumbnail">' +
-          '<div class="card-body">' +
-            '<h3>' + content.title + '</h3>' +
-            '<p class="card-summary">' + content.summary + '</p>' +
-            '<div class="card-tags">' + tags + '</div>' +
-          '</div>' +
-        '</a>' +
-      '</div>'
+      '<a class="pf-card" href="' + detailPageUrl + '?id=' + project.id + '"' + cardStyle + '>' +
+        '<div class="pf-card-head"><span class="cell-knob" style="margin:0;"></span>' +
+          '<span class="cell-caption" style="border:none;padding:0;margin:0;">' + num + ' / ' + project.id.replace(/-/g, ' ') + '</span></div>' +
+        '<img class="pf-card-thumb" src="' + project.thumbnail + '" alt="' + content.title + '">' +
+        '<p class="pf-card-title">' + content.title + '</p>' +
+        '<p class="pf-card-desc">' + content.summary + '</p>' +
+        '<div class="pf-tags">' + tags + '</div>' +
+      '</a>'
     );
   }).join('');
 }
@@ -486,68 +507,22 @@ function renderCreationShowcase(containerId) {
   var settings = window.SITE_SETTINGS;
   var visible = (settings && settings.creations) ? settings.creations.filter(function (c) { return c.showOnHome; }) : [];
   if (!visible.length) { container.innerHTML = ''; return; }
-
-  var statusLabels = { open: 'Open to All', private: 'Private', wip: 'Work In Progress' };
-  var activeIndex = 0;
-  var swirls = {};
-
-  function render() {
-    container.innerHTML = visible.map(function (c, i) {
-      var isActive = i === activeIndex;
-      var bg = c.cardBg || 'var(--color-ink-raised)';
-      var category = c.status === 'custom' ? (c.statusLabel || '') : (statusLabels[c.status] || c.status || '');
-      var useLabel = c.useLabel || 'Use It';
-      var downloadLabel = c.downloadLabel || 'Download';
-      var useBtnHtml = c.passwordProtected
-        ? '<button type="button" class="cell-tool-btn cell-tool-btn-primary" onclick="event.preventDefault();openToolLink(this,\'' + c.id + '\',\'' + encodeURIComponent(c.url) + '\')">' + useLabel + '</button>'
-        : '<a class="cell-tool-btn cell-tool-btn-primary" href="' + c.url + '">' + useLabel + '</a>';
-      var downloadBtnHtml = (c.downloadEnabled !== false && c.downloadFile && c.downloadFile.file)
-        ? '<a class="cell-tool-btn" href="' + c.downloadFile.file + '" download>' + downloadLabel + '</a>'
-        : '';
-      var swirl = swirls[c.id];
-      var blurStyle = swirl
-        ? 'background:' + swirl + ';'
-        : (c.thumbnail ? 'background-image:url(' + c.thumbnail + ');background-position:center;' : '');
-      return (
-        '<div class="showcase-panel' + (isActive ? ' active' : '') + '" style="background:' + bg + '" data-index="' + i + '">' +
-          '<div class="showcase-blur" style="' + blurStyle + '"></div>' +
-          '<div class="showcase-scrim"></div>' +
-          '<div class="showcase-panel-img">' + (c.thumbnail ? '<img src="' + c.thumbnail + '" alt="' + c.name + '">' : '') + '</div>' +
-          '<div class="showcase-vert"><span>' + c.name + '</span></div>' +
-          '<div class="showcase-panel-body">' +
-            (category ? '<div class="showcase-cat">' + category + '</div>' : '') +
-            '<h3 class="showcase-title">' + c.name + '</h3>' +
-            '<p class="showcase-summary">' + c.description + '</p>' +
-            '<div style="display:flex;gap:10px;flex-wrap:wrap;">' + useBtnHtml + downloadBtnHtml + '</div>' +
-          '</div>' +
-        '</div>'
-      );
-    }).join('');
-
-    container.querySelectorAll('.showcase-panel').forEach(function (panel) {
-      panel.addEventListener('click', function (e) {
-        var i = parseInt(panel.getAttribute('data-index'), 10);
-        if (i === activeIndex) return;
-        e.preventDefault();
-        activeIndex = i;
-        render();
-      });
-    });
-  }
-
-  render();
-
-  visible.forEach(function (c) {
-    if (!c.thumbnail) return;
-    var probe = new Image();
-    probe.crossOrigin = 'anonymous';
-    probe.onload = function () {
-      extractEqualColorSwirl(probe, 6, function (gradient) {
-        if (gradient) { swirls[c.id] = gradient; render(); }
-      });
-    };
-    probe.src = c.thumbnail;
-  });
+  var statusLabels = { open: 'Open', private: 'Private', wip: 'WIP' };
+  container.innerHTML = visible.map(function (c) {
+    var label = c.status === 'custom' ? (c.statusLabel || '') : (statusLabels[c.status] || c.status || '');
+    var isHot = c.status === 'private';
+    var lo = c.brandColor || null;
+    var hi = lo ? lightenHex(lo, 0.55) : null;
+    var knobStyle = lo ? ' style="--brand-lo:' + lo + ';--brand-hi:' + (hi || lo) + ';"' : '';
+    return (
+      '<a class="creation" href="' + c.url + '">' +
+        '<div class="creation-top"><span class="creation-knob"' + knobStyle + '></span>' +
+          (label ? '<span class="status-pill' + (isHot ? ' hot' : '') + '">' + label + '</span>' : '') +
+        '</div>' +
+        '<div><p class="creation-name">' + c.name + '</p><p class="creation-desc">' + c.description + '</p></div>' +
+      '</a>'
+    );
+  }).join('');
 }
 
 /* ---- Password-gated "Use It" link ----
