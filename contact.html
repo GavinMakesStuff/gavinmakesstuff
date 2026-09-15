@@ -8,24 +8,48 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div id="site-nav-placeholder"></div>
+  <div class="page-stage">
+    <div class="device">
+      <span class="hole tl"></span><span class="hole tr"></span><span class="hole bl"></span><span class="hole br"></span>
 
-  <div class="contact-wrap">
-    <div class="contact-hero">
-      <img id="contact-headshot" src="/images/site/headshot-placeholder.svg" alt="Gavin Krohman">
-      <div>
-        <h1 id="contact-name">Gavin Krohman</h1>
-        <p class="location" id="contact-location">Vancouver, BC</p>
+      <div class="tech-strip">
+        <div class="tech-strip-left">
+          <span><span class="model">GK—01</span> / SELF-INITIATED WORK</span>
+          <span class="tech-dot"></span>
+          <span>STILL SHIPPING</span>
+        </div>
+        <div class="roundel"><span class="roundel-mark"></span><span class="roundel-text">gavin makes stuff</span></div>
+      </div>
+
+      <div class="device-body">
+        <div id="site-nav-placeholder"></div>
+
+        <div class="hero-sub">
+          <div class="hero-eyebrow-row"><span class="lcd">GET IN TOUCH</span></div>
+          <div class="contact-block">
+            <div class="pf-avatar" style="width:88px;height:88px;min-width:88px;font-size:1.5rem;"><img id="contact-headshot" src="/images/site/headshot-placeholder.svg" alt="Gavin Krohman"></div>
+            <div>
+              <h1 class="pf-name" id="contact-name" style="margin:0 0 6px;">Gavin Krohman</h1>
+              <p class="hero-desc" id="contact-location" style="margin:0;">Vancouver, BC</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-rows" id="contact-links">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+
+      <div class="device-footer">
+        <span class="edge-label">MODEL GK·01 — GRID SYSTEM</span>
+        <div class="footer-mid"><span class="knurl"></span><span id="footer-text">© 2026 Gavin makes stuff</span></div>
+        <div class="footer-right">
+          <div class="barcode"><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:16px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span></div>
+          <span class="serial">GMS·2026·V1</span>
+        </div>
       </div>
     </div>
-    <div class="contact-links" id="contact-links">
-      <div class="empty-state" style="padding:20px 0;">Loading…</div>
-    </div>
   </div>
-
-  <footer class="site-footer">
-    <div class="container"><span id="footer-text">© 2026 Gavin makes stuff</span></div>
-  </footer>
 
   <script src="/js/shared.js"></script>
   <script>
@@ -42,11 +66,16 @@
         }
         var c = s.contact || {};
         var links = document.getElementById('contact-links');
-        links.innerHTML = [
-          c.email    ? '<a class="contact-link-row" href="mailto:' + c.email + '"><div class="contact-link-icon">✉️</div><div><div class="contact-link-label">Email</div><div class="contact-link-sub">' + c.email + '</div></div></a>' : '',
-          c.linkedin ? '<a class="contact-link-row" href="' + c.linkedin + '" target="_blank" rel="noopener"><div class="contact-link-icon">💼</div><div><div class="contact-link-label">LinkedIn</div><div class="contact-link-sub">' + c.linkedin.replace('https://','') + '</div></div></a>' : '',
-          c.dribbble ? '<a class="contact-link-row" href="' + c.dribbble + '" target="_blank" rel="noopener"><div class="contact-link-icon">🏀</div><div><div class="contact-link-label">Dribbble</div><div class="contact-link-sub">' + c.dribbble.replace('https://','') + '</div></div></a>' : '',
-        ].filter(Boolean).join('') || '<p class="empty-state">No contact info added yet.</p>';
+        var rows = [];
+        if (c.email) rows.push({ href: 'mailto:' + c.email, label: 'Email', value: c.email, lo: '#FF4B12', hi: '#FF9A6B' });
+        if (c.linkedin) rows.push({ href: c.linkedin, label: 'LinkedIn', value: c.linkedin.replace('https://', ''), lo: '#0A66C2', hi: '#5B9FE0' });
+        if (c.dribbble) rows.push({ href: c.dribbble, label: 'Dribbble', value: c.dribbble.replace('https://', ''), lo: '#EA4C89', hi: '#F08FB5' });
+        links.innerHTML = rows.length ? rows.map(function (r) {
+          return '<a class="contact-row" href="' + r.href + '" target="_blank" rel="noopener" style="--knob-hi:' + r.hi + ';--knob-lo:' + r.lo + ';">' +
+            '<span class="cell-knob" style="margin:0;"></span>' +
+            '<div><div class="contact-row-label">' + r.label + '</div><div class="contact-row-value">' + r.value + '</div></div>' +
+            '<span class="contact-row-arrow">↗</span></a>';
+        }).join('') : '<p class="empty-state">No contact info added yet.</p>';
       } catch (e) { console.error(e); }
     })();
   </script>
