@@ -5,150 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gavin makes stuff</title>
   <link rel="icon" id="site-favicon" href="/images/site/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <!-- Google Analytics is injected dynamically by shared.js (applySettings → injectAnalytics),
-       based on the GA4 Measurement ID set in Admin → Site Settings → Google Analytics.
-       No per-page snippet needed. -->
-  <style>
-    :root{--bg:#0C0D0E;--surface:#131416;--surface-2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--white:#F2EFE9;--muted:#6B7075;--radius:14px;--gap:10px;}
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    html,body{background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
-    a{text-decoration:none;color:inherit;}
-    .top-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);}
-    .nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.06em;text-transform:uppercase;}
-    .nav-links{display:flex;gap:28px;list-style:none;}
-    .nav-links a{font-size:.78rem;font-weight:500;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;transition:color .15s;}
-    .nav-links a:hover{color:var(--white);}
-    .page-body{padding:24px 28px 28px;display:flex;flex-direction:column;gap:var(--gap);min-height:calc(100vh - 61px);}
-    .bento-main{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:var(--gap);flex:1;min-height:480px;}
-    .cell-hero{grid-column:1;grid-row:1/3;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;}
-    .gms-ghost{position:absolute;top:-.1em;left:-.06em;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(100px,16vw,180px);line-height:1;color:transparent;-webkit-text-stroke:1px var(--border-h);pointer-events:none;user-select:none;letter-spacing:-.04em;white-space:nowrap;}
-    .hero-eyebrow{font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:12px;position:relative;display:flex;align-items:center;gap:8px;}
-    .hero-eyebrow::before{content:'';display:inline-block;width:16px;height:1px;background:var(--red);flex-shrink:0;}
-    .hero-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.9rem,3.2vw,2.6rem);line-height:1.08;letter-spacing:-.025em;position:relative;margin-bottom:14px;white-space:pre-line;}
-    .hero-desc{font-size:.85rem;color:var(--muted);line-height:1.65;max-width:260px;position:relative;margin-bottom:24px;}
-    .hero-location{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted);position:relative;}
-    .hero-location::before{content:'◎';color:var(--red);font-size:.62rem;}
-    .cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:border-color .18s,transform .18s;position:relative;overflow:hidden;}
-    .cell:hover{border-color:var(--red);transform:translateY(-3px);}
-    .cell:hover .cell-arrow{color:var(--red);}
-    .cell:hover .cell-icon-wrap{background:var(--red);}
-    .cell-top{display:flex;align-items:flex-start;justify-content:space-between;}
-    .cell-icon-wrap{width:40px;height:40px;border-radius:9px;background:var(--border-h);display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0;}
-    .cell-icon-wrap svg{width:18px;height:18px;stroke:var(--white);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
-    .cell-arrow{font-size:1rem;color:var(--muted);transition:color .18s;}
-    .cell-body{margin-top:24px;}
-    .cell-label{font-size:.65rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
-    .cell-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.2rem,2vw,1.65rem);letter-spacing:-.02em;line-height:1.1;color:var(--white);margin-bottom:7px;}
-    .cell-desc{font-size:.8rem;color:var(--muted);line-height:1.55;}
-    .creations-section{display:flex;flex-direction:column;gap:var(--gap);}
-    .creations-label{display:flex;align-items:center;gap:12px;font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
-    .creations-label::after{content:'';flex:1;height:1px;background:var(--border);}
-    .creations-row{display:flex;gap:var(--gap);flex-wrap:wrap;}
-    .cell-tool{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;transition:border-color .18s,transform .18s;min-width:200px;flex:0 0 auto;color:inherit;}
-    .cell-tool:hover{border-color:var(--red);transform:translateY(-2px);}
-    .cell-tool:hover .cell-icon-wrap{background:var(--red);}
-    .cell-tool .cell-icon-wrap{width:36px;height:36px;border-radius:8px;background:var(--border-h);display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0;overflow:hidden;}
-    .tool-info{flex:1;min-width:0;}
-    .tool-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:-.01em;color:var(--white);margin-bottom:2px;}
-    .tool-desc{font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .tool-badge{font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:4px;flex-shrink:0;}
-    .tool-badge.private{background:rgba(217,48,37,.08);color:var(--red);border:1px solid rgba(217,48,37,.25);}
-    .tool-badge.wip{background:rgba(234,179,8,.08);color:#ca8a04;border:1px solid rgba(234,179,8,.25);}
-    .tool-badge.open{background:rgba(34,197,94,.08);color:#16a34a;border:1px solid rgba(34,197,94,.25);}
-    .cell-tool-actions{display:flex;gap:8px;flex-shrink:0;width:100%;margin-top:4px;}
-    .cell-tool-btn{font-family:'Inter',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:6px 12px;border-radius:6px;border:1px solid var(--border-h);background:transparent;color:var(--white);cursor:pointer;text-align:center;flex:1;transition:background .15s,border-color .15s;}
-    .cell-tool-btn:hover{background:var(--border-h);}
-    .cell-tool-btn:disabled{opacity:.5;cursor:not-allowed;}
-    .cell-tool-btn-primary{background:var(--red);border-color:var(--red);}
-    .cell-tool-btn-primary:hover{background:#bc251c;border-color:#bc251c;}
-
-    /* ── Creations showcase (expanding-panel carousel) — mirrors
-       css/styles.css's .showcase-* rules, using this page's own tokens
-       since index.html is fully self-contained (no shared stylesheet). ── */
-    .showcase-row{display:flex;gap:var(--gap);height:460px;}
-    .showcase-panel{position:relative;border-radius:var(--radius);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;flex:1 1 0%;min-width:0;transition:flex-grow .5s cubic-bezier(.22,1,.36,1);}
-    .showcase-panel.active{flex:8 1 0%;cursor:default;}
-    .showcase-blur{position:absolute;inset:-25%;background-size:cover;background-position:center;filter:blur(30px) saturate(2) brightness(1.05);transform:scale(1.2);animation:showcase-swirl 14s ease-in-out infinite alternate;opacity:0;transition:opacity .4s;}
-    .showcase-panel:not(.active) .showcase-blur{opacity:1;}
-    @keyframes showcase-swirl{0%{transform:scale(1.2) rotate(-4deg) translate(-2%,-1%);}50%{transform:scale(1.32) rotate(3deg) translate(2%,2%);}100%{transform:scale(1.24) rotate(-2deg) translate(-1%,2%);}}
-    .showcase-scrim{position:absolute;inset:0;background:rgba(0,0,0,.22);opacity:0;transition:opacity .4s;}
-    .showcase-panel:not(.active) .showcase-scrim{opacity:1;}
-    .showcase-panel-img{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-width:0;min-height:0;padding:16px;}
-    .showcase-panel-img img{position:relative;z-index:2;width:86%;height:86%;object-fit:contain;opacity:0;transform:scale(.92);transition:opacity .35s .26s,transform .4s .26s;}
-    .showcase-panel.active .showcase-panel-img img{opacity:1;transform:scale(1);}
-    .showcase-vert{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;opacity:0;transition:opacity .18s;}
-    .showcase-panel:not(.active) .showcase-vert{opacity:1;}
-    .showcase-vert span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.04em;white-space:nowrap;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55);}
-    .showcase-panel-body{position:relative;z-index:2;flex-shrink:0;padding:22px 26px 26px;opacity:0;transform:translateY(10px);transition:opacity .35s .3s,transform .35s .3s;}
-    .showcase-panel.active .showcase-panel-body{opacity:1;transform:translateY(0);}
-    .showcase-panel:not(.active) .showcase-panel-body{padding:0;height:0;overflow:hidden;}
-    .showcase-cat{font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px;white-space:nowrap;}
-    .showcase-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.2rem;margin-bottom:8px;white-space:nowrap;color:#16181a;}
-    .showcase-summary{color:#3d4143;font-size:.86rem;line-height:1.55;margin-bottom:16px;max-width:420px;}
-    @media(max-width:700px){.showcase-row{height:340px;}.showcase-title,.showcase-cat{white-space:normal;}}
-
-    .site-footer{border-top:1px solid var(--border);padding:20px 28px;color:var(--muted);font-size:.75rem;letter-spacing:.03em;}
-    @media(max-width:960px){.bento-main{grid-template-columns:1fr 1fr;grid-template-rows:auto;min-height:unset;}.cell-hero{grid-column:1/3;grid-row:1;min-height:240px;}}
-    @media(max-width:580px){.bento-main{grid-template-columns:1fr;}.cell-hero{grid-column:1;}.page-body{padding:12px;}.top-nav{padding:16px;}.nav-links{gap:14px;}.cell-tool{min-width:unset;flex:1 1 calc(50% - var(--gap));}}
-  </style>
+  <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <nav class="top-nav">
-    <span class="nav-logo" id="home-nav-logo">Gavin makes stuff</span>
-    <ul class="nav-links">
-      <li><a href="/studio/index.html">The Studio</a></li>
-      <li><a href="/portfolio/index.html">Portfolio</a></li>
-      <li><a href="/studio/blog.html">Blog</a></li>
-      <li><a href="/contact.html">Contact</a></li>
-    </ul>
-  </nav>
+  <div class="page-stage">
+    <div class="device">
+      <span class="hole tl"></span><span class="hole tr"></span><span class="hole bl"></span><span class="hole br"></span>
 
-  <div class="page-body">
-    <div class="bento-main">
-      <div class="cell-hero">
-        <div class="gms-ghost" aria-hidden="true">GMS</div>
-        <div>
-          <p class="hero-eyebrow" id="hero-eyebrow">Designer &amp; Maker</p>
-          <h1 class="hero-name" id="hero-tagline">Gavin
-makes
-stuff.</h1>
-          <p class="hero-desc" id="hero-desc">UI/UX design, hardware builds, and the occasional thing that catches fire a little.</p>
-          <p class="hero-location" id="hero-location">Vancouver, BC</p>
+      <div class="tech-strip">
+        <div class="tech-strip-left">
+          <span><span class="model">GK—01</span> / SELF-INITIATED WORK</span>
+          <span class="tech-dot"></span>
+          <span>STILL SHIPPING</span>
         </div>
+        <div class="roundel"><span class="roundel-mark"></span><span class="roundel-text" id="home-nav-logo">gavin makes stuff</span></div>
       </div>
 
-      <a class="cell" href="/studio/index.html">
-        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><span class="cell-arrow">↗</span></div>
-        <div class="cell-body"><p class="cell-label">Workshop</p><p class="cell-name">The Studio</p><p class="cell-desc">Projects, builds, files to download, and steps to follow.</p></div>
-      </a>
+      <div class="device-body">
+        <div class="top-nav">
+          <div>
+            <div class="navbtns">
+              <a class="navbtn current" href="/index.html"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg><span class="dot"></span></a>
+              <a class="navbtn" href="/studio/index.html"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="dot"></span></a>
+              <a class="navbtn" href="/portfolio/index.html"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg><span class="dot"></span></a>
+              <a class="navbtn" href="/studio/blog.html"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="dot"></span></a>
+              <a class="navbtn" href="/contact.html"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M22 6 12 13 2 6"/></svg><span class="dot"></span></a>
+            </div>
+            <div class="navcaps"><span class="navcap">Home</span><span class="navcap">Studio</span><span class="navcap">Folio</span><span class="navcap">Blog</span><span class="navcap">Contact</span></div>
+          </div>
+        </div>
 
-      <a class="cell" href="/portfolio/index.html">
-        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div><span class="cell-arrow">↗</span></div>
-        <div class="cell-body"><p class="cell-label">Professional</p><p class="cell-name">Portfolio</p><p class="cell-desc">Selected work, problems solved, skills behind them.</p></div>
-      </a>
+        <div class="hero">
+          <div>
+            <div class="hero-eyebrow-row"><span class="lcd" id="hero-eyebrow">TODAY <span class="lcd-sep">/</span> DESIGN + BUILD</span></div>
+            <h1 class="wordmark" id="hero-tagline">Gavin<br>Makes<br>Stuff.</h1>
+            <p class="hero-desc" id="hero-desc">UI/UX design, hardware builds, and the occasional thing that catches fire a little.</p>
+          </div>
+          <div class="dial-wrap">
+            <div class="dial-ring"></div>
+            <div class="dial-diag"></div>
+            <div class="dial-mark"></div>
+            <span class="dial-spec a">49.36°N</span>
+            <span class="dial-spec b">123.11°W</span>
+            <div class="dial-hub"><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
 
-      <a class="cell" href="/studio/blog.html">
-        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><span class="cell-arrow">↗</span></div>
-        <div class="cell-body"><p class="cell-label">Writing</p><p class="cell-name">Blog</p><p class="cell-desc">Stories behind the builds, lessons learned, and what's next.</p></div>
-      </a>
+        <div class="bento-main">
+          <a class="cell" href="/studio/index.html">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">01 / workshop</span>
+            <p class="cell-name">The Studio</p>
+            <p class="cell-desc">Projects, builds, files to download.</p>
+          </a>
+          <a class="cell" href="/portfolio/index.html">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">02 / professional</span>
+            <p class="cell-name">Portfolio</p>
+            <p class="cell-desc">Selected work &amp; problems solved.</p>
+          </a>
+          <a class="cell" href="/studio/blog.html">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">03 / writing</span>
+            <p class="cell-name">Blog</p>
+            <p class="cell-desc">Stories behind the builds.</p>
+          </a>
+          <a class="cell" href="/contact.html">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">04 / say hi</span>
+            <p class="cell-name">Contact</p>
+            <p class="cell-desc">LinkedIn, Dribbble, email.</p>
+          </a>
+        </div>
 
-      <a class="cell" href="/contact.html">
-        <div class="cell-top"><div class="cell-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><span class="cell-arrow">↗</span></div>
-        <div class="cell-body"><p class="cell-label">Get in touch</p><p class="cell-name">Contact</p><p class="cell-desc">LinkedIn, Dribbble, email — find me where it makes sense.</p></div>
-      </a>
-    </div>
+        <p class="creations-label">Creations</p>
+        <div class="creations-row" id="creations-row"></div>
+      </div>
 
-    <div class="creations-section">
-      <p class="creations-label">Creations</p>
-      <div class="showcase-row" id="creations-row"></div>
+      <div class="device-footer">
+        <span class="edge-label">MODEL GK·01 — GRID SYSTEM</span>
+        <div class="footer-mid"><span class="knurl"></span><span id="footer-text">© 2026 Gavin makes stuff</span></div>
+        <div class="footer-right">
+          <div class="barcode"><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:16px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span></div>
+          <span class="serial">GMS·2026·V1</span>
+        </div>
+      </div>
     </div>
   </div>
-
-  <footer class="site-footer">
-    <span id="footer-text">© 2026 Gavin makes stuff</span>
-  </footer>
 
   <script src="/js/shared.js"></script>
   <script>
@@ -158,16 +101,12 @@ stuff.</h1>
         var settings = await res.json();
         initSettings(settings);
         applySettings(settings, 'home');
-        // Home page has its own nav logo element (not injected by buildNav)
         var logo = document.getElementById('home-nav-logo');
         if (logo && settings.site && settings.site.name) logo.textContent = settings.site.name;
-        // Hero text
         var h = settings.home;
         if (h) {
-          if (h.eyebrow)     document.getElementById('hero-eyebrow').textContent = h.eyebrow;
-          if (h.tagline)     document.getElementById('hero-tagline').textContent  = h.tagline;
-          if (h.description) document.getElementById('hero-desc').textContent     = h.description;
-          if (h.location)    document.getElementById('hero-location').textContent = h.location;
+          if (h.tagline)     document.getElementById('hero-tagline').innerHTML = h.tagline.replace(/\n/g, '<br>');
+          if (h.description) document.getElementById('hero-desc').textContent  = h.description;
         }
       } catch (e) { console.error('Settings load failed', e); }
       renderCreationShowcase('creations-row');
