@@ -2134,6 +2134,14 @@ function renderCreationsBuilder(creations){
         '</div>'+
         '<p class="hint">Match this to the thumbnail\'s own background so the homepage showcase has no visible seam.</p>'+
       '</div>'+
+      '<div class="field">'+
+        '<label>Brand accent color</label>'+
+        '<div style="display:flex;gap:10px;align-items:center;">'+
+          '<input type="color" id="cr-brand-color-'+i+'" value="'+esc(c.brandColor||'#F0491D')+'" oninput="document.getElementById(\'cr-brand-color-hex-'+i+'\').value=this.value;" style="width:52px;height:38px;padding:2px;flex-shrink:0;">'+
+          '<input type="text" id="cr-brand-color-hex-'+i+'" value="'+esc(c.brandColor||'')+'" placeholder="#F0491D" oninput="document.getElementById(\'cr-brand-color-'+i+'\').value=this.value||\'#F0491D\';" style="max-width:140px;">'+
+        '</div>'+
+        '<p class="hint">This project\'s own brand color — used as the accent on its homepage marker (e.g. Scout\'s teal, TerraLens\' forest green). Separate from the card background above.</p>'+
+      '</div>'+
 
       '<div class="creation-section-label">Use It button</div>'+
       '<div class="creation-row" style="margin-bottom:14px;">'+
@@ -2175,7 +2183,7 @@ function toggleCreationDownload(i){
 
 function addCreation(){
   state.settings.creations=state.settings.creations||[];
-  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',cardBg:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadEnabled:true,downloadLabel:'Download',downloadFile:null});
+  state.settings.creations.push({id:'new-creation-'+Date.now(),name:'New creation',description:'',url:'/',status:'private',statusLabel:'',thumbnail:'',cardBg:'',brandColor:'',showOnHome:true,useLabel:'Use It',passwordProtected:false,downloadEnabled:true,downloadLabel:'Download',downloadFile:null});
   renderSettingsForm();
 }
 function removeCreation(i){
@@ -2213,6 +2221,7 @@ async function saveSettings(){
       statusLabel:document.getElementById('cr-label-'+i)?.value||'',
       thumbnail:(window.__uploads['cr-thumb-'+i]&&window.__uploads['cr-thumb-'+i][0])||c.thumbnail||'',
       cardBg:(document.getElementById('cr-card-bg-hex-'+i)?.value.trim())||(document.getElementById('cr-card-bg-'+i)?.value)||'',
+      brandColor:(document.getElementById('cr-brand-color-hex-'+i)?.value.trim())||(document.getElementById('cr-brand-color-'+i)?.value)||'',
       showOnHome:document.getElementById('cr-show-'+i)?document.getElementById('cr-show-'+i).checked:true,
       useLabel:document.getElementById('cr-uselabel-'+i)?.value||'Use It',
       passwordProtected:document.getElementById('cr-pw-'+i)?document.getElementById('cr-pw-'+i).checked:false,

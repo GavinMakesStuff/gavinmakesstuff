@@ -1,0 +1,723 @@
+<title>GMS Teenage Engineering Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Silkscreen:wght@400;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ color-scheme: light; }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;background:#0e0e0e;}
+  body{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+
+  /* ============ picker chrome (not part of the mockups) ============ */
+  .picker-bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:80;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;background:#111;color:#eee;font-family:'IBM Plex Mono',monospace;}
+  .picker-group{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .picker-bar button{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:5px;border:1px solid #3a3a3a;background:#1c1c1c;color:#bdbdbd;cursor:pointer;}
+  .picker-bar button:hover{border-color:#666;color:#fff;}
+  .picker-bar button.on{background:#FF4B12;border-color:#FF4B12;color:#fff;}
+  .picker-label{color:#777;font-size:.68rem;margin-right:4px;}
+  .picker-bar select{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.02em;padding:7px 10px;border-radius:5px;border:1px solid #3a3a3a;background:#1c1c1c;color:#fff;}
+  .refnote{color:#666;font-size:.62rem;}
+  .stage{padding:18px 16px 48px;display:flex;justify-content:center;}
+
+  /* ============ device chassis (shared skeleton) ============ */
+  .device{width:100%;max-width:1180px;position:relative;overflow:hidden;background:var(--bg);
+    border-radius:var(--chassis-radius);border:1px solid var(--line);box-shadow:var(--device-shadow);font-family:'Inter',sans-serif;
+    display:flex;flex-direction:column;}
+  .device *{box-sizing:border-box;}
+  .device-body{flex:1;}
+
+  .hole{width:20px;height:20px;border-radius:50%;position:absolute;z-index:6;
+    background:radial-gradient(circle at 34% 28%, var(--hole-hi) 0%, var(--hole-mid) 55%, var(--hole-lo) 100%);
+    box-shadow:inset 0 2px 3px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.35);}
+  .hole.tl{top:16px;left:16px;} .hole.tr{top:16px;right:16px;} .hole.bl{bottom:16px;left:16px;} .hole.br{bottom:16px;right:16px;}
+
+  /* top technical strip — mirrors "EP—133 / NEW UPDATE 2.0 / FULFILLING THE PROMISE" */
+  .tech-strip{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 46px 0;font-family:var(--font-label);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;}
+  .tech-strip .model{color:var(--accent);font-weight:600;}
+  .tech-strip-left{display:flex;align-items:center;gap:10px;}
+  .tech-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+  .roundel{display:flex;align-items:center;gap:10px;}
+  .roundel-mark{width:18px;height:18px;min-width:18px;border-radius:50%;border:1.3px solid var(--ink);position:relative;flex-shrink:0;}
+  .roundel-mark::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--ink);}
+  .roundel-text{font-family:var(--font-label);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+
+  .device-body{padding:0 46px;}
+
+  /* nav strip: two authentic patterns — square transport buttons (Grey) / hashed pill tabs (Cream) */
+  .top-nav{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:22px 0 20px;flex-wrap:wrap;}
+  .navbtns{display:flex;gap:10px;}
+  .navbtn{width:46px;height:38px;border-radius:8px;background:var(--key-bg);box-shadow:var(--key-shadow);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-decoration:none;position:relative;transition:box-shadow .12s,transform .12s;}
+  .navbtn svg{width:14px;height:14px;stroke:var(--key-ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+  .navbtn .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);}
+  .navbtn.current .dot{background:var(--accent);box-shadow:0 0 4px var(--accent);}
+  .navbtn:hover,.navbtn.current{transform:translateY(1px);box-shadow:var(--key-shadow-active);}
+  .navcaps{display:flex;gap:10px;margin-top:6px;}
+  .navcap{width:46px;text-align:center;font-family:var(--font-label);font-size:.54rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+
+  .navpill-row{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:repeating-linear-gradient(45deg, var(--hash, rgba(21,19,16,.08)) 0px, var(--hash, rgba(21,19,16,.08)) 1px, transparent 1px, transparent 7px);}
+  .navpill{flex:1;text-align:center;padding:10px 8px;font-family:var(--font-label);font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-right:1px solid var(--line);text-decoration:none;background:var(--bg);}
+  .navpill:last-child{border-right:none;}
+  .navpill.current{background:var(--accent);color:#fff;}
+
+  /* ---- hero ---- */
+  .hero{position:relative;padding:8px 0 30px;display:grid;grid-template-columns:1fr 260px;gap:24px;align-items:center;}
+  .lcd{font-family:'Silkscreen',monospace;display:inline-flex;align-items:center;gap:7px;background:var(--lcd-bg);color:var(--lcd-ink);
+    padding:7px 11px;border-radius:5px;letter-spacing:.05em;font-size:.72rem;box-shadow:inset 0 2px 5px rgba(0,0,0,.55);}
+  .lcd .lcd-sep{opacity:.5;}
+  .lcd-badge{font-family:var(--font-label);font-size:.6rem;font-weight:700;background:var(--lcd-bg);color:var(--lcd-ink);border-radius:3px;padding:1px 5px;}
+  .hero-eyebrow-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+  .wordmark{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2.6rem,6.4vw,4.4rem);line-height:.92;letter-spacing:-.02em;
+    color:transparent;-webkit-text-stroke:1.6px var(--ink);margin:0;}
+  .wordmark-sub{font-family:var(--font-label);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:10px 0 22px;}
+  .hero-desc{font-size:.86rem;color:var(--muted);line-height:1.65;max-width:420px;margin:0;}
+  .accent-tag{position:absolute;top:2px;right:0;width:22px;height:22px;border-radius:4px;background:var(--accent);color:#fff;font-family:var(--font-label);
+    font-weight:700;font-size:.7rem;display:flex;align-items:center;justify-content:center;}
+
+  .dial-wrap{position:relative;width:230px;height:230px;justify-self:center;flex-shrink:0;}
+  .dial-ring{position:absolute;inset:0;border-radius:50%;border:1px solid var(--line-strong);}
+  .dial-diag{position:absolute;left:4%;right:4%;top:50%;height:1px;background:var(--line-strong);transform-origin:center;transform:rotate(38deg);}
+  .dial-hub{position:absolute;left:50%;top:50%;width:74px;height:74px;border-radius:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 35% 30%, var(--hole-hi), var(--hole-lo));box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .dial-hub i{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--ink);opacity:.5;}
+  .dial-hub i:nth-child(1){top:9px;left:9px;} .dial-hub i:nth-child(2){top:9px;right:9px;} .dial-hub i:nth-child(3){bottom:9px;left:9px;} .dial-hub i:nth-child(4){bottom:9px;right:9px;}
+  .dial-spec{position:absolute;font-family:var(--font-label);font-size:.6rem;color:var(--muted);letter-spacing:.05em;white-space:nowrap;}
+  .dial-spec.a{top:18%;left:14%;transform:rotate(38deg);transform-origin:left center;}
+  .dial-spec.b{bottom:16%;right:12%;}
+  .dial-mark{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent);top:22px;right:38px;}
+
+  /* ---- section cards ---- */
+  .bento-main{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:6px 0 8px;}
+  .cell{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px;display:flex;flex-direction:column;
+    align-items:flex-start;gap:2px;text-decoration:none;position:relative;}
+  .cell-knob{width:32px;height:32px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 35% 30%, var(--knob-hi), var(--knob-lo));
+    box-shadow:0 1px 2px rgba(0,0,0,.3), inset 0 0 0 1px var(--knob-ring);position:relative;margin-bottom:12px;}
+  .cell-knob::after{content:'';position:absolute;top:3px;left:50%;width:1.6px;height:6px;background:var(--knob-mark);transform:translateX(-50%);}
+  .cell-caption{font-family:var(--font-label);font-size:.6rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;padding-bottom:10px;border-bottom:1px solid var(--line);width:100%;}
+  .cell-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:-.01em;color:var(--ink);margin:0 0 6px;}
+  .cell-desc{font-size:.76rem;color:var(--muted);line-height:1.5;margin:0;}
+
+  /* ---- creations ---- */
+  .creations-label{font-family:var(--font-label);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:12px;margin:20px 0 12px;}
+  .creations-label::after{content:'';flex:1;height:1px;background:var(--line);}
+  .creations-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding-bottom:28px;}
+  .creation{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;display:flex;flex-direction:column;gap:10px;
+    text-decoration:none;transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;}
+  .creation:hover{transform:translateY(-2px);border-color:var(--brand-lo, var(--accent));box-shadow:0 6px 16px -8px rgba(0,0,0,.25);}
+  .creation:hover .creation-knob{transform:scale(1.12);box-shadow:0 0 0 4px color-mix(in srgb, var(--brand-lo, var(--accent)) 22%, transparent), 0 1px 2px rgba(0,0,0,.25);}
+  .creation:active{transform:translateY(0);}
+  .creation-top{display:flex;align-items:center;justify-content:space-between;}
+  .creation-knob{width:20px;height:20px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 35% 30%, var(--brand-hi, var(--hole-hi)), var(--brand-lo, var(--knob-lo)));box-shadow:0 1px 2px rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.08);transition:transform .18s ease, box-shadow .18s ease;}
+  .status-pill{background:var(--ink);color:var(--bg);font-family:var(--font-label);font-size:.54rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:4px;}
+  .status-pill.hot{background:var(--accent);color:#fff;}
+  .creation-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.88rem;color:var(--ink);}
+  .creation-desc{font-size:.68rem;color:var(--muted);line-height:1.4;}
+
+  /* ---- footer: vertical edge label / knurled dial / barcode — a true 3-col grid so
+     the center mark stays exactly centered no matter how wide the side groups are ---- */
+  .device-footer{border-top:1px solid var(--line);padding:16px 46px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:16px;}
+  .edge-label{justify-self:start;writing-mode:vertical-rl;font-family:var(--font-label);font-size:.56rem;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;transform:rotate(180deg);height:70px;}
+  .footer-mid{justify-self:center;display:flex;align-items:center;gap:10px;color:var(--muted);font-family:var(--font-label);font-size:.62rem;letter-spacing:.04em;}
+  .knurl{width:30px;height:30px;border-radius:50%;background:repeating-conic-gradient(var(--knurl-a) 0deg 4deg, var(--knurl-b) 4deg 8deg);
+    box-shadow:0 1px 3px rgba(0,0,0,.4), inset 0 0 3px rgba(0,0,0,.3);}
+  .barcode{display:flex;align-items:flex-end;gap:1.5px;height:22px;}
+  .barcode span{background:var(--ink);display:block;}
+  .footer-right{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .serial{font-family:var(--font-label);font-size:.56rem;letter-spacing:.08em;color:var(--muted);}
+
+  /* --- Portfolio page --- */
+  .pf-hero{position:relative;padding:8px 0 20px;display:flex;gap:22px;align-items:flex-start;}
+  .pf-avatar{width:76px;height:76px;min-width:76px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--muted);font-size:1.3rem;}
+  .pf-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:var(--ink);margin:10px 0 8px;letter-spacing:-.01em;}
+  .pf-summary{font-size:.82rem;color:var(--muted);line-height:1.65;max-width:560px;margin:0;}
+  .pf-section{padding:8px 0 30px;}
+  .pf-heading{font-family:var(--font-label);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:12px;margin:0 0 14px;}
+  .pf-heading::after{content:'';flex:1;height:1px;background:var(--line);}
+  .pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .pf-grid-3{grid-template-columns:repeat(3,1fr);}
+  .pf-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;gap:12px;}
+  .pf-card-head{display:flex;align-items:center;gap:10px;}
+  .pf-card-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.06rem;color:var(--ink);letter-spacing:-.01em;}
+  .pf-card-desc{font-size:.78rem;color:var(--muted);line-height:1.6;}
+  .pf-tags{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:fit-content;}
+  .pf-tag{font-family:var(--font-label);font-size:.56rem;letter-spacing:.05em;text-transform:uppercase;padding:5px 9px;border-right:1px solid var(--line);
+    background:repeating-linear-gradient(45deg, var(--hash, rgba(21,19,16,.08)) 0px, var(--hash, rgba(21,19,16,.08)) 1px, transparent 1px, transparent 7px);color:var(--ink);}
+  .pf-tag:last-child{border-right:none;}
+  .pf-tag.hot{background:var(--accent);color:#fff;}
+
+  /* ---- sub-page hero (Studio / Blog / Contact headers — text only, no dial: that's home-only) ---- */
+  .hero-sub{padding:8px 0 22px;}
+  .hero-sub .wordmark{font-size:clamp(2.1rem,5vw,3.2rem);}
+  .actions-row{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .btn-key{font-family:var(--font-label);font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    padding:12px 18px;border-radius:8px;text-decoration:none;background:var(--key-bg);color:var(--key-ink);box-shadow:var(--key-shadow);transition:box-shadow .12s,transform .12s;}
+  .btn-key:hover{transform:translateY(1px);box-shadow:var(--key-shadow-active);}
+  .btn-key.primary{background:var(--accent);color:#fff;box-shadow:0 2px 0 #b23608, 0 4px 8px rgba(0,0,0,.16);}
+  .btn-key.primary:hover{box-shadow:0 1px 0 #b23608, inset 0 1px 3px rgba(0,0,0,.2);}
+  .back-link{font-family:var(--font-label);font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .back-link:hover{color:var(--ink);}
+
+  /* ---- blog list rows ---- */
+  .blog-rows{display:flex;flex-direction:column;}
+  .blog-row{display:flex;align-items:flex-start;gap:16px;padding:18px 0;border-bottom:1px solid var(--line);text-decoration:none;}
+  .blog-row:last-child{border-bottom:none;}
+  .blog-date{font-family:'Silkscreen',monospace;background:var(--lcd-bg);color:var(--lcd-ink);font-size:.6rem;padding:5px 8px;border-radius:4px;flex-shrink:0;white-space:nowrap;margin-top:2px;box-shadow:inset 0 2px 4px rgba(0,0,0,.5);}
+  .blog-row-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink);margin:0 0 5px;letter-spacing:-.01em;}
+  .blog-row-desc{font-size:.78rem;color:var(--muted);line-height:1.55;margin:0;max-width:560px;}
+  .blog-row-arrow{margin-left:auto;color:var(--muted);font-family:var(--font-label);font-size:.85rem;flex-shrink:0;padding-top:2px;}
+
+  /* ---- detail page (studio project / blog post / portfolio project) ---- */
+  .detail-head{padding:8px 0 4px;}
+  .detail-eyebrow{display:flex;align-items:center;gap:10px;margin:18px 0 12px;}
+  .detail-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.5rem,3.6vw,2.1rem);letter-spacing:-.01em;color:var(--ink);margin:0 0 14px;}
+  .detail-body{padding:4px 0 10px;}
+  .detail-body p{font-size:.85rem;color:var(--muted);line-height:1.75;max-width:640px;margin:0 0 14px;}
+  .gallery-plate{aspect-ratio:16/9;max-width:640px;border-radius:var(--radius);border:1px solid var(--line);background:var(--panel);
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;margin:22px 0;}
+  .gallery-plate .grille{position:absolute;inset:0;background-size:9px 9px;opacity:.5;}
+  .gallery-plate span{font-family:var(--font-label);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);position:relative;z-index:1;background:var(--bg);padding:5px 11px;border-radius:4px;border:1px solid var(--line);}
+  .downloads-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-top:10px;max-width:520px;}
+  .download-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line);background:var(--panel);}
+  .download-row:last-child{border-bottom:none;}
+  .download-label{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.85rem;color:var(--ink);}
+  .download-meta{font-family:var(--font-label);font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.04em;}
+  .download-btn{font-family:var(--font-label);font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border-radius:6px;background:var(--ink);color:var(--bg);text-decoration:none;flex-shrink:0;}
+
+  /* ---- contact page ---- */
+  .contact-block{display:flex;gap:22px;align-items:center;}
+  .contact-rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:0 0 30px;max-width:640px;}
+  .contact-row{display:flex;align-items:center;gap:16px;padding:16px 18px 16px 15px;border-bottom:1px solid var(--line);border-left:3px solid transparent;background:var(--panel);text-decoration:none;}
+  .contact-row:last-child{border-bottom:none;}
+  .contact-row-label{font-family:var(--font-label);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+  .contact-row-value{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.92rem;color:var(--ink);}
+  .contact-row-arrow{margin-left:auto;color:var(--muted);}
+
+  /* ============ VARIANT — GREY (TP-7 / K.O. Sidekick) ============ */
+  [data-style="grey"]{
+    --bg:#D8D5CE; --panel:#E4E1D9; --line:#C6C2B8; --line-strong:#B6B2A6; --ink:#19180F; --muted:#726E62;
+    --accent:#FF4B12; --font-label:'IBM Plex Mono',monospace;
+    --chassis-radius:22px; --radius:12px;
+    --device-shadow:0 30px 60px -22px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.5) inset;
+    --hole-hi:#f3f1ea; --hole-mid:#c4c0b3; --hole-lo:#8f8b7d;
+    --lcd-bg:#141310; --lcd-ink:#FF8A4C;
+    --knob-hi:#fdfcf8; --knob-lo:#bcb8ab; --knob-mark:#38352a; --knob-ring:rgba(0,0,0,.08);
+    --key-bg:linear-gradient(180deg,#f4f2ec,#dedad0); --key-ink:#19180F;
+    --key-shadow:0 2px 0 #b6b2a6, 0 4px 8px rgba(0,0,0,.16);
+    --key-shadow-active:0 1px 0 #b6b2a6, inset 0 1px 3px rgba(0,0,0,.15);
+    --knurl-a:#c9c5b8; --knurl-b:#9f9b8d;
+  }
+  [data-style="grey"] .navbtn:nth-child(1){--knob-lo:#fff;}
+  [data-style="grey"] .cell:nth-of-type(1) .cell-knob{--knob-hi:#ffb98f;--knob-lo:#FF4B12;}
+  [data-style="grey"] .cell:nth-of-type(2) .cell-knob{--knob-hi:#fff;--knob-lo:#e3dfd4;}
+  [data-style="grey"] .cell:nth-of-type(3) .cell-knob{--knob-hi:#4a4a4a;--knob-lo:#161616;--knob-mark:#eee;}
+  [data-style="grey"] .cell:nth-of-type(4) .cell-knob{--knob-hi:#c7c3b6;--knob-lo:#8f8b7d;}
+  /* Creations knobs carry each project's real brand color (tinted to sit in the metal-knob render) — same across body variants */
+  .creation:nth-of-type(1) .creation-knob{--brand-hi:#4FA9C4;--brand-lo:#005A7A;} /* Scout — teal */
+  .creation:nth-of-type(2) .creation-knob{--brand-hi:#7CA98F;--brand-lo:#355647;} /* TerraLens — forest */
+  .creation:nth-of-type(3) .creation-knob{--brand-hi:#4A7690;--brand-lo:#1E3A4A;} /* Anami — herald blue */
+  .creation:nth-of-type(4) .creation-knob{--brand-hi:#C3E8D6;--brand-lo:#6FAF8F;} /* Balance — accent green */
+  .creation:nth-of-type(5) .creation-knob{--brand-hi:#E6A31A;--brand-lo:#1F3147;} /* Marginalia — navy + gold */
+  [data-style="grey"] .barcode span:nth-child(odd){width:1.5px;} [data-style="grey"] .barcode span:nth-child(even){width:3px;}
+
+  /* ============ VARIANT — CREAM (EP-133 K.O. II) ============ */
+  [data-style="cream"]{
+    --bg:#F0EADA; --panel:#F8F4E9; --line:#DFD8C4; --line-strong:#CFC7AE; --ink:#151310; --muted:#918A76;
+    --accent:#FF4B12; --hash:rgba(21,19,16,.10); --font-label:'IBM Plex Mono',monospace;
+    --chassis-radius:20px; --radius:14px;
+    --device-shadow:0 30px 60px -22px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.5) inset;
+    --hole-hi:#fffdf5; --hole-mid:#e2dbc4; --hole-lo:#b8ae8f;
+    --lcd-bg:#151310; --lcd-ink:#FF8A4C;
+    --knob-hi:#fffdf5; --knob-lo:#d8d0b8; --knob-mark:#3a3527; --knob-ring:rgba(0,0,0,.08);
+    --knurl-a:#e2dbc4; --knurl-b:#b8ae8f;
+  }
+  [data-style="cream"] .cell:nth-of-type(1) .cell-knob{--knob-hi:#ffb98f;--knob-lo:#FF4B12;}
+  [data-style="cream"] .cell:nth-of-type(2) .cell-knob{--knob-hi:#4a4a4a;--knob-lo:#161616;--knob-mark:#eee;}
+  [data-style="cream"] .cell:nth-of-type(3) .cell-knob{--knob-hi:#fff;--knob-lo:#e2dbc4;}
+  [data-style="cream"] .cell:nth-of-type(4) .cell-knob{--knob-hi:#c7bfa4;--knob-lo:#a89f80;}
+  [data-style="cream"] .cell,[data-style="cream"] .creation,[data-style="cream"] .pf-card,[data-style="cream"] .pf-avatar{border-radius:16px;}
+  [data-style="cream"] .barcode span:nth-child(3n){width:3px;} [data-style="cream"] .barcode span:nth-child(3n+1){width:1.5px;} [data-style="cream"] .barcode span:nth-child(3n+2){width:1px;}
+
+  /* nav-mode toggling: grey = square transport buttons, cream = hashed pill tabs */
+  [data-style="grey"] .navpill-row{display:none;}
+  [data-style="cream"] .navbtns,[data-style="cream"] .navcaps{display:none;}
+  [data-style="cream"] .navpill-row{width:100%;}
+
+  /* ---- responsive ---- */
+  @media(max-width:980px){
+    .bento-main{grid-template-columns:1fr 1fr;}
+    .creations-row{grid-template-columns:repeat(3,1fr);}
+    .pf-grid,.pf-grid-3{grid-template-columns:1fr 1fr;}
+    .hero{grid-template-columns:1fr;}
+    .dial-wrap{justify-self:flex-start;width:180px;height:180px;}
+    .device-body{padding:0 32px;}
+    .tech-strip{padding:16px 36px 0;}
+    .device-footer{padding:14px 36px;}
+    .hole{width:16px;height:16px;} .hole.tl,.hole.tr{top:14px;} .hole.bl,.hole.br{bottom:14px;}
+    .hole.tl,.hole.bl{left:14px;} .hole.tr,.hole.br{right:14px;}
+  }
+  @media(max-width:620px){
+    .bento-main{grid-template-columns:1fr;}
+    .creations-row{grid-template-columns:repeat(2,1fr);}
+    .pf-grid,.pf-grid-3{grid-template-columns:1fr;}
+    .device-body{padding:0 20px;}
+    .tech-strip{padding:14px 30px 0;gap:8px 14px;}
+    .device-footer{padding:14px 30px;}
+    .top-nav{padding:18px 0 16px;}
+    .pf-hero{flex-direction:column;}
+    .dial-wrap{display:none;} /* location dial is a homepage-only flourish; too tight on phones for sub-pages anyway */
+    .edge-label{display:none;}
+    .device-footer{display:flex;flex-direction:column;align-items:flex-start;gap:10px;}
+    .footer-mid{justify-self:auto;width:100%;justify-content:center;}
+    .footer-right{justify-self:auto;align-items:flex-start;width:100%;flex-direction:row;justify-content:space-between;align-items:center;}
+    .navpill{font-size:.56rem;padding:9px 4px;}
+    .roundel-text{display:none;}
+    .hole{width:13px;height:13px;} .hole.tl,.hole.tr{top:11px;} .hole.bl,.hole.br{bottom:11px;}
+    .hole.tl,.hole.bl{left:11px;} .hole.tr,.hole.br{right:11px;}
+  }
+  @media(max-width:420px){
+    .stage{padding:12px 12px 36px;}
+    .device{border-radius:16px;}
+    .wordmark{font-size:clamp(1.9rem,11vw,2.6rem)!important;}
+    .navcaps{display:none;}
+    .navbtn{width:40px;height:34px;}
+    .tech-strip{padding-left:26px;padding-right:26px;}
+    .device-footer{padding-left:26px;padding-right:26px;}
+    .hole{width:11px;height:11px;} .hole.tl,.hole.tr{top:9px;} .hole.bl,.hole.br{bottom:9px;}
+    .hole.tl,.hole.bl{left:9px;} .hole.tr,.hole.br{right:9px;}
+  }
+
+  /* ---- motion: tactile, mechanical — 4 page-transition options to compare live ---- */
+  @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  @keyframes page-in-sweep{
+    0%{opacity:0;transform:translateY(16px) scale(.97);filter:blur(2px);}
+    55%{opacity:1;filter:blur(0);}
+    100%{opacity:1;transform:translateY(0) scale(1);}
+  }
+  @keyframes page-in-fade{from{opacity:0;}to{opacity:1;}}
+  @keyframes page-in-slide{from{opacity:0;transform:translateX(26px);}to{opacity:1;transform:translateX(0);}}
+  @keyframes page-in-press{
+    0%{opacity:0;transform:scale(.985);}
+    60%{opacity:1;}
+    100%{opacity:1;transform:scale(1);}
+  }
+  @keyframes page-in-iris{
+    0%{clip-path:circle(4% at 82% 0%);opacity:.5;}
+    100%{clip-path:circle(150% at 82% 0%);opacity:1;}
+  }
+  @keyframes page-in-wipe{
+    from{clip-path:inset(0 100% 0 0);}
+    to{clip-path:inset(0 0 0 0);}
+  }
+  @keyframes sweep-down{
+    0%{top:-2%;opacity:0;}
+    12%{opacity:1;}
+    88%{opacity:1;}
+    100%{top:101%;opacity:0;}
+  }
+  @keyframes led-confirm{
+    0%{box-shadow:0 0 2px var(--accent);}
+    35%{box-shadow:0 0 12px var(--accent);}
+    100%{box-shadow:0 0 6px var(--accent);}
+  }
+
+  .lcd::before{animation:pulse-dot 2.6s ease-in-out infinite;}
+
+  [data-transition="sweep"] [data-page]{animation:page-in-sweep .38s cubic-bezier(.22,1,.36,1);}
+  [data-transition="fade"] [data-page]{animation:page-in-fade .2s ease;}
+  [data-transition="slide"] [data-page]{animation:page-in-slide .26s cubic-bezier(.22,1,.36,1);}
+  [data-transition="press"] [data-page]{animation:page-in-press .16s ease-out;}
+  [data-transition="iris"] [data-page]{animation:page-in-iris .45s ease-out;}
+  [data-transition="wipe"] [data-page]{animation:page-in-wipe .32s cubic-bezier(.65,0,.35,1);}
+  [data-transition="none"] [data-page]{animation:none;}
+
+  .scan-sweep{position:absolute;left:0;right:0;top:0;height:2px;z-index:45;pointer-events:none;opacity:0;
+    background:linear-gradient(90deg, transparent, var(--accent) 15%, var(--accent) 85%, transparent);
+    box-shadow:0 0 14px 1px var(--accent);}
+  .scan-sweep.run{animation:sweep-down .46s cubic-bezier(.6,0,.4,1);}
+
+  .navbtn.confirm .led, .navpill.confirm{animation:led-confirm .4s ease-out;}
+
+  .cell-knob{transition:transform .22s cubic-bezier(.22,1,.36,1);}
+  .cell{transition:transform .15s ease, border-color .15s ease;}
+  .cell:hover{transform:translateY(-2px);border-color:var(--accent);}
+  .cell:hover .cell-knob{transform:rotate(22deg);}
+  .cell:active{transform:translateY(0);}
+
+  a.pf-card,a.blog-row{text-decoration:none;}
+  a.pf-card{transition:transform .15s ease, border-color .15s ease;}
+  a.pf-card:hover{transform:translateY(-2px);border-color:var(--knob-lo, var(--accent));}
+  a.pf-card:hover .cell-knob{transform:rotate(22deg);}
+  a.pf-card:active{transform:translateY(0);}
+
+  .btn-key:active{transform:translateY(2px);}
+  .btn-key.primary:active{box-shadow:0 1px 0 #b23608, inset 0 1px 3px rgba(0,0,0,.2);}
+
+  .navpill{transition:background .15s ease, color .15s ease;}
+  .navpill:not(.current):hover{background:rgba(0,0,0,.05);}
+
+  .blog-row{transition:background .15s ease, padding-left .15s ease;}
+  a.blog-row:hover{background:var(--panel);padding-left:8px;}
+
+  .contact-row{transition:background .15s ease, border-color .15s ease;}
+  .contact-row:hover{background:var(--bg);border-left-color:var(--knob-lo, var(--accent));}
+  .contact-row:hover .cell-knob{transform:rotate(22deg);}
+  .contact-row:hover .contact-row-arrow{transform:translate(2px,-2px);color:var(--knob-lo, var(--accent));}
+  .contact-row-arrow{transition:transform .15s ease, color .15s ease;display:inline-block;}
+
+  .download-btn{transition:filter .12s ease, transform .12s ease;}
+  .download-btn:hover{filter:brightness(1.2);}
+  .download-btn:active{transform:translateY(1px);}
+
+  .back-link{transition:color .12s ease, gap .12s ease;}
+  .back-link:hover{gap:9px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
+  }
+</style>
+
+<div class="picker-bar">
+  <div class="picker-group">
+    <span class="picker-label">BODY</span>
+    <button data-set-style="grey" class="on">Grey · TP-7 / Sidekick</button>
+    <button data-set-style="cream">Cream · EP-133</button>
+  </div>
+  <div class="picker-group">
+    <span class="picker-label">PAGE</span>
+    <select id="page-select">
+      <option value="home">Home</option>
+      <option value="studio">Studio</option>
+      <option value="studio-project">Studio — Project detail</option>
+      <option value="blog">Blog</option>
+      <option value="blog-post">Blog — Post detail</option>
+      <option value="portfolio">Portfolio</option>
+      <option value="portfolio-project">Portfolio — Project detail</option>
+      <option value="contact">Contact</option>
+    </select>
+    <span class="refnote">or click nav / cards / "back" links inside the mockup</span>
+  </div>
+</div>
+
+<div class="stage">
+<div class="rig" data-style="grey" data-transition="press">
+  <div class="device">
+    <span class="hole tl"></span><span class="hole tr"></span><span class="hole bl"></span><span class="hole br"></span>
+    <div class="scan-sweep"></div>
+
+    <div class="tech-strip">
+      <div class="tech-strip-left">
+        <span><span class="model">GK—01</span> / SELF-INITIATED WORK</span>
+        <span class="tech-dot"></span>
+        <span>STILL SHIPPING</span>
+      </div>
+      <div class="roundel"><span class="roundel-mark"></span><span class="roundel-text">gavin makes stuff</span></div>
+    </div>
+
+    <div class="device-body">
+      <div class="top-nav">
+        <div>
+          <div class="navbtns">
+            <a class="navbtn" data-section="home" href="#"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg><span class="dot"></span></a>
+            <a class="navbtn" data-section="studio" href="#"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="dot"></span></a>
+            <a class="navbtn" data-section="portfolio" href="#"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg><span class="dot"></span></a>
+            <a class="navbtn" data-section="blog" href="#"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="dot"></span></a>
+            <a class="navbtn" data-section="contact" href="#"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M22 6 12 13 2 6"/></svg><span class="dot"></span></a>
+          </div>
+          <div class="navcaps"><span class="navcap">Home</span><span class="navcap">Studio</span><span class="navcap">Folio</span><span class="navcap">Blog</span><span class="navcap">Contact</span></div>
+        </div>
+        <div class="navpill-row">
+          <a class="navpill" data-section="home" href="#">Home</a><a class="navpill" data-section="studio" href="#">Studio</a><a class="navpill" data-section="portfolio" href="#">Portfolio</a><a class="navpill" data-section="blog" href="#">Blog</a><a class="navpill" data-section="contact" href="#">Contact</a>
+        </div>
+      </div>
+
+      <div data-page="home" data-section="home">
+        <div class="hero">
+          <div>
+            <div class="hero-eyebrow-row"><span class="lcd">TODAY <span class="lcd-sep">/</span> DESIGN + BUILD</span><span class="lcd-badge">YVR</span></div>
+            <h1 class="wordmark">GAVIN<br>MAKES<br>STUFF.</h1>
+            <p class="wordmark-sub">designer &amp; maker — est. 2019</p>
+            <p class="hero-desc">UI/UX design, hardware builds, and the occasional thing that catches fire a little.</p>
+          </div>
+          <div class="dial-wrap">
+            <span class="accent-tag">V</span>
+            <div class="dial-ring"></div>
+            <div class="dial-diag"></div>
+            <div class="dial-mark"></div>
+            <span class="dial-spec a">49.36°N</span>
+            <span class="dial-spec b">123.11°W</span>
+            <div class="dial-hub"><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+
+        <div class="bento-main">
+          <a class="cell" data-goto="studio" href="#">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">01 / workshop</span>
+            <p class="cell-name">The Studio</p>
+            <p class="cell-desc">Projects, builds, files to download.</p>
+          </a>
+          <a class="cell" data-goto="portfolio" href="#">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">02 / professional</span>
+            <p class="cell-name">Portfolio</p>
+            <p class="cell-desc">Selected work &amp; problems solved.</p>
+          </a>
+          <a class="cell" data-goto="blog" href="#">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">03 / writing</span>
+            <p class="cell-name">Blog</p>
+            <p class="cell-desc">Stories behind the builds.</p>
+          </a>
+          <a class="cell" data-goto="contact" href="#">
+            <span class="cell-knob"></span>
+            <span class="cell-caption">04 / say hi</span>
+            <p class="cell-name">Contact</p>
+            <p class="cell-desc">LinkedIn, Dribbble, email.</p>
+          </a>
+        </div>
+
+        <p class="creations-label">Creations</p>
+        <div class="creations-row">
+          <a class="creation" href="#"><div class="creation-top"><span class="creation-knob"></span><span class="status-pill hot">Private</span></div><div><p class="creation-name">Scout</p><p class="creation-desc">AI-powered job analysis</p></div></a>
+          <a class="creation" href="#"><div class="creation-top"><span class="creation-knob"></span><span class="status-pill">Open</span></div><div><p class="creation-name">TerraLens</p><p class="creation-desc">ESG data tracker</p></div></a>
+          <a class="creation" href="#"><div class="creation-top"><span class="creation-knob"></span><span class="status-pill">WIP</span></div><div><p class="creation-name">Anami</p><p class="creation-desc">Daily reading briefing</p></div></a>
+          <a class="creation" href="#"><div class="creation-top"><span class="creation-knob"></span><span class="status-pill">WIP</span></div><div><p class="creation-name">Balance</p><p class="creation-desc">Finance auto-categorized</p></div></a>
+          <a class="creation" href="#"><div class="creation-top"><span class="creation-knob"></span><span class="status-pill hot">Private</span></div><div><p class="creation-name">Marginalia</p><p class="creation-desc">Kindle highlight archive</p></div></a>
+        </div>
+      </div>
+
+      <div data-page="portfolio" data-section="portfolio" hidden>
+        <div class="pf-hero">
+          <div class="pf-avatar">GK</div>
+          <div>
+            <span class="lcd" style="margin-bottom:10px;">DESIGN + BUILD</span>
+            <h2 class="pf-name">Gavin Krohman</h2>
+            <p class="pf-summary">My background splits pretty evenly between tech and creative work — not a technologist who dabbles in design, or the other way around.</p>
+          </div>
+        </div>
+
+        <div class="pf-section">
+          <p class="pf-heading">Selected Projects</p>
+          <div class="pf-grid">
+            <a class="pf-card" data-goto="portfolio-project" href="#" style="--knob-hi:#7CA98F;--knob-lo:#355647;">
+              <div class="pf-card-head"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">01 / terralens</span></div>
+              <p class="pf-card-title">Filling in ESG Gaps in Mining</p>
+              <p class="pf-card-desc">An ESG data platform for resource-constrained junior mining companies to organize disclosures and close reporting gaps.</p>
+              <div class="pf-tags"><span class="pf-tag hot">Product design</span><span class="pf-tag">Data platform</span></div>
+            </a>
+            <a class="pf-card" href="#" style="--knob-hi:#4FA9C4;--knob-lo:#005A7A;">
+              <div class="pf-card-head"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">02 / scout</span></div>
+              <p class="pf-card-title">A Personal Job Search Companion</p>
+              <p class="pf-card-desc">A locally hosted job search dashboard that uses AI to analyze job postings against a personal resume and history.</p>
+              <div class="pf-tags"><span class="pf-tag hot">AI tooling</span><span class="pf-tag">UX</span></div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div data-page="portfolio-project" data-section="portfolio" hidden>
+        <div class="detail-head">
+          <a class="back-link" href="#" data-goto="portfolio">‹ back to portfolio</a>
+          <div class="detail-eyebrow"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">01 / terralens</span></div>
+          <h1 class="detail-title">Filling in ESG Gaps in Mining</h1>
+          <div class="pf-tags"><span class="pf-tag hot">Product design</span><span class="pf-tag">Data platform</span><span class="pf-tag">B2B SaaS</span></div>
+        </div>
+        <div class="detail-body">
+          <p>TerraLens is an ESG data platform designed for resource-constrained junior mining companies to organize disclosures and close reporting gaps that larger operators solve with dedicated compliance teams.</p>
+          <p>I led the product design end to end — mapping the reporting workflow with two mining operators, structuring the data model behind their disclosures, and designing the dashboard that turns scattered spreadsheets into an auditable ESG record.</p>
+          <div class="gallery-plate"><div class="grille"></div><span>PRODUCT SCREENS — 01/04</span></div>
+        </div>
+      </div>
+
+      <div data-page="studio" data-section="studio" hidden>
+        <div class="hero-sub">
+          <div class="hero-eyebrow-row"><span class="lcd">WORKSHOP <span class="lcd-sep">/</span> BLOG</span></div>
+          <h1 class="wordmark">THE<br>STUDIO.</h1>
+          <p class="hero-desc">Projects, builds, and the occasional thing that catches fire a little. Grab the files, follow along, build your own.</p>
+          <div class="actions-row">
+            <a class="btn-key primary" href="#">Browse projects</a>
+            <a class="btn-key" href="#">Read the blog</a>
+          </div>
+        </div>
+
+        <p class="creations-label">Recent Projects</p>
+        <div class="pf-grid pf-grid-3" style="margin-bottom:26px;">
+          <a class="pf-card" data-goto="studio-project" href="#" style="--knob-hi:#7CA98F;--knob-lo:#355647;">
+            <div class="pf-card-head"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">01 / terralens</span></div>
+            <p class="pf-card-title">TerraLens</p>
+            <p class="pf-card-desc">ESG data platform for junior mining companies.</p>
+          </a>
+          <a class="pf-card" href="#" style="--knob-hi:#D8BC8A;--knob-lo:#7A5C2E;">
+            <div class="pf-card-head"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">02 / jorgen</span></div>
+            <p class="pf-card-title">Jorgen and His Times</p>
+            <p class="pf-card-desc">Passing down the family story as a real book.</p>
+          </a>
+          <a class="pf-card" href="#" style="--knob-hi:#4FA9C4;--knob-lo:#005A7A;">
+            <div class="pf-card-head"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">03 / scout</span></div>
+            <p class="pf-card-title">Scout</p>
+            <p class="pf-card-desc">A personal job search companion.</p>
+          </a>
+        </div>
+
+        <p class="creations-label">Latest From The Blog</p>
+        <div class="blog-rows" style="margin-bottom:10px;">
+          <a class="blog-row" data-goto="blog-post" href="#">
+            <span class="blog-date">08.04</span>
+            <div><p class="blog-row-title">How I Built a Personal Job Search Tool to Get Through a Career Change</p><p class="blog-row-desc">How a career change job search led to building a personal job search tool, a fit-scoring engine, and eventually Scout.</p></div>
+            <span class="blog-row-arrow">→</span>
+          </a>
+          <div class="blog-row">
+            <span class="blog-date">07.03</span>
+            <div><p class="blog-row-title">How I Turned My Great-Great-Grandfather's Immigration Story Into a Real Book</p><p class="blog-row-desc">I discovered my grandmother's typewritten account of her father immigrating from Norway, and turned it into something my family could hold.</p></div>
+            <span class="blog-row-arrow">→</span>
+          </div>
+        </div>
+      </div>
+
+      <div data-page="studio-project" data-section="studio" hidden>
+        <div class="detail-head">
+          <a class="back-link" href="#" data-goto="studio">‹ back to the studio</a>
+          <div class="detail-eyebrow"><span class="cell-knob" style="margin:0;"></span><span class="cell-caption" style="border:none;padding:0;margin:0;">01 / terralens</span></div>
+          <h1 class="detail-title">TerraLens — Filling in ESG Gaps in Mining</h1>
+          <div class="pf-tags"><span class="pf-tag hot">Web app</span><span class="pf-tag">Data platform</span></div>
+        </div>
+        <div class="detail-body">
+          <p>An ESG data platform built for resource-constrained junior mining companies to organize disclosures and close reporting gaps. This is the workshop write-up — how it's built, what it runs on, and what I'd change next.</p>
+          <div class="gallery-plate"><div class="grille"></div><span>SCREENSHOTS — 01/03</span></div>
+          <p class="creations-label" style="margin-top:0;">Downloads</p>
+          <div class="downloads-list">
+            <div class="download-row"><div><div class="download-label">Data model reference</div><div class="download-meta">PDF · 240 KB</div></div><a class="download-btn" href="#">Get</a></div>
+            <div class="download-row"><div><div class="download-label">Figma component kit</div><div class="download-meta">FIG · external link</div></div><a class="download-btn" href="#">Get</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div data-page="blog" data-section="blog" hidden>
+        <div class="hero-sub">
+          <div class="hero-eyebrow-row"><span class="lcd">THE STUDIO <span class="lcd-sep">/</span> BLOG</span></div>
+          <h1 class="wordmark">WRITE-UPS.</h1>
+          <p class="hero-desc">Stories behind the builds, lessons learned, and whatever else is on my mind.</p>
+        </div>
+        <div class="blog-rows">
+          <a class="blog-row" data-goto="blog-post" href="#">
+            <span class="blog-date">08.04</span>
+            <div><p class="blog-row-title">Building a Concert Scrapbook App</p><p class="blog-row-desc">Why a spreadsheet wasn't enough to track concert memories, and how building a personal archive turned into a real app.</p></div>
+            <span class="blog-row-arrow">→</span>
+          </a>
+          <div class="blog-row">
+            <span class="blog-date">07.03</span>
+            <div><p class="blog-row-title">How I Turned My Great-Great-Grandfather's Immigration Story Into a Real Book</p><p class="blog-row-desc">I discovered my grandmother's typewritten account of her father immigrating from Norway.</p></div>
+            <span class="blog-row-arrow">→</span>
+          </div>
+          <div class="blog-row">
+            <span class="blog-date">06.29</span>
+            <div><p class="blog-row-title">How I Built a Personal Job Search Tool to Get Through a Career Change</p><p class="blog-row-desc">How a career change job search led to building a personal job search tool, a fit-scoring engine, and eventually Scout.</p></div>
+            <span class="blog-row-arrow">→</span>
+          </div>
+        </div>
+      </div>
+
+      <div data-page="blog-post" data-section="blog" hidden>
+        <div class="detail-head">
+          <a class="back-link" href="#" data-goto="blog">‹ back to the blog</a>
+          <div class="detail-eyebrow"><span class="blog-date">08.04</span></div>
+          <h1 class="detail-title">How I Built a Personal Job Search Tool to Get Through a Career Change</h1>
+        </div>
+        <div class="detail-body">
+          <p>When I started actively job searching after a career change, I was drowning in tabs — thirty postings open at once, half of them re-reads, no way to tell which ones actually fit until I'd already written a cover letter.</p>
+          <p>So I built Scout: a locally hosted dashboard that pulls in postings and scores them against my own resume and history, so the tabs I keep open are the ones actually worth writing for.</p>
+          <div class="gallery-plate"><div class="grille"></div><span>SCOUT DASHBOARD</span></div>
+        </div>
+      </div>
+
+      <div data-page="contact" data-section="contact" hidden>
+        <div class="hero-sub">
+          <div class="hero-eyebrow-row"><span class="lcd">GET IN TOUCH</span></div>
+          <div class="contact-block">
+            <div class="pf-avatar" style="width:88px;height:88px;min-width:88px;font-size:1.5rem;">GK</div>
+            <div>
+              <h1 class="pf-name" style="margin:0 0 6px;">Gavin Krohman</h1>
+              <p class="hero-desc" style="margin:0;">Vancouver, BC</p>
+            </div>
+          </div>
+        </div>
+        <div class="contact-rows">
+          <a class="contact-row" href="#" style="--knob-hi:#FF9A6B;--knob-lo:#FF4B12;"><span class="cell-knob" style="margin:0;"></span><div><div class="contact-row-label">Email</div><div class="contact-row-value">gavinmakesstuff@gmail.com</div></div><span class="contact-row-arrow">↗</span></a>
+          <a class="contact-row" href="#" style="--knob-hi:#5B9FE0;--knob-lo:#0A66C2;"><span class="cell-knob" style="margin:0;"></span><div><div class="contact-row-label">LinkedIn</div><div class="contact-row-value">linkedin.com/in/gavin-krohman</div></div><span class="contact-row-arrow">↗</span></a>
+          <a class="contact-row" href="#" style="--knob-hi:#F08FB5;--knob-lo:#EA4C89;"><span class="cell-knob" style="margin:0;"></span><div><div class="contact-row-label">Dribbble</div><div class="contact-row-value">dribbble.com/GavinKrohman</div></div><span class="contact-row-arrow">↗</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="device-footer">
+      <span class="edge-label">MODEL GK·01 — GRID SYSTEM</span>
+      <div class="footer-mid"><span class="knurl"></span><span>© 2026 GAVIN KROHMAN</span></div>
+      <div class="footer-right">
+        <div class="barcode"><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:16px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span></div>
+        <span class="serial">GMS·2026·V1</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+  (function(){
+    var rig = document.querySelector('.rig');
+    var styleBtns = document.querySelectorAll('[data-set-style]');
+    var pageSelect = document.getElementById('page-select');
+
+    styleBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        rig.setAttribute('data-style', b.getAttribute('data-set-style'));
+        styleBtns.forEach(function(x){x.classList.toggle('on', x===b);});
+      });
+    });
+
+    var hasNavigated = false;
+    var sweep = document.querySelector('.scan-sweep');
+
+    function goTo(target){
+      rig.querySelectorAll('[data-page]').forEach(function(p){
+        p.hidden = p.getAttribute('data-page') !== target;
+      });
+      var section = (rig.querySelector('[data-page="'+target+'"]') || {}).getAttribute
+        ? rig.querySelector('[data-page="'+target+'"]').getAttribute('data-section')
+        : target;
+
+      if (hasNavigated && sweep && rig.getAttribute('data-transition') === 'sweep') {
+        sweep.classList.remove('run');
+        void sweep.offsetWidth; /* restart the keyframe */
+        sweep.classList.add('run');
+      }
+
+      rig.querySelectorAll('.navbtn, .navpill').forEach(function(n){
+        var isMatch = n.getAttribute('data-section') === section;
+        n.classList.toggle('current', isMatch);
+        if (isMatch && hasNavigated) {
+          n.classList.remove('confirm');
+          void n.offsetWidth;
+          n.classList.add('confirm');
+        }
+      });
+
+      hasNavigated = true;
+      if (pageSelect) pageSelect.value = target;
+      window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
+    }
+
+    if (pageSelect) {
+      pageSelect.addEventListener('change', function(){ goTo(pageSelect.value); });
+    }
+    rig.addEventListener('click', function(e){
+      var el = e.target.closest('[data-goto], .navbtn, .navpill');
+      if (!el) return;
+      e.preventDefault();
+      var target = el.getAttribute('data-goto') || el.getAttribute('data-section');
+      if (target) goTo(target);
+    });
+    goTo('home');
+  })();
+</script>
