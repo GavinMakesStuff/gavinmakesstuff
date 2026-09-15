@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Gavin makes stuff</title>
   <meta name="robots" content="noindex, nofollow">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
   <style>
-    :root{--ink:#0C0D0E;--ink-r:#131416;--ink-r2:#0F1011;--border:#1E2022;--border-h:#2C2F32;--red:#D93025;--paper:#F2EFE9;--muted:#6B7075;--radius:10px;--green:#16a34a;--amber:#ca8a04;}
+    /* Matches the public site's TE-hardware grey theme (css/styles.css) — same
+       tokens renamed to fit this file's existing variable names so every rule
+       below that already references var(--ink)/var(--paper)/etc. picks up the
+       new palette without a full rewrite. --ink is now a "sunken surface" tone
+       (inputs/textareas), not the page background — see --page-bg for that. */
+    :root{--page-bg:#D8D5CE;--ink:#CFCBC0;--ink-r:#E4E1D9;--ink-r2:#EDEAE2;--border:#C6C2B8;--border-h:#B6B2A6;--red:#FF4B12;--red-active:#B23608;--paper:#19180F;--muted:#726E62;--radius:10px;--green:#16a34a;--amber:#ca8a04;--font-label:'IBM Plex Mono',monospace;}
     *{box-sizing:border-box;margin:0;padding:0;}
-    html,body{background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+    html,body{background:var(--page-bg);color:var(--paper);font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
     h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-.02em;}
     a{color:var(--red);text-decoration:none;}
 
@@ -136,7 +141,7 @@
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--paper);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;white-space:nowrap;}
     .btn:hover{background:var(--border);}
     .btn-primary{background:var(--red);border-color:var(--red);color:#fff;}
-    .btn-primary:hover{background:#bc251c;}
+    .btn-primary:hover{background:var(--red-active);}
     .btn-ghost{background:var(--border);border-color:var(--muted);}
     .btn-danger{border-color:#e05555;color:#e05555;}
     .btn-danger:hover{background:rgba(224,85,85,.1);}

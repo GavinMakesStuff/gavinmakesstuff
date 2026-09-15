@@ -8,25 +8,41 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div id="site-nav-placeholder"></div>
+  <div class="page-stage">
+    <div class="device">
+      <span class="hole tl"></span><span class="hole tr"></span><span class="hole bl"></span><span class="hole br"></span>
 
-  <header class="hero">
-    <div class="container">
-      <p class="hero-eyebrow">The Studio</p>
-      <h1>Projects</h1>
-      <p class="lede">Everything built and shared so far. Click any card for the full write-up, photos, and files.</p>
+      <div class="tech-strip">
+        <div class="tech-strip-left">
+          <span><span class="model">GK—01</span> / SELF-INITIATED WORK</span>
+          <span class="tech-dot"></span>
+          <span>STILL SHIPPING</span>
+        </div>
+        <div class="roundel"><span class="roundel-mark"></span><span class="roundel-text">gavin makes stuff</span></div>
+      </div>
+
+      <div class="device-body">
+        <div id="site-nav-placeholder"></div>
+
+        <div class="hero-sub">
+          <div class="hero-eyebrow-row"><span class="lcd">THE STUDIO <span class="lcd-sep">/</span> ALL PROJECTS</span></div>
+          <h1 class="wordmark">PROJECTS.</h1>
+          <p class="hero-desc">Everything built and shared so far. Click any card for the full write-up, photos, and files.</p>
+        </div>
+
+        <div id="all-projects-grid" class="pf-grid pf-grid-3" style="margin-bottom:30px;"><div class="empty-state">Loading…</div></div>
+      </div>
+
+      <div class="device-footer">
+        <span class="edge-label">MODEL GK·01 — GRID SYSTEM</span>
+        <div class="footer-mid"><span class="knurl"></span><span id="footer-text">© 2026 Gavin makes stuff</span></div>
+        <div class="footer-right">
+          <div class="barcode"><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:16px"></span><span style="height:22px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:14px"></span><span style="height:22px"></span><span style="height:9px"></span></div>
+          <span class="serial">GMS·2026·V1</span>
+        </div>
+      </div>
     </div>
-  </header>
-
-  <section class="section" style="padding-top:0;">
-    <div class="container">
-      <div id="all-projects-grid" class="card-grid"><div class="empty-state">Loading…</div></div>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="container"><span id="footer-text">© 2026 Gavin makes stuff</span></div>
-  </footer>
+  </div>
 
   <script src="/js/shared.js"></script>
   <script>

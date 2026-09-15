@@ -30,8 +30,8 @@ a:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-of
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
 
 /* ============ page shell: everything sits inside the "device" ============ */
-.page-stage{padding:18px 16px 48px;display:flex;justify-content:center;}
-.device{width:100%;max-width:1180px;position:relative;overflow:hidden;background:var(--bg);
+.page-stage{padding:18px 24px 48px;display:flex;justify-content:center;}
+.device{width:100%;max-width:2000px;position:relative;overflow:hidden;background:var(--bg);
   border-radius:var(--chassis-radius);border:1px solid var(--line);box-shadow:var(--device-shadow);
   font-family:var(--font-body);display:flex;flex-direction:column;}
 .device *{box-sizing:border-box;}
