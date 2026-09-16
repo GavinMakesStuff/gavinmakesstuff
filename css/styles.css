@@ -74,9 +74,9 @@ a:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-of
 .lcd .lcd-sep{opacity:.5;}
 .lcd-badge{font-family:var(--font-label);font-size:.6rem;font-weight:700;background:var(--lcd-bg);color:var(--lcd-ink);border-radius:3px;padding:1px 5px;}
 .hero-eyebrow-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
-.wordmark{font-family:var(--font-display);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.4rem);line-height:.92;letter-spacing:-.005em;
-  color:transparent;-webkit-text-stroke:1.6px var(--ink);margin:0;
-  font-feature-settings:"liga" 0,"clig" 0;font-variant-ligatures:none;}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.4rem);line-height:.92;letter-spacing:.05em;
+  color:transparent;-webkit-text-stroke:1.2px var(--ink);margin:0;
+  font-feature-settings:"liga" 0,"clig" 0;font-variant-ligatures:none;font-kerning:none;}
 .wordmark-sub{font-family:var(--font-label);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:10px 0 22px;}
 .hero-desc{font-size:.86rem;color:var(--muted);line-height:1.65;max-width:420px;margin:0;}
 .accent-tag{position:absolute;top:2px;right:0;width:22px;height:22px;border-radius:4px;background:var(--accent);color:#fff;font-family:var(--font-label);
@@ -169,9 +169,13 @@ a.pf-card:active{transform:translateY(0);}
 .pf-tag.hot{background:var(--accent);color:#fff;}
 
 /* ---- sub-page hero (Studio / Blog / Contact — text only, no dial) ----
-   Same centered reading-column treatment as the detail pages, so these
-   don't pin to the left edge of the wide chassis either. */
-.hero-sub{padding:8px 0 22px;max-width:880px;margin-left:auto;margin-right:auto;}
+   Left-aligned by default (matches Home's hero and Portfolio's pf-hero,
+   both flush to the chassis's left edge) — just capped in width so lines
+   don't stretch the full chassis. Contact opts into centering instead
+   via .hero-sub--center (its content — an avatar + name — reads better
+   centered than a headline does). */
+.hero-sub{padding:8px 0 22px;max-width:880px;}
+.hero-sub--center{margin-left:auto;margin-right:auto;}
 .hero-sub .wordmark{font-size:clamp(2.1rem,5vw,3.2rem);}
 .actions-row{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
 .btn-key{font-family:var(--font-label);font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
