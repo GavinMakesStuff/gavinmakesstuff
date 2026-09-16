@@ -30,7 +30,7 @@ a:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-of
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
 
 /* ============ page shell: everything sits inside the "device" ============ */
-.page-stage{padding:18px 24px 48px;display:flex;justify-content:center;}
+.page-stage{padding:18px 24px 48px;display:flex;justify-content:center;min-height:100vh;min-height:100dvh;}
 .device{width:100%;max-width:2000px;position:relative;overflow:hidden;background:var(--bg);
   border-radius:var(--chassis-radius);border:1px solid var(--line);box-shadow:var(--device-shadow);
   font-family:var(--font-body);display:flex;flex-direction:column;}
@@ -74,8 +74,9 @@ a:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-of
 .lcd .lcd-sep{opacity:.5;}
 .lcd-badge{font-family:var(--font-label);font-size:.6rem;font-weight:700;background:var(--lcd-bg);color:var(--lcd-ink);border-radius:3px;padding:1px 5px;}
 .hero-eyebrow-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
-.wordmark{font-family:var(--font-display);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.4rem);line-height:.92;letter-spacing:-.02em;
-  color:transparent;-webkit-text-stroke:1.6px var(--ink);margin:0;}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.4rem);line-height:.92;letter-spacing:-.005em;
+  color:transparent;-webkit-text-stroke:1.6px var(--ink);margin:0;
+  font-feature-settings:"liga" 0,"clig" 0;font-variant-ligatures:none;}
 .wordmark-sub{font-family:var(--font-label);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:10px 0 22px;}
 .hero-desc{font-size:.86rem;color:var(--muted);line-height:1.65;max-width:420px;margin:0;}
 .accent-tag{position:absolute;top:2px;right:0;width:22px;height:22px;border-radius:4px;background:var(--accent);color:#fff;font-family:var(--font-label);
@@ -167,8 +168,10 @@ a.pf-card:active{transform:translateY(0);}
 .pf-tag:last-child{border-right:none;}
 .pf-tag.hot{background:var(--accent);color:#fff;}
 
-/* ---- sub-page hero (Studio / Blog / Contact — text only, no dial) ---- */
-.hero-sub{padding:8px 0 22px;}
+/* ---- sub-page hero (Studio / Blog / Contact — text only, no dial) ----
+   Same centered reading-column treatment as the detail pages, so these
+   don't pin to the left edge of the wide chassis either. */
+.hero-sub{padding:8px 0 22px;max-width:880px;margin-left:auto;margin-right:auto;}
 .hero-sub .wordmark{font-size:clamp(2.1rem,5vw,3.2rem);}
 .actions-row{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
 .btn-key{font-family:var(--font-label);font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
@@ -226,7 +229,7 @@ a.blog-row:hover{background:var(--panel);padding-left:8px;}
 
 /* ---- contact page ---- */
 .contact-block{display:flex;gap:22px;align-items:center;}
-.contact-rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:0 0 30px;max-width:640px;}
+.contact-rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:0 auto 30px;max-width:880px;}
 .contact-row{display:flex;align-items:center;gap:16px;padding:16px 18px 16px 15px;border-bottom:1px solid var(--line);border-left:3px solid transparent;background:var(--panel);text-decoration:none;transition:background .15s ease, border-color .15s ease;}
 .contact-row:last-child{border-bottom:none;}
 .contact-row:hover{background:var(--bg);border-left-color:var(--knob-lo, var(--accent));}
