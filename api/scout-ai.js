@@ -16,6 +16,8 @@
 //   'find-contact'           — HR/recruiting contact lookup via web_search. Tier-gated (1 unit).
 //   'parse-resume'           — extract profile fields from a resume. Free, rate-limited.
 //   'cover-letter'           — 3 cover-letter opening lines from an analyzed job. Tier-gated (1 unit).
+//   'analytics-consent'      — turn the opt-in insights program on/off. Free, rate-limited.
+//   'analytics-track'        — store whitelisted insight events for opted-in users. Free, rate-limited.
 //
 // Vercel env vars required:
 //   SCOUT_ANTHROPIC_API_KEY   — Anthropic API key
@@ -28,6 +30,7 @@ import {
   applyTierGate, refundTokens, verifyUser, parseJobsFromModelText, logAnalyzedJobs,
   checkFreeEndpointRateLimit,
 } from './_lib/scout-shared.js';
+import { handleConsent, handleTrack } from './_lib/scout-analytics.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -58,6 +61,8 @@ export default async function handler(req, res) {
     case 'find-contact': return handleFindContact(req, res);
     case 'parse-resume': return handleParseResume(req, res);
     case 'cover-letter': return handleCoverLetter(req, res);
+    case 'analytics-consent': return handleAnalyticsConsent(req, res);
+    case 'analytics-track':   return handleAnalyticsTrack(req, res);
     default:              return res.status(400).json({ error: 'Unknown action: ' + action });
   }
 }
@@ -379,4 +384,31 @@ Return ONLY a JSON array of exactly 3 strings, no markdown, no explanation.`;
     await refundTokens(supabase, user.id, gate.tokensDeducted, 'refund_api_error');
     return res.status(500).json({ error: 'Upstream API error: ' + err.message });
   }
+}
+
+// ══════════════════════════════════════════
+// ANALYTICS (opt-in insights) — logic lives in _lib/scout-analytics.js
+// ══════════════════════════════════════════
+async function handleAnalyticsConsent(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  const user = await verifyUser(supabase, req);
+  if (!user) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { limited } = await checkFreeEndpointRateLimit(supabase, user.id, 'analytics-consent', { windowMinutes: 5, maxCalls: 10 });
+  if (limited) return res.status(429).json({ error: 'Too many requests. Please wait a few minutes and try again.' });
+
+  const out = await handleConsent(supabase, user, req.body);
+  return res.status(out.status).json(out.body);
+}
+
+async function handleAnalyticsTrack(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  const user = await verifyUser(supabase, req);
+  if (!user) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { limited } = await checkFreeEndpointRateLimit(supabase, user.id, 'analytics-track', { windowMinutes: 5, maxCalls: 60 });
+  if (limited) return res.status(429).json({ error: 'Too many requests.' });
+
+  const out = await handleTrack(supabase, user, req.body);
+  return res.status(out.status).json(out.body);
 }

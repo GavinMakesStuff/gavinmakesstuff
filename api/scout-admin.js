@@ -9,8 +9,9 @@
 //     — token/user management. Requires a VIP JWT (unchanged from before).
 //   'analytics'
 //     — aggregate usage/demand analytics for scout/admin/analytics.html.
-//     Requires profiles.is_admin (a separate, narrower flag from VIP tier
-//     — see scout/db/2026-08-19-scout-admin-flag.sql). Every value
+//     Requires profiles.is_admin AND the ANALYTICS_ADMIN_USER_ID Vercel
+//     variable to match the caller; it fails closed (everyone gets 403)
+//     until that variable is set. Every value
 //     returned is a count/sum/average/ranked-list, never a row tied to a
 //     specific user.
 //   'rewrite'
@@ -20,7 +21,8 @@
 //     field, nothing for a visitor to paste or steal.
 
 import { createClient } from '@supabase/supabase-js';
-import { verifyAdmin, SCOUT_MODEL } from './_lib/scout-shared.js';
+import { verifyAdmin, verifyUser, SCOUT_MODEL } from './_lib/scout-shared.js';
+import { verifyAnalyticsAdmin } from './_lib/scout-analytics.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -37,7 +39,7 @@ export default async function handler(req, res) {
   // not an admin — a signed-in non-admin shouldn't be able to tell those
   // apart.
   if (action === 'analytics') {
-    const adminUser = await verifyAdmin(supabase, req);
+    const adminUser = await verifyAnalyticsAdmin(supabase, req, verifyUser);
     if (!adminUser) return res.status(403).json({ error: 'Not authorized' });
     return sendAnalytics(res);
   }
@@ -130,6 +132,8 @@ export default async function handler(req, res) {
       const { data: adjustments } = await supabase
         .from('admin_adjustments')
         .select('*')
+        // Never reveal who joined the Insights program (null reasons must stay).
+        .or('reason.is.null,reason.neq.analytics_opt_in_bonus')
         .order('created_at', { ascending: false })
         .limit(50);
 

@@ -98,12 +98,32 @@ async function loadUserProfile(userId) {
   const { data: weeklyUsed } = await _supa
     .rpc('get_weekly_usage', { p_user_id: userId });
 
+  // Consent state is read separately and fails soft: if the columns are not
+  // there yet (migration not run) sign-in must still work.
+  let analyticsConsent = false, analyticsBonusGranted = false, analyticsAvailable = false;
+  try {
+    const { data: c, error: cErr } = await _supa
+      .from('profiles')
+      .select('analytics_consent, analytics_bonus_granted_at, is_internal, is_admin')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!cErr && c) {
+      analyticsConsent      = !!c.analytics_consent;
+      // Internal (operator) accounts and VIPs are never offered the reward.
+      analyticsBonusGranted = !!c.analytics_bonus_granted_at || !!c.is_internal || !!c.is_admin || (profile?.tier === 'vip');
+      analyticsAvailable    = true;
+    }
+  } catch (e) { /* leave defaults */ }
+
   scoutUser = {
     id:         profile?.id         || userId,
     email:      profile?.email      || '',
     tier:       profile?.tier       || 'free',
     balance:    balance?.balance    || 0,
     weeklyUsed: weeklyUsed || 0,
+    analyticsConsent,
+    analyticsBonusGranted,
+    analyticsAvailable,
   };
 }
 

@@ -395,6 +395,17 @@
          time (toggled via setMobileView() in jobs.js); on desktop both show
          side by side and this bar stays hidden. -->
     <div class="detail-col-wrap">
+    <div id="insights-prompt" class="insights-prompt" role="region" aria-label="Optional insights program" hidden>
+      <div class="insights-prompt-text">
+        <strong>Help improve Scout, get 3 free tokens.</strong>
+        Share grouped, de-identified usage details. No names, emails or text you write. Off by default, and you can stop any time.
+        <a href="legal/privacy.html#insights" target="_blank" rel="noopener">Details</a>
+      </div>
+      <div class="insights-prompt-actions">
+        <button class="btn btn-primary btn-sm" onclick="Insights.setConsent(true)">Turn on and get 3 tokens</button>
+        <button class="btn btn-ghost btn-sm" onclick="Insights.dismissPrompt()">Not now</button>
+      </div>
+    </div>
     <button class="mobile-back-btn" onclick="setMobileView('list')"><i class="ti ti-arrow-left"></i> Back to results</button>
     <div class="detail-panel" id="detail-content">
 
@@ -645,6 +656,49 @@
           </div>
         </div>
 
+        <!-- Insights program (opt-in) -->
+        <div class="profile-card full-width" id="insights-card" hidden>
+          <div class="profile-card-title"><i class="ti ti-shield-lock"></i> Help improve Scout (optional)</div>
+          <p class="insights-lead">
+            Share grouped, de-identified information about how you use Scout so we can understand what job seekers need.
+            It is off unless you turn it on, and you can turn it off any time.
+            Right now, Scout only records that you opened the app. We will ask you again before collecting anything new.
+          </p>
+          <div class="insights-cols">
+            <div>
+              <div class="insights-heading">What may be shared over time</div>
+              <ul class="insights-list">
+                <li>Grouped details such as experience range, target role and industry category, and pay range</li>
+                <li>Grouped details about the jobs you analyze, and how well they matched</li>
+                <li>What you do in Scout (like saving or applying) and when, to the day or week</li>
+              </ul>
+            </div>
+            <div>
+              <div class="insights-heading">Never shared</div>
+              <ul class="insights-list">
+                <li>Your name, email or any contact details</li>
+                <li>Your notes, resume or cover letter text</li>
+                <li>Job posting text or links, exact location, or payment details</li>
+              </ul>
+            </div>
+          </div>
+          <p class="insights-note">
+            It is tied to a random code, not your account. Turning it off, or deleting your account, removes the link we use to connect it to your account.
+            Only combined statistics for groups of 10 or more people are ever shared with others.
+            <a href="legal/privacy.html#insights" target="_blank" rel="noopener">Read the details</a>.
+          </p>
+          <div class="insights-row">
+            <label class="insights-switch">
+              <input type="checkbox" class="insights-toggle" role="switch" aria-describedby="insights-status-text" onchange="Insights.setConsent(this.checked)"/>
+              <span class="insights-slider" aria-hidden="true"></span>
+              <span class="insights-switch-label">Share insights</span>
+            </label>
+            <span class="insights-status" id="insights-status-text" aria-live="polite">Off</span>
+          </div>
+          <div class="insights-reward"><i class="ti ti-gift"></i> Turn it on once and get <strong>3 free tokens</strong> as a thank-you.</div>
+          <div class="insights-reward-done" hidden><i class="ti ti-check"></i> You've received your 3-token thank-you.</div>
+        </div>
+
         <!-- Save bar -->
         <div class="profile-save-bar">
           <button class="btn btn-primary" onclick="saveProfile()"><i class="ti ti-check"></i> Save Profile</button>
@@ -761,6 +815,11 @@
     nav.onload = function() {
       var jobs = document.createElement('script');
       jobs.src = 'js/jobs.js';
+      jobs.onload = function() {
+        var insights = document.createElement('script');
+        insights.src = 'js/insights.js';
+        document.head.appendChild(insights);
+      };
       document.head.appendChild(jobs);
     };
     document.head.appendChild(nav);
