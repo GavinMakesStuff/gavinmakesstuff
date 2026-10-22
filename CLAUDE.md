@@ -5,7 +5,10 @@ Vercel (`outputDirectory: "."` — root of repo is what's served, not a `public/
 subfolder; an old `public/studio/` folder existed briefly after a partial rename
 and has since been merged into `studio/`).
 
-Repo root (local): `C:\Users\gkroh\Desktop\Apps\gmstuff3\gavinmakesstuff`
+Repo root (local): `C:\Users\gkroh\Documents\gavinmakesstuff`
+(previously `C:\Users\gkroh\Desktop\Apps\gmstuff3\gavinmakesstuff` — copied to the
+new path 2026-10-22; the old copy was left in place rather than deleted, so other
+in-flight sessions/tools pointed at the old path may still need to be redirected.)
 
 ## Format preferences
 - Deliver full files, not partial diffs or find/replace snippets, unless asked.
@@ -40,7 +43,7 @@ Repo root (local): `C:\Users\gkroh\Desktop\Apps\gmstuff3\gavinmakesstuff`
 /scout/                  Scout app — SEPARATE, edited outside this workflow,
                           local dev at C:\Users\gkroh\Desktop\Web Crawler\,
                           deployed repo at
-                          C:\Users\gkroh\Desktop\Apps\gmstuff3\gavinmakesstuff\scout\
+                          C:\Users\gkroh\Documents\gavinmakesstuff\scout\
 ```
 
 ## API functions (/api/)
