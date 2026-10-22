@@ -206,14 +206,31 @@ async function checkForMultiplePostings(texts) {
   return flags.findIndex(Boolean);
 }
 
+// Keep in sync with the copy in api/scout-ai.js (handleDetectMulti).
 function buildMultiPostingCheckPrompt(texts) {
-  return `You will be shown ${texts.length} block(s) of pasted text. Each block is SUPPOSED to be exactly one job posting, but sometimes a user accidentally pastes multiple different job postings concatenated together into one block (e.g. copied straight from a job board's search results page).
+  return `You will be shown ${texts.length} block(s) of pasted text. Each block is SUPPOSED to be exactly one job posting. Text copied from a job page with Ctrl+A also includes site navigation, menus, footers, cookie and legal links, "apply" buttons and company boilerplate. That is normal and is NOT a second posting.
 
-For each block, decide: does it contain more than one distinct job posting (different title/company/requirements repeated), or is it a single posting?
+For each block, decide whether it clearly contains two or more separate, complete job postings, each with its own title AND its own duties or requirements. Do NOT count any of these as extra postings:
+- the same job's title repeated (page heading, breadcrumb, "Apply for ...")
+- job titles mentioned only in passing ("reports to the Regional Manager", "works with the Sales Director", team or org-chart references)
+- sections of one posting (responsibilities, requirements, skills, benefits, travel, salary), including responsibilities grouped under sub-headings such as "On site" and "Office and remote" or "Day-to-day" and "Strategic", navigation links, footers, disclaimers or company descriptions
+- a list of "related jobs" or "similar jobs" that is only titles or links
 
-Return ONLY a JSON array of exactly ${texts.length} booleans, in order — true if that block contains multiple postings, false if it's a single posting. No markdown, no backticks, no explanation.
+Judge every block completely on its own. Blocks are unrelated to each other: they may be near-identical, from the same company, or share the same navigation, boilerplate and footer. Never compare blocks with each other, and never treat similarity between blocks as evidence that one of them contains multiple postings.
+
+When unsure, it is a single posting.
+
+Return ONLY a JSON array of exactly ${texts.length} booleans, in order. true only if that block clearly contains two or more separate complete postings, otherwise false. No markdown, no backticks, no explanation.
 
 ${texts.map((t,i)=>`--- BLOCK ${i+1} ---\n${String(t).slice(0,4000)}`).join('\n\n')}`;
+}
+
+// A multi-posting flag is a warning, never a dead end: both checks are
+// guesses (a Ctrl+A copy of one page also drags in nav/footer text), so the
+// user can always override. Billing is per textarea sent either way, so
+// overriding cannot cost more.
+function confirmAnalyzeAsSingle(idx) {
+  return confirm(`Posting ${idx + 1} may contain more than one job. If it's really a single posting (for example, extra page text got copied along with it), choose OK to analyze it anyway. Choose Cancel to split it into separate boxes first.`);
 }
 
 function parseFlagsArray(raw, expectedLen) {
@@ -245,25 +262,24 @@ async function analyzeJobs(overrideTexts, btnEl) {
     return;
   }
 
-  // Pass 1 — instant, no network. Hard reject on confident matches so no
-  // tokens are ever spent on an obviously-concatenated paste.
+  // Pass 1 — instant, no network. Warns on confident structural matches so
+  // an obviously-concatenated paste is caught before any tokens are spent,
+  // but the user can override (a single posting can trip it too).
   const regexIdx = texts.findIndex(detectMultiplePostings);
+  let userConfirmedSingle = false;
   if (regexIdx !== -1) {
-    showToast(`Posting ${regexIdx + 1} looks like it has more than one job pasted together — split each posting into its own box before analyzing.`);
-    return;
+    if (!confirmAnalyzeAsSingle(regexIdx)) return;
+    userConfirmedSingle = true;
   }
 
   // Pass 2 — cheap model check for multi-posting pastes the regex missed.
   // Skipped for queued auto-continuations (already checked when the user
-  // submitted them) and for anything already flagged/blocked above.
-  if (!overrideTexts) {
+  // submitted them) and when the user already confirmed a posting is single.
+  if (!overrideTexts && !userConfirmedSingle) {
     if (btnEl) { btnEl.disabled = true; btnEl.dataset.origHtml = btnEl.innerHTML; btnEl.innerHTML = '<i class="ti ti-loader-2"></i> Checking…'; }
     try {
       const flaggedIdx = await checkForMultiplePostings(texts);
-      if (flaggedIdx !== -1) {
-        showToast(`Posting ${flaggedIdx + 1} looks like it has more than one job — split each posting into its own box before analyzing.`);
-        return;
-      }
+      if (flaggedIdx !== -1 && !confirmAnalyzeAsSingle(flaggedIdx)) return;
     } catch (err) {
       console.warn('[Scout] multi-posting pre-check failed, proceeding anyway:', err);
     } finally {
@@ -1051,6 +1067,7 @@ function renderSavedCard(job, idx, isApplied) {
   const kw        = job.keywords||{};
   const rep       = job.companyReputation;
   const dateStr   = isApplied?'Applied '+new Date(job.appliedAt).toLocaleDateString():'Saved '+new Date(job.savedAt).toLocaleDateString();
+  const asBadge   = isApplied ? AppStatus.statusBadge(job) : null;
   const reqs      = (job.requirements||[]).map(r=>`<span class="chip chip-req">${escHtml(r)}</span>`).join(' ');
   const benefits  = (job.benefits||[]).map(b=>`<span class="benefit-pill">${escHtml(b)}</span>`).join(' ');
   const kwHard    = (kw.hardSkills||[]).map(k=>`<span class="chip chip-hard">${escHtml(k)}</span>`).join(' ');
@@ -1109,6 +1126,7 @@ function renderSavedCard(job, idx, isApplied) {
         <div class="dh-title">${escHtml(job.title)}</div>
         <div class="dh-company">${safeHref(job.companyUrl)?`<a href="${safeHref(job.companyUrl)}" target="_blank" rel="noopener">${escHtml(job.company)} ↗</a>`:escHtml(job.company)}</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:3px;font-family:var(--font-mono);">${dateStr}</div>
+        ${asBadge?`<div style="margin-top:5px;"><span class="as-badge as-tone-${asBadge.tone}">${escHtml(asBadge.label)}</span></div>`:''}
       </div>
       <div class="dh-actions">
         <button class="btn-icon${isStarred?' star-active':''}" onclick="toggleStarSaved(${idx},${isApplied})" title="Star">
@@ -1156,6 +1174,7 @@ function renderSavedCard(job, idx, isApplied) {
     ${(kwHard||kwSoft||kwInd||kwMissingSc)?`<div class="detail-section"><div class="ds-label" style="margin-bottom:10px;">Resume and Cover Letter Keywords</div>${kwHard?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Hard Skills</div><div class="chip-row">${kwHard}</div></div>`:''}${kwSoft?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;">Soft Skills</div><div class="chip-row">${kwSoft}</div></div>`:''}${kwInd?`<div style="margin-bottom:7px;"><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Industry Terms</div><div class="chip-row">${kwInd}</div></div>`:''}${kwMissingSc?`<div><div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:4px;">⚠ Missing from your resume</div><div class="chip-row">${kwMissingSc}</div></div>`:''}</div>`:''}
     ${repHtml}
     ${locHtml}
+    ${isApplied?AppStatus.renderStatusBlock(job, idx):''}
     <div class="detail-section">
       <div class="ds-label">Application Tracking</div>
       <div class="tracking-block">
@@ -1447,6 +1466,10 @@ ${job.summary || ''}`;
       contactLinkedIn: job.contactLinkedIn,
       manualPostingUrl:job.manualPostingUrl,
       notes:           job.notes,
+      appStatus:       job.appStatus,
+      interviews:      job.interviews,
+      finalDecision:   job.finalDecision,
+      interviewsOpen:  job.interviewsOpen,
       originalText:    postingText,
     };
     syncSavedJobs();
@@ -1538,6 +1561,61 @@ function updateTracking(idx,isApplied,field,value) {
   isApplied?syncAppliedJobs():syncSavedJobs();
   if(field==='followUpSent') showToast(value?'Follow up marked as sent.':'Follow up unmarked.');
   else if(field==='dateApplied'||field==='followUpDate') showToast('Date saved.');
+}
+
+// ══════════════════════════════════════════
+// APPLICATION STATUS (logic + markup in js/app-status.js)
+// Every control is editable/clearable at any time; a change re-renders only
+// that card so scroll position and other cards are untouched.
+// ══════════════════════════════════════════
+const _appStatusTimers = {};
+function renderAppliedCard(idx) {
+  const job = appliedJobs[idx];
+  if (!job) return;
+  const card = document.querySelector('[data-applied-idx="'+idx+'"]');
+  if (!card) { renderApplied(); return; }
+  const active = document.activeElement;
+  const label = (active && card.contains(active) && active.getAttribute) ? active.getAttribute('aria-label') : null;
+  card.innerHTML = renderSavedCard(job, idx, true);
+  if (label) document.querySelector('[data-applied-idx="'+idx+'"] [aria-label="'+label+'"]')?.focus();
+}
+function mutateAppStatus(idx, fn) {
+  const job = appliedJobs[idx];
+  if (!job) return false;
+  clearTimeout(_appStatusTimers[idx]);
+  const result = fn(job);
+  syncAppliedJobs();
+  renderAppliedCard(idx);
+  return result;
+}
+function onTier1Change(idx, value) {
+  const job = appliedJobs[idx];
+  if (job && value === 'rejected' && job.finalDecision && job.finalDecision !== 'rejected') {
+    const cur = AppStatus.FINAL_OPTIONS.find(o => o.value === job.finalDecision);
+    const name = cur ? cur.label : job.finalDecision;
+    if (!confirm('The final decision "'+name+'" will be replaced by Application Rejected. Continue?')) {
+      renderAppliedCard(idx);
+      return;
+    }
+  }
+  mutateAppStatus(idx, j => AppStatus.setTier1(j, value));
+}
+function onFinalDecision(idx, value)        { mutateAppStatus(idx, j => AppStatus.setFinalDecision(j, value)); }
+function onInterviewDate(idx, i, value) {
+  const job = appliedJobs[idx];
+  if (!job) return;
+  AppStatus.setInterviewDate(job, i, value);
+  clearTimeout(_appStatusTimers[idx]);
+  _appStatusTimers[idx] = setTimeout(() => { syncAppliedJobs(); renderAppliedCard(idx); }, 700);
+}
+function onInterviewCompleted(idx, i, done) { mutateAppStatus(idx, j => AppStatus.setInterviewCompleted(j, i, done)); }
+function onAddInterview(idx) {
+  const ok = mutateAppStatus(idx, j => AppStatus.addInterview(j));
+  if (ok === false) showToast('Maximum of '+AppStatus.MAX_INTERVIEWS+' interviews.');
+}
+function onRemoveInterview(idx, i) {
+  if (!confirm('Remove interview '+(i+1)+'?')) return;
+  mutateAppStatus(idx, j => AppStatus.removeInterview(j, i));
 }
 
 // ══════════════════════════════════════════
@@ -1677,6 +1755,7 @@ function copyJobData(job) {
     `REQUIREMENTS:   ${(job.requirements||[]).join(', ')}`,``,`BENEFITS:       ${(job.benefits||[]).join(', ')||'None listed'}`,``,
     `KEYWORDS:`,`  Hard Skills:    ${(kw.hardSkills||[]).join(', ')}`,`  Soft Skills:    ${(kw.softSkills||[]).join(', ')}`,`  Industry Terms: ${(kw.industryTerms||[]).join(', ')}`,``,
     `REPUTATION:     ${rep?.rating||'N/A'} — ${rep?.summary||'N/A'}`,``,
+    ...(appliedJobs.includes(job) ?AppStatus.copyLines(job).concat(['']) : []),
     `TRACKING:`,`  Date applied:     ${job.dateApplied||'Not set'}`,`  Follow up sent:   ${job.followUpSent?'Yes':'No'}`,
     `  Follow up date:   ${job.followUpDate||'Not set'}`,`  Contact name:     ${job.contactName||job.contact?.name||'Not set'}`,
     `  Contact email:    ${job.contactEmail||job.contact?.email||'Not set'}`,`  Contact LinkedIn: ${job.contactLinkedIn||'Not set'}`,`  Notes:            ${job.notes||'None'}`,

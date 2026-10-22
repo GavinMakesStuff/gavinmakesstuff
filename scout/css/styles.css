@@ -476,6 +476,25 @@ a:hover { text-decoration: underline; }
 .contact-result.not-found { color: var(--text-dim); font-style: italic; }
 
 /* ══════════════════════════════════════
+   APPLICATION STATUS (applied tab)
+   ══════════════════════════════════════ */
+.as-block .ds-label { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.as-tier { padding: 10px 0; border-bottom: 1px solid var(--border-dim); }
+.as-tier:first-child { padding-top: 0; }
+.as-tier:last-child { border-bottom: none; padding-bottom: 0; }
+.as-tier-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 7px; }
+.as-count { font-weight: 600; color: var(--text-dim); margin-left: 4px; }
+.as-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.as-iv-label { font-size: 12px; font-weight: 700; color: var(--text-body); min-width: 84px; }
+.as-note { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.as-badge { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.as-tone-good  { background: var(--green-bg);  color: var(--green); border-color: var(--green-dim); }
+.as-tone-bad   { background: var(--red-bg);    color: var(--red);   border-color: var(--red-dim); }
+.as-tone-teal  { background: var(--teal-light); color: var(--teal); border-color: var(--teal-glow); }
+.as-tone-amber { background: var(--amber-bg);  color: var(--amber); border-color: var(--amber-dim); }
+.as-tone-muted { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+/* ══════════════════════════════════════
    PROFILE FULL PAGE
    ══════════════════════════════════════ */
 .profile-page { flex: 1; overflow-y: auto; background: var(--bg); display: flex; flex-direction: column; }

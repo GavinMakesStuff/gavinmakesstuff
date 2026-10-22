@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Accessibility Statement | Scout</title>
+  <link rel="icon" type="image/png" href="../media/scoutfavicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #F4F6F8; --surface: #FFFFFF; --border: #D0D7DD;
+      --teal: #005A7A; --text: #1A2B38; --text-body: #2C3E4A; --text-muted: #3A5A6E;
+      --font-ui: 'Nunito', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text-body); font-family: var(--font-ui); margin: 0; line-height: 1.7; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+    a { color: var(--teal); }
+    .logo-row { display:flex; align-items:center; gap:10px; margin-bottom: 32px; }
+    .logo-row .name { font-size: 1.3rem; font-weight: 800; color: var(--teal); }
+    h1 { color: var(--text); font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; }
+    .updated { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 32px; }
+    h2 { color: var(--text); font-size: 1.05rem; font-weight: 800; margin-top: 36px; margin-bottom: 10px; }
+    p, li { font-size: 0.95rem; }
+    ul { padding-left: 20px; }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 20px 0; font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-row">
+    <a href="../app.html" class="name">Scout</a>
+  </div>
+
+  <h1>Accessibility Statement</h1>
+  <div class="updated">Last updated: August 26, 2026</div>
+
+  <p>Scout is operated by Gavin Krohman, an individual sole proprietor based in Vancouver, British Columbia, Canada. We want Scout to be usable by as many people as possible, including people with disabilities, and we're committed to meeting the Web Content Accessibility Guidelines (WCAG) 2.1 at Level AA.</p>
+
+  <h2>1. Conformance Target</h2>
+  <p>We're targeting WCAG 2.1 Level AA across Scout's public pages and the core app. This is an ongoing goal rather than a guarantee — as a small, solo-operated tool, Scout hasn't had a full independent accessibility audit, and some areas may not yet fully conform.</p>
+
+  <h2>2. Measures We Take</h2>
+  <ul>
+    <li>Semantic HTML structure and heading hierarchy on public and app pages.</li>
+    <li>Sufficient color contrast between text and background in Scout's teal/sand palette.</li>
+    <li>Keyboard-operable interactive elements (forms, buttons, links) where standard HTML controls are used.</li>
+    <li>Readable, resizable text set in the Nunito typeface, without relying on fixed pixel sizing that blocks browser zoom.</li>
+  </ul>
+
+  <h2>3. Known Limitations</h2>
+  <p>Scout hasn't been through a formal accessibility audit, so there may be gaps we're not yet aware of — for example around screen-reader labeling on some interactive analysis results, or focus handling in dynamic UI states. We're actively working to identify and close these gaps over time.</p>
+
+  <h2>4. Reporting an Issue</h2>
+  <p>If you encounter an accessibility barrier while using Scout, please let us know — specific details (the page, what you were trying to do, and your browser/assistive technology) help us fix it faster. Email <a href="mailto:gavinmakesstuff@gmail.com">gavinmakesstuff@gmail.com</a> and we'll respond as quickly as we can.</p>
+
+  <h2>5. Changes to This Statement</h2>
+  <p>We may update this statement as Scout's accessibility work progresses. If we make material changes, we'll update the date above.</p>
+
+  <div class="box">This statement reflects a good-faith, in-progress effort by a small, solo-operated tool. It hasn't been reviewed by an accessibility professional or lawyer — if Scout grows, a formal audit against WCAG 2.1 AA is worth commissioning.</div>
+</div>
+</body>
+</html>

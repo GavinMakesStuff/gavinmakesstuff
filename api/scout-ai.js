@@ -174,11 +174,20 @@ async function handleDetectMulti(req, res) {
     return res.status(429).json({ error: 'Too many requests. Please wait a few minutes and try again.' });
   }
 
-  const prompt = `You will be shown ${texts.length} block(s) of pasted text. Each block is SUPPOSED to be exactly one job posting, but sometimes a user accidentally pastes multiple different job postings concatenated together into one block (e.g. copied straight from a job board's search results page).
+  // Keep in sync with buildMultiPostingCheckPrompt in scout/js/jobs.js.
+  const prompt = `You will be shown ${texts.length} block(s) of pasted text. Each block is SUPPOSED to be exactly one job posting. Text copied from a job page with Ctrl+A also includes site navigation, menus, footers, cookie and legal links, "apply" buttons and company boilerplate. That is normal and is NOT a second posting.
 
-For each block, decide: does it contain more than one distinct job posting (different title/company/requirements repeated), or is it a single posting?
+For each block, decide whether it clearly contains two or more separate, complete job postings, each with its own title AND its own duties or requirements. Do NOT count any of these as extra postings:
+- the same job's title repeated (page heading, breadcrumb, "Apply for ...")
+- job titles mentioned only in passing ("reports to the Regional Manager", "works with the Sales Director", team or org-chart references)
+- sections of one posting (responsibilities, requirements, skills, benefits, travel, salary), including responsibilities grouped under sub-headings such as "On site" and "Office and remote" or "Day-to-day" and "Strategic", navigation links, footers, disclaimers or company descriptions
+- a list of "related jobs" or "similar jobs" that is only titles or links
 
-Return ONLY a JSON array of exactly ${texts.length} booleans, in order — true if that block contains multiple postings, false if it's a single posting. No markdown, no backticks, no explanation.
+Judge every block completely on its own. Blocks are unrelated to each other: they may be near-identical, from the same company, or share the same navigation, boilerplate and footer. Never compare blocks with each other, and never treat similarity between blocks as evidence that one of them contains multiple postings.
+
+When unsure, it is a single posting.
+
+Return ONLY a JSON array of exactly ${texts.length} booleans, in order. true only if that block clearly contains two or more separate complete postings, otherwise false. No markdown, no backticks, no explanation.
 
 ${texts.map((t, i) => `--- BLOCK ${i + 1} ---\n${String(t).slice(0, DETECT_MAX_CHARS)}`).join('\n\n')}`;
 

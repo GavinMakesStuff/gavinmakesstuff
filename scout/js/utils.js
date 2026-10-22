@@ -26,32 +26,66 @@ let userProfile = JSON.parse(localStorage.getItem('scout-profile') || 'null') ||
 // account (not the browser) is the real source of truth now, synced via
 // these. No-op in local/stub dev mode (no _supa global) or before a
 // session exists; localStorage still gets written either way.
+//
+// Writes are serialized per table (js/sync-queue.js): calls fire un-awaited
+// from many places, and overlapping delete-then-insert runs used to collide on
+// the (user_id, job_key) unique constraint and fail silently. Now a run never
+// overlaps another; edits made mid-run collapse into one follow-up run that
+// reads the latest list. Each run upserts what is present, THEN deletes only
+// rows that are gone, so the account is never empty partway through (closing
+// the tab mid-sync can leave a harmless superset, never lost data), and every
+// step's error is checked instead of ignored.
+const _syncWarned = { scout_saved_jobs: false, scout_applied_jobs: false };
+
+async function _syncJobsTable(table, getJobs) {
+  const uid   = scoutSession.user.id;
+  const stamp = new Date().toISOString();
+  const rows  = SyncQueue.dedupeByKey(
+    getJobs().map(j => ({ user_id: uid, job_key: jobKey(j), job_data: j, updated_at: stamp }))
+  );
+
+  if (rows.length) {
+    const { error } = await _supa.from(table).upsert(rows, { onConflict: 'user_id,job_key' });
+    if (error) throw error;
+  }
+
+  const { data: existing, error: listError } = await _supa.from(table).select('job_key').eq('user_id', uid);
+  if (listError) throw listError;
+  const stale = SyncQueue.keysToDelete((existing || []).map(r => r.job_key), rows.map(r => r.job_key));
+  for (const keys of SyncQueue.chunk(stale, 50)) {
+    const { error } = await _supa.from(table).delete().eq('user_id', uid).in('job_key', keys);
+    if (error) throw error;
+  }
+}
+
+function _makeJobsSync(table, getJobs, label) {
+  return SyncQueue.createSerialRunner(
+    async () => {
+      if (typeof _supa === 'undefined' || !scoutSession?.user?.id) return;
+      await _syncJobsTable(table, getJobs);
+      _syncWarned[table] = false;
+    },
+    e => {
+      console.error('[Scout] Failed to sync ' + label + ' to account:', e);
+      if (!_syncWarned[table]) {
+        _syncWarned[table] = true;
+        showToast("Couldn't save your " + label + " to your account. They're kept on this device and will retry on your next change.", 6000);
+      }
+    }
+  );
+}
+
+const _runSavedSync   = _makeJobsSync('scout_saved_jobs',   () => savedJobs,   'saved jobs');
+const _runAppliedSync = _makeJobsSync('scout_applied_jobs', () => appliedJobs, 'applied jobs');
+
 async function syncSavedJobs() {
   localStorage.setItem('scout-saved', JSON.stringify(savedJobs));
-  if (typeof _supa === 'undefined' || !scoutSession?.user?.id) return;
-  const uid = scoutSession.user.id;
-  try {
-    await _supa.from('scout_saved_jobs').delete().eq('user_id', uid);
-    if (savedJobs.length) {
-      await _supa.from('scout_saved_jobs').insert(
-        savedJobs.map(j => ({ user_id: uid, job_key: jobKey(j), job_data: j }))
-      );
-    }
-  } catch (e) { console.error('[Scout] Failed to sync saved jobs to account:', e); }
+  return _runSavedSync();
 }
 
 async function syncAppliedJobs() {
   localStorage.setItem('scout-applied', JSON.stringify(appliedJobs));
-  if (typeof _supa === 'undefined' || !scoutSession?.user?.id) return;
-  const uid = scoutSession.user.id;
-  try {
-    await _supa.from('scout_applied_jobs').delete().eq('user_id', uid);
-    if (appliedJobs.length) {
-      await _supa.from('scout_applied_jobs').insert(
-        appliedJobs.map(j => ({ user_id: uid, job_key: jobKey(j), job_data: j }))
-      );
-    }
-  } catch (e) { console.error('[Scout] Failed to sync applied jobs to account:', e); }
+  return _runAppliedSync();
 }
 
 async function syncJobProfile() {

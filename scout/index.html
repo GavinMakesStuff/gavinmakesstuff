@@ -3,6 +3,19 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <script>
+    // A magic-link sign-in belongs in the app, not on this marketing page.
+    // Supabase falls back to the Site URL (this page) whenever the link's
+    // redirect address isn't on its allow-list, and this page has no sign-in
+    // code, so the tokens in the URL would be ignored and the user would stay
+    // signed out. Forward them to app.html (hash and query intact) so the app
+    // can complete the sign-in. Runs before first paint so there is no flash.
+    (function () {
+      var h = location.hash, q = location.search;
+      var hasTokens = /[#&](access_token|error_code|error_description)=/.test(h) || /[?&](code|error_code)=/.test(q);
+      if (hasTokens) location.replace('app.html' + q + h);
+    })();
+  </script>
   <title>Scout | Stop guessing which jobs are worth your time</title>
   <meta name="description" content="Scout scores every job posting against your real profile, checking missing keywords, red flags, and company reputation before you spend an hour on an application that was never going to call back."/>
   <link rel="icon" type="image/png" href="media/scoutfavicon.png"/>
@@ -301,6 +314,7 @@
       <a href="contact.html">Contact</a>
       <a href="legal/terms.html">Terms</a>
       <a href="legal/privacy.html">Privacy</a>
+      <a href="legal/accessibility.html">Accessibility</a>
     </div>
   </div>
 </footer>
