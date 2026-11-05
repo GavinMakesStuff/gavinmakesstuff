@@ -2,8 +2,8 @@
   "posts": [
     {
       "id": "living-room",
-      "status": "published",
-      "draft": false,
+      "status": "draft",
+      "draft": true,
       "scheduledAt": "",
       "title": "design",
       "date": "2026-11-05",
