@@ -656,9 +656,13 @@ function resetFormViews(){
 /* ── API helper ── */
 async function callApi(payload){
   var res=await fetch('/api/manage-content',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentToken},body:JSON.stringify(payload)});
-  var data=await res.json();
-  if(!res.ok)throw new Error(data.error||'Request failed');
-  return data;
+  var text='',data=null;
+  try{text=await res.text();data=text?JSON.parse(text):{};}catch(e){data=null;}
+  if(!res.ok){
+    if(res.status===413)throw new Error('That is too large for the server (limit is about 4 MB per request). Photos are shrunk automatically; for other files, use a smaller one.');
+    throw new Error((data&&data.error)||('Request failed ('+res.status+')'));
+  }
+  return data||{};
 }
 
 /* ── Status ── */
@@ -828,6 +832,76 @@ function fileToBase64(file){
   });
 }
 
+/* Vercel rejects request bodies over ~4.5 MB and base64 adds a third, so raw files
+   must stay under ~3.2 MB. Photos are resized (max 1920px) and re-encoded as WebP
+   here, the same shrink the server does later, so a phone photo never hits the cap. */
+var UPLOAD_LIMIT_BYTES=3200000;
+async function shrinkImage(file){
+  if(!/^image\//.test(file.type)||/svg|gif/.test(file.type))return null;
+  var bmp;
+  try{bmp=await createImageBitmap(file,{imageOrientation:'from-image'});}
+  catch(e){
+    bmp=await new Promise(function(res,rej){var img=new Image();img.onload=function(){res(img);};img.onerror=rej;img.src=URL.createObjectURL(file);});
+  }
+  var w=bmp.width||bmp.naturalWidth,h=bmp.height||bmp.naturalHeight;
+  var scale=Math.min(1,1920/Math.max(w,h));
+  var cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
+  var canvas=document.createElement('canvas');canvas.width=cw;canvas.height=ch;
+  canvas.getContext('2d').drawImage(bmp,0,0,cw,ch);
+  if(bmp.close)bmp.close();
+  var blob=await new Promise(function(res){canvas.toBlob(res,'image/webp',.82);});
+  var ext='webp';
+  if(!blob||blob.type!=='image/webp'){blob=await new Promise(function(res){canvas.toBlob(res,'image/jpeg',.85);});ext='jpg';}
+  if(!blob)return null;
+  return {base64:await fileToBase64(blob),ext:ext,bytes:blob.size};
+}
+async function prepareUpload(file,path,onlyIfLarge){
+  if(!onlyIfLarge||file.size>UPLOAD_LIMIT_BYTES){
+    var small=null;
+    try{small=await shrinkImage(file);}catch(e){small=null;}
+    if(small){
+      if(small.bytes>UPLOAD_LIMIT_BYTES)throw new Error(file.name+' is still too large after shrinking. Try a smaller image.');
+      return {path:path.replace(/\.[A-Za-z0-9]+$/,'.'+small.ext),base64:small.base64};
+    }
+  }
+  if(file.size>UPLOAD_LIMIT_BYTES)throw new Error(file.name+' is '+(file.size/1048576).toFixed(1)+' MB, over the ~3 MB upload limit. Use a smaller file.');
+  return {path:path,base64:await fileToBase64(file)};
+}
+/* Images dropped or pasted into the post body: upload as files and insert the URL
+   (Quill's default is to embed the raw image data inside the post, which is huge). */
+async function uploadEditorImages(range,files){
+  var idEl=document.getElementById('f-id');
+  var id=(idEl&&idEl.value.trim())||'post';
+  try{
+    showStatus('Uploading '+files.length+' image(s)…');
+    var at=range?range.index:quillEditor.getLength();
+    for(var i=0;i<files.length;i++){
+      var p0='images/blog/'+id+'/'+Date.now()+'-'+(files[i].name||'pasted-image.png').replace(/[^a-zA-Z0-9.\-_]/g,'');
+      var prep=await prepareUpload(files[i],p0);
+      var r=await callApi({action:'upload',path:prep.path,contentBase64:prep.base64,siteId:state.currentSiteId});
+      quillEditor.insertEmbed(at,'image',r.path,'user');at+=1;
+    }
+    quillEditor.setSelection(at,0);
+    hideStatus();
+  }catch(e){showStatus('Image upload failed: '+e.message,true);}
+}
+/* Safety net at save time: swap any image still embedded as raw data for an uploaded file. */
+async function uploadEmbeddedDataImages(){
+  if(!quillEditor)return;
+  var imgs=Array.from(quillEditor.root.querySelectorAll('img[src^="data:"]'));
+  if(!imgs.length)return;
+  showStatus('Uploading '+imgs.length+' pasted image(s)…');
+  var idEl=document.getElementById('f-id');
+  var id=(idEl&&idEl.value.trim())||'post';
+  for(var i=0;i<imgs.length;i++){
+    var blob=await (await fetch(imgs[i].src)).blob();
+    var file=new File([blob],'pasted-'+(i+1)+'.png',{type:blob.type||'image/png'});
+    var prep=await prepareUpload(file,'images/blog/'+id+'/'+Date.now()+'-pasted-'+(i+1)+'.png');
+    var r=await callApi({action:'upload',path:prep.path,contentBase64:prep.base64,siteId:state.currentSiteId});
+    imgs[i].setAttribute('src',r.path);
+  }
+}
+
 function uploadWidget(fieldKey,existingPaths,multiple){
   window.__uploads[fieldKey]=(existingPaths||[]).slice();
   return '<div class="upload-list" id="upload-list-'+fieldKey+'">'+renderUploadItems(fieldKey)+'</div>'+
@@ -852,9 +926,9 @@ async function handleImageUpload(fieldKey,inputEl,multiple){
   try{
     for(var i=0;i<files.length;i++){
       var file=files[i];
-      var base64=await fileToBase64(file);
-      var path='images/projects/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
-      var uploadPayload={action:'upload',path:path,contentBase64:base64};
+      var path0='images/projects/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
+      var prep=await prepareUpload(file,path0);
+      var uploadPayload={action:'upload',path:prep.path,contentBase64:prep.base64};
       if(state.editingType==='blog')uploadPayload.siteId=state.currentSiteId;
       var result=await callApi(uploadPayload);
       if(!multiple)window.__uploads[fieldKey]=[result.path];
@@ -906,6 +980,7 @@ async function handleFileUpload(fieldKey){
   if(!label||!file){alert('Add both text and a file.');return;}
   showStatus('Uploading file…');
   try{
+    if(file.size>UPLOAD_LIMIT_BYTES)throw new Error(file.name+' is '+(file.size/1048576).toFixed(1)+' MB, over the ~3 MB upload limit. Host it elsewhere and link to it, or use a smaller file.');
     var base64=await fileToBase64(file);
     var path='files/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
     var uploadPayload={action:'upload',path:path,contentBase64:base64};
@@ -954,9 +1029,9 @@ async function handleGalleryUpload(fieldKey,inputEl){
   try{
     for(var i=0;i<files.length;i++){
       var file=files[i];
-      var base64=await fileToBase64(file);
-      var path='images/blog/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
-      var result=await callApi({action:'upload',path:path,contentBase64:base64,siteId:state.currentSiteId});
+      var path0='images/blog/'+id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'');
+      var prep=await prepareUpload(file,path0);
+      var result=await callApi({action:'upload',path:prep.path,contentBase64:prep.base64,siteId:state.currentSiteId});
       window.__galleries[fieldKey].push({url:result.path,alt:'',caption:''});
     }
     document.getElementById('gallery-list-'+fieldKey).innerHTML=renderGalleryItems(fieldKey);
@@ -1215,7 +1290,7 @@ function renderForm(){
 
     quillEditor=new Quill('#f-body-quill',{
       theme:'snow',
-      modules:{toolbar:[[{header:[1,2,3,4,5,6,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['blockquote','code-block','link'],['clean']]}
+      modules:{toolbar:[[{header:[1,2,3,4,5,6,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['blockquote','code-block','link'],['clean']],uploader:{mimetypes:['image/png','image/jpeg','image/webp','image/gif'],handler:function(range,files){uploadEditorImages(range,files);}}}
     });
     quillEditor.root.innerHTML=item.body||'';
     quillEditor.on('text-change',markFormDirty);
@@ -1540,6 +1615,8 @@ async function savePost(){
   var status=document.getElementById('f-status').value;
   var scheduledAtRaw=document.getElementById('f-scheduled-at').value;
   if(status==='scheduled'&&!scheduledAtRaw){alert('Set a publish date/time, or change the status.');return;}
+  try{await uploadEmbeddedDataImages();}
+  catch(e){showStatus('Could not upload an image in the post: '+e.message,true);return;}
   var images=(window.__galleries['post-gallery']||[]).map(function(img){
     return {url:img.url,alt:img.alt||'',caption:img.caption||''};
   });
@@ -1568,6 +1645,7 @@ async function savePost(){
     },
     seoAnalysis:state.editingItem.seoAnalysis||null,
   };
+  if(JSON.stringify(item).length>4000000){showStatus('This post is too large to save (over ~4 MB of text and data). Remove large pasted content and try again.',true);return;}
   showStatus(status==='draft'?'Saving draft…':status==='scheduled'?'Scheduling…':'Publishing…');
   try{
     await callApi({action:'save',type:'blog',item:item,siteId:state.currentSiteId});
@@ -2211,10 +2289,9 @@ async function handleFaviconUpload(inputEl){
   if(!file)return;
   showStatus('Uploading favicon…');
   try{
-    var base64=await fileToBase64(file);
     var ext=file.name.split('.').pop();
-    var path='images/site/favicon.'+ext;
-    var result=await callApi({action:'upload',path:path,contentBase64:base64});
+    var prep=await prepareUpload(file,'images/site/favicon.'+ext,true);
+    var result=await callApi({action:'upload',path:prep.path,contentBase64:prep.base64});
     state.settings.favicon=result.path;
     document.getElementById('favicon-preview-img').src=result.path+'?t='+Date.now();
     hideStatus();
