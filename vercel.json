@@ -1,7 +1,11 @@
 {
   "outputDirectory": ".",
+  "functions": {
+    "api/seo-tools.js": { "includeFiles": "{data/blog.json,studio/blog-post-shell.html}" }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/studio/blog-post.html", "destination": "/api/seo-tools?action=blog-post" },
     { "source": "/sitemap.xml", "destination": "/api/seo-tools?action=sitemap" },
     { "source": "/anami", "destination": "https://anami-nu.vercel.app/anami" },
     { "source": "/anami/:path*", "destination": "https://anami-nu.vercel.app/anami/:path*" }
@@ -20,6 +24,12 @@
     },
     {
       "source": "/scout/app.html",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/studio/blog-post-shell.html",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
       ]

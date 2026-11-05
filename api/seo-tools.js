@@ -20,6 +20,10 @@
                    SEO/AEO prompt the CMS's on-demand "Analyse this site"
                    button uses (api/_lib/seo-prompt.js) and appends a
                    dated score snapshot to data/seo-reports.json.
+   - blog-post    (GET, public) — served at /studio/blog-post.html via the
+                   vercel.json rewrite. Server-renders the full article +
+                   meta/OG/JSON-LD into studio/blog-post-shell.html
+                   (api/_lib/blog-post-page.js) so non-JS readers get it.
    - search-console (GET, GitHub-OAuth admin gate) — the CMS Overview's
                    "Search performance" card. Live, on-demand read from
                    Google Search Console (api/_lib/search-console.js) —
@@ -30,6 +34,9 @@
 const { getSiteUrls } = require('./_lib/site-urls');
 const { buildSitePrompt } = require('./_lib/seo-prompt');
 const { getSearchConsolePerformance } = require('./_lib/search-console');
+const { renderBlogPostPage } = require('./_lib/blog-post-page');
+const fs = require('fs');
+const path = require('path');
 
 // Published alongside <this value>.txt at the repo root — IndexNow proves
 // domain ownership by requiring that file to be reachable, not by keeping
@@ -62,6 +69,53 @@ async function requireAdmin(req, res) {
     res.status(403).json({ error: 'Not authorized.' }); return null;
   }
   return githubUser;
+}
+
+// Reads a deployed static file. Prefers the copy bundled with this function
+// (vercel.json functions.includeFiles); falls back to fetching it from the
+// site itself so a bundling miss degrades to one extra request, not an error.
+async function readSiteFile(origin, relPath, asJson) {
+  try {
+    const txt = fs.readFileSync(path.join(process.cwd(), relPath), 'utf8');
+    return asJson ? JSON.parse(txt) : txt;
+  } catch (e) { /* not bundled — fetch it */ }
+  const r = await fetch(origin + '/' + relPath);
+  if (!r.ok) throw new Error('Could not fetch ' + relPath + ': ' + r.status);
+  return asJson ? r.json() : r.text();
+}
+
+// GET /studio/blog-post.html?id=<id> (vercel.json rewrite). Returns the
+// complete article in the initial HTML so non-JS readers (crawlers, link
+// previews, LLM fetchers) get the post, not a "Loading…" shell.
+async function handleBlogPost(req, res) {
+  const origin = 'https://' + (req.headers.host || 'www.gavinmakesstuff.com');
+  const id = (req.query && req.query.id) ? String(req.query.id) : '';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+  let shell;
+  try {
+    shell = await readSiteFile(origin, 'studio/blog-post-shell.html', false);
+  } catch (e) {
+    res.status(502).send('<!DOCTYPE html><title>Temporarily unavailable</title><p>Could not load this page. Please try again shortly.</p>');
+    return;
+  }
+
+  let blogData;
+  try {
+    blogData = await readSiteFile(origin, 'data/blog.json', true);
+  } catch (e) {
+    // Data unavailable: serve the shell as-is so the browser renders it the
+    // old way. Short cache so a transient failure doesn't stick.
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30');
+    res.status(200).send(shell);
+    return;
+  }
+
+  const { status, html } = renderBlogPostPage(shell, blogData, id);
+  // blog.json only changes via a CMS commit → redeploy, which purges the
+  // CDN cache. The time-based cap is just for scheduled posts going live.
+  res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
+  res.status(status).send(html);
 }
 
 async function handleSitemap(req, res) {
@@ -255,6 +309,7 @@ async function handleCronReport(req, res) {
 module.exports = async function (req, res) {
   const action = (req.query && req.query.action) || '';
   if (action === 'sitemap') return handleSitemap(req, res);
+  if (action === 'blog-post') return handleBlogPost(req, res);
   if (action === 'index') return handleIndex(req, res);
   if (action === 'cron-report') return handleCronReport(req, res);
   if (action === 'search-console') return handleSearchConsole(req, res);

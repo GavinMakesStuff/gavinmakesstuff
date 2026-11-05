@@ -44,13 +44,27 @@
   <script src="/js/shared.js"></script>
   <script>
     injectNav('blog', true);
+    // /studio/blog-post.html is served by /api/seo-tools?action=blog-post,
+    // which puts the article into this shell server-side (data-ssr on the
+    // root). Only fall back to client rendering if that didn't happen.
     (async function () {
+      var root = document.getElementById('blog-detail-root');
+      var ssr = root && root.getAttribute('data-ssr');
       try {
-        var [bRes, sRes] = await Promise.all([fetch('/data/blog.json'), fetch('/data/site-settings.json')]);
-        initBlog(await bRes.json());
-        applySettings(await sRes.json(), null);
+        if (ssr) {
+          applySettings(await (await fetch('/data/site-settings.json')).json(), null);
+        } else {
+          var [bRes, sRes] = await Promise.all([fetch('/data/blog.json'), fetch('/data/site-settings.json')]);
+          initBlog(await bRes.json());
+          applySettings(await sRes.json(), null);
+        }
       } catch (e) { console.error(e); }
-      renderBlogDetail();
+      if (ssr === '1') {
+        var h1 = root.querySelector('.detail-title');
+        trackEvent('view_blog_post', { post_id: getQueryParam('id'), post_title: h1 ? h1.textContent : '' });
+      } else if (!ssr) {
+        renderBlogDetail();
+      }
     })();
   </script>
 </body>
