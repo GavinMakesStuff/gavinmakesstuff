@@ -6,6 +6,7 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/studio/blog-post.html", "destination": "/api/seo-tools?action=blog-post" },
+    { "source": "/blog/:id", "destination": "/api/seo-tools?action=blog-post&id=:id" },
     { "source": "/sitemap.xml", "destination": "/api/seo-tools?action=sitemap" },
     { "source": "/anami", "destination": "https://anami-nu.vercel.app/anami" },
     { "source": "/anami/:path*", "destination": "https://anami-nu.vercel.app/anami/:path*" }

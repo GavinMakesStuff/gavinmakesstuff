@@ -53,7 +53,7 @@
         initBlog(await bRes.json());
         applySettings(await sRes.json(), 'studioBlog');
       } catch (e) { console.error(e); }
-      renderBlogCards('blog-posts-list', '/studio/blog-post.html');
+      renderBlogCards('blog-posts-list', '/blog/');
     })();
   </script>
 </body>

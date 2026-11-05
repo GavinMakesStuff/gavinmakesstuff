@@ -20,7 +20,8 @@
                    SEO/AEO prompt the CMS's on-demand "Analyse this site"
                    button uses (api/_lib/seo-prompt.js) and appends a
                    dated score snapshot to data/seo-reports.json.
-   - blog-post    (GET, public) — served at /studio/blog-post.html via the
+   - blog-post    (GET, public) — served at /blog/<id> and the older
+                   /studio/blog-post.html?id=<id> via the
                    vercel.json rewrite. Server-renders the full article +
                    meta/OG/JSON-LD into studio/blog-post-shell.html
                    (api/_lib/blog-post-page.js) so non-JS readers get it.
@@ -84,7 +85,7 @@ async function readSiteFile(origin, relPath, asJson) {
   return asJson ? r.json() : r.text();
 }
 
-// GET /studio/blog-post.html?id=<id> (vercel.json rewrite). Returns the
+// GET /blog/<id> or /studio/blog-post.html?id=<id> (vercel.json rewrites). Returns the
 // complete article in the initial HTML so non-JS readers (crawlers, link
 // previews, LLM fetchers) get the post, not a "Loading…" shell.
 async function handleBlogPost(req, res) {

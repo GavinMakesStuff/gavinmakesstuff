@@ -36,7 +36,7 @@ test('HTML post: full body, links, images, metadata in initial HTML', () => {
   assert.ok(html.includes('<h2>Section</h2>'));
   assert.ok(html.includes('src="/images/a.webp" width="10" alt="Rich &amp; Post — image 1"'));
   assert.ok(html.includes('alt="kept"'));
-  assert.ok(html.includes('<link rel="canonical" href="https://www.gavinmakesstuff.com/studio/blog-post.html?id=html-post">'));
+  assert.ok(html.includes('<link rel="canonical" href="https://www.gavinmakesstuff.com/blog/html-post">'));
   assert.ok(html.includes('<meta property="og:image" content="https://www.gavinmakesstuff.com/images/t.webp">'));
   assert.ok(html.includes('<title>Rich &amp; Post — Gavin makes stuff</title>'));
   assert.match(html, /<meta name="description" content="Hello Sofa Section">/);
@@ -80,4 +80,12 @@ test('every live post in data/blog.json renders with its full body', () => {
 test('addMissingAlt leaves existing alt alone', () => {
   assert.strictEqual(addMissingAlt('<img src="a" alt="x">', 'T'), '<img src="a" alt="x">');
   assert.strictEqual(addMissingAlt('<img src="a"/>', 'T'), '<img src="a" alt="T — image 1"/>');
+});
+
+test('canonical and sitemap use clean /blog/<id> URLs', async () => {
+  const { postPath } = require('../api/_lib/blog-post-page');
+  assert.strictEqual(postPath('living-room'), '/blog/living-room');
+  const { html } = renderBlogPostPage(shell, sample, 'md-post');
+  assert.ok(html.includes('<link rel="canonical" href="https://www.gavinmakesstuff.com/blog/md-post">'));
+  assert.ok(html.includes('<meta property="og:url" content="https://www.gavinmakesstuff.com/blog/md-post">'));
 });

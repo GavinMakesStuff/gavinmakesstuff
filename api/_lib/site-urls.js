@@ -50,7 +50,7 @@ async function getSiteUrls(origin) {
 
   for (const post of blogData.posts || []) {
     if (!isPostLive(post)) continue;
-    urls.push({ loc: origin + '/studio/blog-post.html?id=' + encodeURIComponent(post.id), lastmod: post.date || null });
+    urls.push({ loc: origin + '/blog/' + encodeURIComponent(post.id), lastmod: post.date || null });
   }
 
   return urls;

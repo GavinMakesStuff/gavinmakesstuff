@@ -1,12 +1,13 @@
 /* ============================================================
-   Server-side render for /studio/blog-post.html?id=<post-id>
+   Server-side render for /blog/<post-id> (canonical) and the older
+   /studio/blog-post.html?id=<post-id> (still served, canonical points to /blog/).
 
    Why this exists: the blog post page used to be a static shell that
    showed "Loading…" until js/shared.js fetched /data/blog.json and
    injected the article in the browser. Crawlers, link unfurlers and
    LLM-based readers that don't run JavaScript only ever saw "Loading…".
 
-   vercel.json rewrites /studio/blog-post.html → /api/seo-tools?action=
+   vercel.json rewrites both URLs → /api/seo-tools?action=
    blog-post, which uses this module to take the real page chrome
    (studio/blog-post-shell.html, the old static file, unchanged in look)
    and put the complete article plus per-post metadata into the initial
@@ -20,6 +21,10 @@
 const { isPostLive } = require('./site-urls');
 
 const CANONICAL_ORIGIN = 'https://www.gavinmakesstuff.com';
+
+// Clean, query-string-free post URL. Some fetchers (LLM readers, link
+// unfurlers) drop ?query params; a path-only URL survives that.
+function postPath(id) { return '/blog/' + encodeURIComponent(id); }
 const SITE_NAME = 'Gavin makes stuff';
 const AUTHOR_NAME = 'Gavin Krohman';
 
@@ -151,7 +156,7 @@ function renderArticleHtml(post) {
 }
 
 function buildMeta(post) {
-  const canonical = CANONICAL_ORIGIN + '/studio/blog-post.html?id=' + encodeURIComponent(post.id);
+  const canonical = CANONICAL_ORIGIN + postPath(post.id);
   const titleText = plainText((post.seo && post.seo.title) || post.title) || 'Blog post';
   const description = truncate(
     plainText((post.seo && post.seo.metaDescription) || post.summary || '') || plainText(renderPostBody(post.body)),
@@ -207,4 +212,4 @@ function renderBlogPostPage(shellHtml, blogData, id) {
   return { status: 200, html: html };
 }
 
-module.exports = { renderBlogPostPage, renderArticleHtml, buildMeta, addMissingAlt, ROOT_RE };
+module.exports = { postPath, renderBlogPostPage, renderArticleHtml, buildMeta, addMissingAlt, ROOT_RE };

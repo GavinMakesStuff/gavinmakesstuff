@@ -417,6 +417,20 @@ function renderPostBody(body) {
 }
 
 /* ---- Blog list ---- */
+// A detailPageUrl ending in '/' is a clean path prefix (/blog/<id>);
+// anything else keeps the old ?id= query style.
+function postHref(detailPageUrl, id) {
+  return detailPageUrl.slice(-1) === '/'
+    ? detailPageUrl + encodeURIComponent(id)
+    : detailPageUrl + '?id=' + id;
+}
+// Post id from ?id= or from a /blog/<id> path.
+function getPostId() {
+  var q = getQueryParam('id');
+  if (q) return q;
+  var m = window.location.pathname.match(/^\/blog\/([^\/]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 function renderBlogCards(containerId, detailPageUrl, limit) {
   var container = document.getElementById(containerId);
   if (!container) return;
@@ -427,7 +441,7 @@ function renderBlogCards(containerId, detailPageUrl, limit) {
     var d = new Date(post.date + 'T00:00:00');
     var shortDate = String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
     return (
-      '<a class="blog-row" href="' + detailPageUrl + '?id=' + post.id + '">' +
+      '<a class="blog-row" href="' + postHref(detailPageUrl, post.id) + '">' +
         '<span class="blog-date">' + shortDate + '</span>' +
         '<div><p class="blog-row-title">' + post.title + '</p><p class="blog-row-desc">' + post.summary + '</p></div>' +
         '<span class="blog-row-arrow">→</span>' +
@@ -438,7 +452,7 @@ function renderBlogCards(containerId, detailPageUrl, limit) {
 
 /* ---- Blog detail ---- */
 function renderBlogDetail() {
-  var id = getQueryParam('id');
+  var id = getPostId();
   var post = (window.BLOG_POSTS || []).find(function (p) { return p.id === id; });
   var root = document.getElementById('blog-detail-root');
   if (!root) return;
